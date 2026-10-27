@@ -1,0 +1,4 @@
+kafka/
+kafka-runtime/
+app-logs/
+*.log
