@@ -1,13 +1,22 @@
 package com.hexaware.security_master_market;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.util.Properties;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
 
-@SpringBootTest
 class SecurityMasterMarketApplicationTests {
-
-	@Test
-	void contextLoads() {
-	}
-
+  @Test
+  void configurationUsesOnlyOwnedDatabaseAndNeverCreatesSchema() throws Exception {
+    var properties = new Properties();
+    try (var input = getClass().getResourceAsStream("/application.properties")) {
+      properties.load(input);
+    }
+    assertThat(properties.getProperty("spring.datasource.url")).contains("/security_market_db?");
+    assertThat(properties.getProperty("spring.datasource.username"))
+        .isEqualTo("${MARKET_DB_USERNAME:root}");
+    assertThat(properties.getProperty("spring.jpa.hibernate.ddl-auto")).isEqualTo("validate");
+    assertThat(properties.getProperty("spring.sql.init.mode")).isEqualTo("never");
+    assertThat(properties.getProperty("app.auth.issuer")).isNull();
+  }
 }
