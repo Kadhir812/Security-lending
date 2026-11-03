@@ -1,0 +1,76 @@
+ORGANIZATION
+
+│
+
+├── USERS
+
+│     └── USER_ROLES
+
+│              └── ROLES
+
+│
+
+├── MSLA_AGREEMENT
+
+│       ├── COUNTERPARTY_CREDIT_LIMIT
+
+│       │         └── CREDIT_LIMIT_HISTORY
+
+│       │
+
+│       ├── COLLATERAL_HAIRCUT
+
+│       │
+
+│       └── LENDING_FEE
+
+│
+
+├── LENDER_INVENTORY
+
+│
+
+└── BORROWER_INVENTORY
+
+          │
+
+          └── LOAN_CONTRACT
+
+                  │
+
+                  ├── CONTRACT_STATUS_HISTORY
+
+                  │
+
+                  ├── COLLATERAL
+
+                  │       └── COLLATERAL_VALUATION_HISTORY
+
+                  │
+
+                  ├── MARK_TO_MARKET_SNAPSHOT
+
+                  │
+
+                  ├── MARGIN_CALL
+
+                  │       └── MARGIN_CALL_TRANSACTION_LOG
+
+                  │
+
+                  ├── RECALL_REQUEST
+
+                  │
+
+                  ├── SETTLEMENT_INSTRUCTION
+
+                  │
+
+                  ├── REBATE_CALCULATION
+
+                  │       └── REBATE_PAYMENT_HISTORY
+
+                  │
+
+                  └── BORROWER_TRADE_ACTIVITY
+ 
