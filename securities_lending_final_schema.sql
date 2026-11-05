@@ -50,9 +50,10 @@
 -- 14. Before approving a loan request, require requested quantity <= lender inventory
 --     available_quantity for the matching security. Lock the inventory row and reserve
 --     the quantity atomically; reject requests that exceed lender inventory.
--- 15. Before approving a loan request, require resulting credit exposure, including the
---     new reservation, <= counterparty_credit_limit.available_amount. Lock the credit
---     row and reserve the amount atomically; reject credit-limit breaches.
+-- 15. Before reserving credit, require new_reservation_amount <= available_amount.
+--     Equivalently, used_amount + reserved_amount + new_reservation_amount <= limit_amount.
+--     Lock the credit row and reserve atomically with contract creation, inventory
+--     reservation and the outbox event; reject credit-limit breaches.
 -- 16. Build and validate loan_contract.collateral_terms from the selected MSLA collateral
 --     conditions and effective collateral_haircut rule. The current workflow accepts CASH;
 --     other collateral types remain represented for future support.
@@ -358,20 +359,18 @@ CREATE TABLE inventory_reservation (
 ) ENGINE=InnoDB;
 
 -- 18. borrower_inventory
--- Borrower-side unified account projection: one row per contract, so positions from
--- multiple lenders remain attributable while the borrower can aggregate by account/security.
+-- Borrower identity is derived through contract -> loan_request -> msla_agreement.borrower_org_id.
+-- Positions are recorded per contract and can be aggregated by borrower organization and security.
 -- This is not the authoritative obligation; loan_contract remains authoritative.
 CREATE TABLE borrower_inventory (
   inventory_id BIGINT AUTO_INCREMENT PRIMARY KEY,
   contract_id BIGINT NOT NULL UNIQUE,
-  account_id VARCHAR(80) NOT NULL,
   security_id BIGINT NOT NULL,
   borrowed_quantity BIGINT NOT NULL DEFAULT 0,
   version BIGINT NOT NULL DEFAULT 0,
   CHECK (borrowed_quantity >= 0),
   FOREIGN KEY (contract_id) REFERENCES loan_contract(contract_id),
-  FOREIGN KEY (security_id) REFERENCES security_master(security_id),
-  INDEX idx_borrower_inventory_account_security (account_id, security_id)
+  FOREIGN KEY (security_id) REFERENCES security_master(security_id)
 ) ENGINE=InnoDB;
 
 -- 19. contract_status_history
