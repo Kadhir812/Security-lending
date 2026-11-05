@@ -20,8 +20,11 @@
 --
 -- REQUIRED TRANSACTIONAL BACKEND RULES (not enforceable by row CHECK constraints):
 -- 1. Validate organization roles, user membership, active mandate/MSLA and validity dates.
--- 2. Validate matching MSLA/security across locate/request and all contract-linked child rows.
+-- 2. Validate the selected security_master.security_type against
+--    msla_agreement.eligible_securities.allowed_types. Validate matching MSLA/security
+--    across locate/request and all contract-linked child rows.
 -- 3. Choose one effective fee/haircut rule; reject ambiguous overlapping periods.
+--    For the current CASH-only collateral workflow, snapshot a validated 0% CASH haircut.
 -- 4. Lock inventory and credit rows in consistent order; reserve both with contract + outbox.
 --    Keep inventory counters equal to reservation/settlement totals. Use version checks too.
 -- 5. Validate all state transitions. Count only confirmed settlement; no double settlement.
@@ -32,7 +35,10 @@
 -- 7. MTM uses consistent as-of prices and settled remaining collateral; preserve old snapshots.
 --    Credit exposure here is loan market value; no credit netting by collateral.
 --    Limit breaches caused by MTM are allowed to be recorded and block new lending.
--- 8. Prevent duplicate active margin calls and recalls exceeding outstanding unrecalled units.
+-- 8. Allow only one active margin call and one active recall per contract.
+--    Active margin-call statuses are OPEN, PARTIALLY_SATISFIED and BREACHED;
+--    active recall statuses are OPEN, PROCESSING, PARTIALLY_RETURNED and OVERDUE.
+--    A recall must also stay within outstanding unrecalled units.
 -- 9. Never release collateral below agreed coverage. Cancel pending transfers before closure.
 -- 10. Accrue daily using agreed daily balance convention; prevent overpayment and reverse
 --     payer/payee for negative rebates. Close only after inventory, collateral and charges resolve.
@@ -41,6 +47,15 @@
 -- 12. Keep financial/audit history immutable. No cascading deletes or hard deletion of trades.
 -- 13. FIX type mappings must be confirmed against the chosen FIX version and lab agreement;
 --     do not infer a FIX type solely from a table name. QuickFIX/J manages session persistence.
+-- 14. Before approving a loan request, require requested quantity <= lender inventory
+--     available_quantity for the matching security. Lock the inventory row and reserve
+--     the quantity atomically; reject requests that exceed lender inventory.
+-- 15. Before approving a loan request, require resulting credit exposure, including the
+--     new reservation, <= counterparty_credit_limit.available_amount. Lock the credit
+--     row and reserve the amount atomically; reject credit-limit breaches.
+-- 16. Build and validate loan_contract.collateral_terms from the selected MSLA collateral
+--     conditions and effective collateral_haircut rule. The current workflow accepts CASH;
+--     other collateral types remain represented for future support.
 
 CREATE DATABASE IF NOT EXISTS securities_lending
   CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -130,7 +145,9 @@ CREATE TABLE security_price (
 ) ENGINE=InnoDB;
 
 -- 8. msla_agreement
--- Lender/custodian derive from mandate. JSON eligibility rule structure must be validated by backend.
+-- Lender/custodian derive from mandate. eligible_securities stores allowed asset types,
+-- not individual security IDs; its JSON structure and values are validated by backend.
+-- collateral_type is the current default collateral condition; backend currently accepts CASH.
 CREATE TABLE msla_agreement (
   msla_id BIGINT AUTO_INCREMENT PRIMARY KEY,
   msla_reference VARCHAR(80) NOT NULL UNIQUE,
@@ -141,7 +158,7 @@ CREATE TABLE msla_agreement (
   agreement_status ENUM('DRAFT','ACTIVE','INACTIVE','EXPIRED') NOT NULL DEFAULT 'DRAFT',
   base_currency CHAR(3) NOT NULL,
   eligible_securities JSON NOT NULL,
-  eligible_collateral JSON NOT NULL,
+  collateral_type ENUM('CASH','ETF','GOVT_BOND','CORPORATE_BOND','EQUITY') NOT NULL DEFAULT 'CASH',
   collateral_coverage_pct DECIMAL(9,4) NOT NULL DEFAULT 105.0000,
   mtm_interval_minutes INT NOT NULL DEFAULT 60,
   margin_call_window_hours INT NOT NULL DEFAULT 24,
@@ -235,6 +252,7 @@ CREATE TABLE lender_inventory (
 
 -- 14. locate_request
 -- Borrower/lender/receiving custodian resolve through MSLA and mandate; no duplicate party columns.
+-- The selected security is validated by backend against MSLA eligible asset types.
 CREATE TABLE locate_request (
   locate_id BIGINT AUTO_INCREMENT PRIMARY KEY,
   locate_reference VARCHAR(80) NOT NULL UNIQUE,
@@ -257,6 +275,7 @@ CREATE TABLE locate_request (
 ) ENGINE=InnoDB;
 
 -- 15. loan_request
+-- The selected security is validated by backend against MSLA eligibility and the linked locate.
 CREATE TABLE loan_request (
   request_id BIGINT AUTO_INCREMENT PRIMARY KEY,
   request_reference VARCHAR(80) NOT NULL UNIQUE,
@@ -279,6 +298,8 @@ CREATE TABLE loan_request (
 
 -- 16. loan_contract
 -- MSLA, security and parties derive from immutable accepted request. Latest values are cached snapshots.
+-- collateral_terms is a backend-built snapshot of MSLA collateral conditions and the
+-- effective haircut rule; coverage and settlement currency remain dedicated columns.
 CREATE TABLE loan_contract (
   contract_id BIGINT AUTO_INCREMENT PRIMARY KEY,
   transaction_reference VARCHAR(80) NOT NULL UNIQUE,
@@ -337,14 +358,20 @@ CREATE TABLE inventory_reservation (
 ) ENGINE=InnoDB;
 
 -- 18. borrower_inventory
--- Outstanding borrowed obligation, not trading holdings. Borrower/security derive from contract request.
+-- Borrower-side unified account projection: one row per contract, so positions from
+-- multiple lenders remain attributable while the borrower can aggregate by account/security.
+-- This is not the authoritative obligation; loan_contract remains authoritative.
 CREATE TABLE borrower_inventory (
   inventory_id BIGINT AUTO_INCREMENT PRIMARY KEY,
   contract_id BIGINT NOT NULL UNIQUE,
+  account_id VARCHAR(80) NOT NULL,
+  security_id BIGINT NOT NULL,
   borrowed_quantity BIGINT NOT NULL DEFAULT 0,
   version BIGINT NOT NULL DEFAULT 0,
   CHECK (borrowed_quantity >= 0),
-  FOREIGN KEY (contract_id) REFERENCES loan_contract(contract_id)
+  FOREIGN KEY (contract_id) REFERENCES loan_contract(contract_id),
+  FOREIGN KEY (security_id) REFERENCES security_master(security_id),
+  INDEX idx_borrower_inventory_account_security (account_id, security_id)
 ) ENGINE=InnoDB;
 
 -- 19. contract_status_history

@@ -2,3 +2,8 @@ kafka/
 kafka-runtime/
 app-logs/
 *.log
+llama/*.exe
+llama/*.dll
+llama/models/
+llama/*.gguf
+llama/schema-review.txt
