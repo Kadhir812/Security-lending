@@ -3,6 +3,12 @@
 This project keeps the frontend and backend alongside a local Apache Kafka
 broker. Kafka runs in single-node KRaft mode; no ZooKeeper service is needed.
 
+The backend's Stage 1 persistence and authentication foundation uses Java 21,
+Spring Boot 4 and service-local MySQL schemas. See
+[Stage 1 setup and verification](docs/STAGE1_SETUP.md) and
+[implementation progress](docs/PROGRESS.md). Kafka processing and lending business
+scenarios are not part of Stage 1.
+
 ## Layout
 
 ```text
@@ -44,15 +50,36 @@ be run from any working directory.
 ## Windows installation and first-time setup
 
 Open PowerShell as your regular user (do not use **Run as administrator**) and
-run:
+run the following from the repository root:
 
 ```powershell
-Set-Location 'C:\secuity lending'
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\setup-kafka.ps1
 ```
 
 `-ExecutionPolicy Bypass` applies only to that PowerShell process; it does not
 change the machine's execution policy.
+
+Start and verify Kafka from PowerShell:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\kafka.ps1 -Action Start
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\kafka.ps1 -Action Verify
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\kafka.ps1 -Action Status
+# When finished:
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\kafka.ps1 -Action Stop
+```
+
+The broker binds to loopback only (`localhost:9092`). The installer downloads
+and extracts inside the system temporary directory, verifies Apache's SHA-512 checksum, and
+installs into `kafka/`. No service or global environment configuration is added.
+The PowerShell helper invokes Java directly to avoid Windows batch classpath
+length limits. It stores its PID in `kafka-runtime/broker.pid` and logs in
+`app-logs/`. `Verify` creates a unique smoke-test topic, produces one message
+with `acks=all`, consumes it, and requires an exact match. The result is saved
+to `app-logs/verification.json`; input and consumer output are retained there
+as `producer-input.txt` and `consumer.log`. Smoke-test topics remain in local
+storage for inspection. `Stop` terminates only the recorded workspace broker;
+allow startup recovery to complete when restarting it.
 The script uses the Kafka 4.4.0 distribution already in `kafka/`. If that
 distribution is missing, it downloads the official Apache binary archive,
 checks its SHA-512 checksum, and extracts it into the project. It copies the

@@ -1,5 +1,16 @@
 # Prompt 07: Security master and market prices
 
+## Stage 3A override (user instruction, 2026-11-07)
+
+Use HTTP REST only for Security & Market Data in this stage. Do not publish
+market-price Kafka events or implement price consumers. Preserve existing common
+messaging tables and code without expanding them. REST authentication is not
+required for this service; do not alter other services' authentication.
+Store security details and immutable price history; expose search, details,
+latest, historical and as-of REST APIs. Do not create tests for this stage.
+This override takes precedence over conflicting Kafka, authentication and test
+instructions below and in the original Stage 3A attachment.
+
 Read and follow prompts/00_MASTER_INSTRUCTIONS.md first.
 
 Implement Security & Market Data APIs to register/update instruments and ingest prices, plus paginated search and detail by ISIN. Validate ISIN format, asset-type ENUM, currency and status. Search by name/symbol; never treat symbol alone as globally unique. Preserve inactive instruments/history.

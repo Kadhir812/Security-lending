@@ -92,19 +92,24 @@ if (-not (Test-Path -LiteralPath $KafkaStorageJar -PathType Leaf)) {
     if (Test-Path -LiteralPath $KafkaHome) {
         $existingItems = @(Get-ChildItem -LiteralPath $KafkaHome -Force -ErrorAction SilentlyContinue)
         if ($existingItems.Count -gt 0) {
-            throw "Kafka folder exists but does not contain the Windows tools: $KafkaStorage. Move or repair that folder, then rerun."
+            throw "Kafka folder exists but does not contain the storage library: $KafkaStorageJar. Move or repair that folder, then rerun."
         }
     }
 
     if (-not $ArchivePath) {
         $ArchivePath = Join-Path ([System.IO.Path]::GetTempPath()) $KafkaArchiveName
         Write-Host "Downloading official Apache Kafka $KafkaVersion binary package..."
-        Invoke-WebRequest -Uri $KafkaArchiveUrl -OutFile $ArchivePath
+        $previousProgress = $ProgressPreference
+        try {
+            $ProgressPreference = 'SilentlyContinue'
+            Invoke-WebRequest -UseBasicParsing -Uri $KafkaArchiveUrl -OutFile $ArchivePath -TimeoutSec 600
+        }
+        finally { $ProgressPreference = $previousProgress }
     }
 
     $ArchivePath = (Resolve-Path -LiteralPath $ArchivePath).Path
     Write-Host 'Fetching the official SHA-512 checksum...'
-    $checksumText = (Invoke-WebRequest -Uri $KafkaChecksumUrl).Content
+    $checksumText = (Invoke-WebRequest -UseBasicParsing -Uri $KafkaChecksumUrl -TimeoutSec 60).Content
     $expectedHash = (($checksumText -replace '^[^:]*:\s*', '') -replace '\s', '').ToLowerInvariant()
     if ($expectedHash -notmatch '^[0-9a-f]{128}$') {
         throw "Could not parse Apache's SHA-512 checksum from $KafkaChecksumUrl"

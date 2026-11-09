@@ -1,6 +1,6 @@
 # Prompt 20: Voluntary partial/full return and release
 
-Read and follow prompts/00_MASTER_INSTRUCTIONS.md first.
+Read and follow prompts/Agents.md first.
 
 Implement borrower return request against outstanding quantity using application events. Custodian validates current balance and existing pending return instructions so concurrent requests cannot return more than outstanding. Create security-return instructions; no balance changes on request alone.
 
