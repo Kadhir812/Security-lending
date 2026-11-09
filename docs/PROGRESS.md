@@ -1,5 +1,58 @@
 # Implementation progress
 
+## Lifecycle verification (2026-11-09)
+
+- Part 1 runtime/schema alignment: no active Spring profile; each service's
+  datasource was queried using its own configured local MySQL credentials.
+  Existing DBs were not reset and no records were inserted.
+- Local schema was 49 tables because `custodian_db` lacked only
+  `credit_exposure_history` (27 vs 28 in its authoritative fresh schema).
+  Existing `margin_call.shortfall_amount` was already generated and the 3B
+  audit columns, 3D currency fields, and 3E contract-view table were present.
+  Applied only the missing table creation from
+  `V3G__credit_exposure_and_satisfied_margin_call.sql` and the missing
+  `loan_contract_view.version` column from
+  `V3G__borrower_contract_view_version.sql`; both changes are additive.
+  Final counts: 5+28+12+5 = 50; no destructive DDL or data reset.
+- Market started from its Maven wrapper in a VS Code task terminal; port 8080
+  `/actuator/health` returned UP and startup output is retained at
+  `app-logs/market-startup.log`.
+- Workspace Kafka still fails moving partition
+  `sl3d3e-requests-20261108-0` with Windows `AccessDeniedException`. At retry,
+  no workspace Kafka JVM or listener existed; the existing data `.lock` was
+  left untouched. No Sysinternals `handle.exe` is available to identify any
+  external Windows file-handle owner. Started the previously verified isolated
+  broker using the same `localhost:9092`/`9093` endpoints; Kafka API versions
+  request succeeded. Its data is retained under
+  `%TEMP%\sl-lifecycle-kafka-20261109`.
+- Custodian, Borrower, and Valuation are not started: required
+  `JWT_SHARED_SECRET` is absent from process, user, and machine environments.
+  Both Custodian and Borrower `users`, `roles`, and `user_roles` are empty; no
+  seed script exists. Existing test fixtures require `CUSTODIAN_OPERATOR` and
+  Borrower `TRADER` membership. Authorization was not weakened and no users
+  were invented. Configure the secret and approved local principals before
+  starting those services or running authenticated simulations.
+- Messaging publisher/consumer flags remain disabled by default in service
+  properties, so broker protocol connectivity is verified but service Kafka
+  clients are not enabled. No business lifecycle was run.
+- Reviewed approved 3H rules against 3J: fee days use next UTC midnight,
+  include both delivery and return settlement dates, select a price at/before
+  cutoff no older than 24 hours, use ACT_365, and round only the final daily
+  amount HALF_UP to cents. No 3J mismatch found.
+- Fixed the Borrower JWT-placeholder test with an explicit test-only property;
+  production still requires `JWT_SHARED_SECRET`.
+- Added focused tests for delivery/return-day quantities and fee HALF_UP
+  calculation. `mvn -pl backend/borrower_service,backend/custodian_service,backend/valuation_accural -am test`:
+  PASS, Borrower 29, Custodian 45, Valuation 14; 88 total, no failures/errors/skips.
+- `python db/validate_structure.py`: PASS, 50-table ceiling. Fresh schemas
+  imported into disposable databases on configured MySQL `localhost:3306`;
+  existing application databases were not changed.
+- Workspace Kafka data was preserved. Market is healthy; remaining service
+  health and authenticated API checks are pending the JWT secret and principals.
+- Health checks, authenticated API/Kafka lifecycle, settlement and fee
+  reconciliation, concurrency, stale-event, and projection checks remain
+  pending.
+
 ## Current implementation status (2026-11-09)
 
 - 3J final CASH release and contract closure are implemented with existing
@@ -32,10 +85,8 @@
   (payout success/rejection/duplicate, closure success/duplicate, Borrower
   settlement projection/versioning and party isolation). Kafka/MySQL E2E,
   live auth, and schema-backed integration checks remain deferred.
-- A broader Borrower/Custodian clean test run stopped at an existing
-  `BorrowerServiceApplicationTests` configuration assertion (JWT placeholder
-  expectation); the Custodian suite was skipped by Maven. The targeted 3J tests
-  above passed in a separate clean run.
+- The prior Borrower JWT-placeholder assertion is fixed; see the lifecycle
+  verification results above.
 - Unresolved accounting policy: fee correction credits/refunds/netting are not
   automated; any outstanding credit balance blocks release/closure for manual
   resolution. Payout actions remain simulated.

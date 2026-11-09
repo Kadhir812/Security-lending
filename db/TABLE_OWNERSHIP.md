@@ -1,4 +1,4 @@
-# 49-table ownership map
+# 50-table ownership map
 
 | Database | Table | Ownership |
 |---|---|---|
@@ -29,6 +29,7 @@
 | custodian_db | `collateral` | AUTHORITATIVE LOCAL RECORD |
 | custodian_db | `recall_request` | AUTHORITATIVE LOCAL RECORD |
 | custodian_db | `margin_call` | AUTHORITATIVE LOCAL RECORD |
+| custodian_db | `credit_exposure_history` | AUTHORITATIVE LOCAL RECORD |
 | custodian_db | `rebate_payment_history` | AUTHORITATIVE LOCAL RECORD |
 | custodian_db | `lending_fee_payment` | AUTHORITATIVE LOCAL RECORD |
 | custodian_db | `settlement_instruction` | AUTHORITATIVE LOCAL RECORD |
