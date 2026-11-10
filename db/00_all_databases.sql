@@ -952,7 +952,7 @@ CREATE TABLE loan_contract_view (
   request_reference VARCHAR(80) NOT NULL UNIQUE,
   transaction_reference VARCHAR(80) NOT NULL UNIQUE,
   contract_snapshot JSON NOT NULL,
-  received_at DATETIME(6) NOT NULL,
+  received_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
   FOREIGN KEY (request_reference) REFERENCES loan_request(request_reference)
 ) ENGINE=InnoDB;
 
