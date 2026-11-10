@@ -24,12 +24,16 @@ import org.springframework.kafka.listener.ContainerProperties;
 import org.springframework.kafka.listener.DefaultErrorHandler;
 import org.springframework.kafka.support.ExponentialBackOffWithMaxRetries;
 import org.springframework.scheduling.annotation.EnableScheduling;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Configuration
 @EnableKafka
 @EnableScheduling
 @EnableConfigurationProperties(MessagingProperties.class)
 public class KafkaMessagingConfiguration {
+  private static final Logger log = LoggerFactory.getLogger(KafkaMessagingConfiguration.class);
+
   @Bean
   public ProducerFactory<String, String> messagingProducerFactory(MessagingProperties properties) {
     var config = new HashMap<String, Object>(properties.getClientProperties());
@@ -85,6 +89,14 @@ public class KafkaMessagingConfiguration {
               @SuppressWarnings("unchecked")
               var message =
                   (org.apache.kafka.clients.consumer.ConsumerRecord<String, String>) record;
+              Throwable cause = rootCause(failure);
+              log.error(
+                  "Kafka message processing exhausted: topic={}, partition={}, offset={}, exception={}, message={}",
+                  message.topic(),
+                  message.partition(),
+                  message.offset(),
+                  cause.getClass().getName(),
+                  cause.getMessage());
               deadLetters.reject(message, "PROCESSING_RETRY_EXHAUSTED");
             },
             backoff);
@@ -100,5 +112,13 @@ public class KafkaMessagingConfiguration {
     errors.setCommitRecovered(true);
     listener.setCommonErrorHandler(errors);
     return listener;
+  }
+
+  private static Throwable rootCause(Throwable failure) {
+    Throwable cause = failure;
+    while (cause.getCause() != null) {
+      cause = cause.getCause();
+    }
+    return cause;
   }
 }

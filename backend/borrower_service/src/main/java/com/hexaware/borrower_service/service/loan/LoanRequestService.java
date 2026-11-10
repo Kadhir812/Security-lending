@@ -50,7 +50,7 @@ public class LoanRequestService {
         writer.submit(
             validated.borrower().getUserId(),
             validated.borrower().getOrganizationReference(),
-            validated.borrower().getToken().getIssuer().toString(),
+            validated.borrower().getToken().getClaimAsString("iss"),
             validated.borrower().getToken().getSubject(),
             idempotencyKey,
             submission,

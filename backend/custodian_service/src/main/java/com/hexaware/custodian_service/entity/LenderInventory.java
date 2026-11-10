@@ -39,13 +39,25 @@ public class LenderInventory {
   private Long totalQuantity;
 
   @Builder.Default
-  @Column(name = "on_loan_quantity", nullable = false)
+  @Column(
+      name = "on_loan_quantity",
+      nullable = false,
+      columnDefinition = "bigint NOT NULL DEFAULT 0")
   private Long onLoanQuantity = 0L;
 
   @Builder.Default
-  @Column(name = "reserved_quantity", nullable = false)
+  @Column(
+      name = "reserved_quantity",
+      nullable = false,
+      columnDefinition = "bigint NOT NULL DEFAULT 0")
   private Long reservedQuantity = 0L;
 
-  @Column(name = "available_quantity", nullable = false, insertable = false, updatable = false)
+  @Column(
+      name = "available_quantity",
+      nullable = false,
+      insertable = false,
+      updatable = false,
+      columnDefinition =
+          "bigint GENERATED ALWAYS AS (total_quantity-on_loan_quantity-reserved_quantity) STORED")
   private Long availableQuantity;
 }

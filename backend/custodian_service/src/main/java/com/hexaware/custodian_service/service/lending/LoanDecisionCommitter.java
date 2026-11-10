@@ -316,6 +316,17 @@ public class LoanDecisionCommitter {
         .build();
   }
 
+  @Transactional
+  public LoanRequestDecisionResponse republishApprovedDecision(
+      LoanRequest request, Organization custodian, Organization borrower) {
+    LoanContract contract =
+        contracts
+            .findByLoanRequestId(request.getRequestId())
+            .orElseThrow(() -> SetupException.conflict("Approved request has no contract"));
+    enqueueDecision(request, borrower.getOrganizationReference(), custodian, contract, null);
+    return response(request, contract);
+  }
+
   private LoanRequest lockPendingRequest(String reference, Long custodianId) {
     LoanRequest request =
         requests
@@ -480,8 +491,15 @@ public class LoanDecisionCommitter {
     result.put("collateralCoveragePct", contract.getCollateralCoveragePct());
     result.put("collateralTerms", contract.getCollateralTerms());
     result.put("acceptedValuationSnapshot", contract.getAcceptedValuationSnapshot());
-    result.put("loanMarketValue", valuation.getLoanMarketValue());
-    result.put("requiredCashCollateral", valuation.getRequiredCashCollateral());
+    Map<String, Object> snapshot = contract.getAcceptedValuationSnapshot();
+    result.put(
+        "loanMarketValue",
+        valuation == null ? snapshot.get("loanMarketValue") : valuation.getLoanMarketValue());
+    result.put(
+        "requiredCashCollateral",
+        valuation == null
+            ? snapshot.get("requiredCashCollateral")
+            : valuation.getRequiredCashCollateral());
     result.put("settlementCalendarVersion", contract.getSettlementCalendarVersion());
     result.put("tradeDate", contract.getTradeDate());
     result.put("settlementDate", contract.getSettlementDate());

@@ -99,7 +99,7 @@ public class MessageLog {
   private Map<String, Object> payload;
 
   @Builder.Default
-  @Column(name = "schema_version", nullable = false)
+  @Column(name = "schema_version", nullable = false, columnDefinition = "int NOT NULL DEFAULT 1")
   private Integer schemaVersion = 1;
 
   @Column(name = "kafka_topic", nullable = true, length = 255)
@@ -124,7 +124,10 @@ public class MessageLog {
 
   @Builder.Default
   @JdbcTypeCode(java.sql.Types.TIMESTAMP)
-  @Column(name = "created_at", nullable = false, columnDefinition = "datetime(6)")
+  @Column(
+      name = "created_at",
+      nullable = false,
+      columnDefinition = "datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)")
   private Instant createdAt = Instant.now();
 
   @JdbcTypeCode(java.sql.Types.TIMESTAMP)
