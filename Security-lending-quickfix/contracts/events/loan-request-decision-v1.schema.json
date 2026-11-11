@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:securities-lending:loan-request-decision:v1",
+  "title": "Loan request decision payload v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "payloadVersion",
+    "requestReference",
+    "borrowerOrganizationReference",
+    "custodianOrganizationReference",
+    "decisionStatus",
+    "decisionReason",
+    "decisionVersion",
+    "respondedAt",
+    "contract"
+  ],
+  "properties": {
+    "payloadVersion": {"const": 1},
+    "requestReference": {"type": "string", "minLength": 1, "maxLength": 80},
+    "borrowerOrganizationReference": {"type": "string", "minLength": 1, "maxLength": 80},
+    "custodianOrganizationReference": {"type": "string", "minLength": 1, "maxLength": 80},
+    "decisionStatus": {"enum": ["APPROVED", "REJECTED"]},
+    "decisionReason": {"type": ["string", "null"], "maxLength": 500},
+    "decisionVersion": {"type": "integer", "minimum": 1},
+    "respondedAt": {"type": "string", "format": "date-time"},
+    "contract": {
+      "oneOf": [
+        {"type": "null"},
+        {
+          "type": "object",
+          "required": [
+            "requestReference",
+            "securityIsin",
+            "transactionReference",
+            "quantity",
+            "settlementCurrency",
+            "settlementDate",
+            "collateralTerms",
+            "acceptedValuationSnapshot"
+          ],
+          "properties": {
+            "requestReference": {"type": "string"},
+            "securityIsin": {"type": "string", "pattern": "^[A-Z0-9]{12}$"},
+            "transactionReference": {"type": "string", "minLength": 1, "maxLength": 80},
+            "quantity": {"type": "integer", "minimum": 1},
+            "settlementCurrency": {"type": "string", "pattern": "^[A-Z]{3}$"},
+            "agreedAnnualFeePct": {"type": "number", "minimum": 0},
+            "dayCountBasis": {"enum": ["ACT_365", "ACT_360"]},
+            "collateralCoveragePct": {"type": "number", "minimum": 0},
+            "collateralTerms": {"type": "object"},
+            "acceptedValuationSnapshot": {"type": "object"},
+            "loanMarketValue": {"type": "number", "exclusiveMinimum": 0},
+            "requiredCashCollateral": {"type": "number", "exclusiveMinimum": 0},
+            "settlementCalendarVersion": {"type": "string", "minLength": 1, "maxLength": 80},
+            "tradeDate": {"type": "string", "format": "date"},
+            "settlementDate": {"type": "string", "format": "date"}
+          },
+          "additionalProperties": false
+        }
+      ]
+    }
+  }
+}

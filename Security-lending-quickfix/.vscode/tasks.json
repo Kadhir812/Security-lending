@@ -1,0 +1,200 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Inspect local service readiness",
+			"type": "shell",
+			"command": "powershell.exe",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Test-NetConnection -ComputerName localhost -Port 8081 -InformationLevel Quiet; curl.exe --silent --show-error --max-time 3 http://localhost:8081/actuator/health; Test-NetConnection -ComputerName localhost -Port 8082 -InformationLevel Quiet; curl.exe --silent --show-error --max-time 3 http://localhost:8082/actuator/health; Test-NetConnection -ComputerName localhost -Port 3306 -InformationLevel Quiet; Test-NetConnection -ComputerName localhost -Port 9092 -InformationLevel Quiet"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "Compile FIX U1 service modules",
+			"type": "shell",
+			"command": "${workspaceFolder}\\backend\\borrower_service\\mvnw.cmd",
+			"args": [
+				"-f",
+				"${workspaceFolder}\\pom.xml",
+				"-pl",
+				"backend/borrower_service,backend/custodian_service",
+				"-DskipTests",
+				"compile"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "Compile FIX U1 with wrapper",
+			"type": "shell",
+			"command": "${workspaceFolder}\\backend\\borrower_service\\mvnw.cmd",
+			"args": [
+				"-f",
+				"${workspaceFolder}\\pom.xml",
+				"-pl",
+				"backend/borrower_service,backend/custodian_service",
+				"-DskipTests",
+				"compile"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "Run one FIX U1 integration test",
+			"type": "shell",
+			"command": "${workspaceFolder}\\backend\\borrower_service\\mvnw.cmd",
+			"args": [
+				"-f",
+				"${workspaceFolder}\\pom.xml",
+				"-pl",
+				"backend/borrower_service",
+				"-Dtest=FixLoanRequestE2EIT",
+				"test"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "Verify FIX U1 files and diff",
+			"type": "shell",
+			"command": "powershell.exe",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"$borrower=(Get-FileHash 'backend\\borrower_service\\src\\main\\resources\\quickfix\\FIX44_SL.xml').Hash; $custodian=(Get-FileHash 'backend\\custodian_service\\src\\main\\resources\\quickfix\\FIX44_SL.xml').Hash; Write-Output ('Dictionaries identical: ' + ($borrower -eq $custodian)); git diff --check; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; git status --short; git diff --stat"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "Compile U1 and BB service modules",
+			"type": "shell",
+			"command": "${workspaceFolder}\\backend\\borrower_service\\mvnw.cmd",
+			"args": [
+				"-f",
+				"${workspaceFolder}\\pom.xml",
+				"-pl",
+				"backend/borrower_service,backend/custodian_service",
+				"-DskipTests",
+				"compile"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "Start Kafka for live lending scenario",
+			"type": "shell",
+			"command": "powershell.exe",
+			"args": [
+				"-NoProfile",
+				"-ExecutionPolicy",
+				"Bypass",
+				"-File",
+				"${workspaceFolder}\\scripts\\kafka.ps1",
+				"-Action",
+				"Start",
+				"-LogDirectory",
+				"app_logs\\live-u1-bb-ba-ak-u2-20261111-1255"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "Start Security Market for live scenario",
+			"type": "shell",
+			"command": "powershell.exe",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location backend\\security_master_market; & .\\mvnw.cmd spring-boot:run 2>&1 | Tee-Object -FilePath app_logs\\live-u1-bb-ba-ak-u2-20261111-1255\\market.log; exit $LASTEXITCODE"
+			],
+			"isBackground": true,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "Start Valuation for live scenario",
+			"type": "shell",
+			"command": "powershell.exe",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location backend\\valuation_accural; & .\\mvnw.cmd spring-boot:run 2>&1 | Tee-Object -FilePath app_logs\\live-u1-bb-ba-ak-u2-20261111-1255\\valuation.log; exit $LASTEXITCODE"
+			],
+			"isBackground": true,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "Start Borrower for live scenario",
+			"type": "shell",
+			"command": "powershell.exe",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location backend\\borrower_service; & .\\mvnw.cmd spring-boot:run 2>&1 | Tee-Object -FilePath ..\\..\\app_logs\\live-u1-bb-ba-ak-u2-20261111-1255\\borrower.log; exit $LASTEXITCODE"
+			],
+			"isBackground": true,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "Start Custodian for live scenario",
+			"type": "shell",
+			"command": "powershell.exe",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location backend\\custodian_service; & .\\mvnw.cmd spring-boot:run 2>&1 | Tee-Object -FilePath ..\\..\\app_logs\\live-u1-bb-ba-ak-u2-20261111-1255\\custodian.log; exit $LASTEXITCODE"
+			],
+			"isBackground": true,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "Restart Custodian with shared local JWT",
+			"type": "shell",
+			"command": "powershell.exe",
+			"args": [
+				"-NoProfile",
+				"-ExecutionPolicy",
+				"Bypass",
+				"-File",
+				"${workspaceFolder}\\scripts\\start-local-auth-service.ps1",
+				"-Service",
+				"Custodian"
+			],
+			"isBackground": true,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "Restart Borrower with shared local JWT",
+			"type": "shell",
+			"command": "powershell.exe",
+			"args": [
+				"-NoProfile",
+				"-ExecutionPolicy",
+				"Bypass",
+				"-File",
+				"${workspaceFolder}\\scripts\\start-local-auth-service.ps1",
+				"-Service",
+				"Borrower"
+			],
+			"isBackground": true,
+			"problemMatcher": [],
+			"group": "test"
+		}
+	]
+}

@@ -1,0 +1,15 @@
+{
+  "eventId": "856520cc-99bb-4875-9ea7-32c54bd250c8",
+  "eventType": "STAGE2_PONG",
+  "schemaVersion": 1,
+  "producerService": "CUSTODIAN",
+  "destinationService": "BORROWER",
+  "correlationId": "stage2-example",
+  "causationEventId": "7cdceaa4-ff26-4fa6-831a-cb0fd1fae746",
+  "aggregateReference": "stage2-example-aggregate",
+  "aggregateVersion": 1,
+  "occurredAt": "2026-11-07T07:00:01Z",
+  "senderOrganizationReference": "CUSTODIAN-TEST",
+  "receiverOrganizationReference": "BORROWER-TEST",
+  "payload": {"accepted": true}
+}
