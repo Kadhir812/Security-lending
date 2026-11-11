@@ -8,5 +8,7 @@ app-logs/
 .stage3a/
 .phase3b/
 .m2/
-prompts/
+/prompts/
 docs/
+!docs/
+docs/*

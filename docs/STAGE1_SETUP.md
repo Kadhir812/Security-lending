@@ -73,6 +73,15 @@ $env:JWT_SHARED_SECRET = '<same-base64-secret>'
   -OrganizationReference '<borrower-org>' | Set-Clipboard
 ```
 
+For Borrower-to-Custodian MSLA lookups, the Borrower token must include both
+`borrower-service` and `custodian-service` audiences because the original token
+is forwarded. The helper accepts comma-separated audiences:
+
+```powershell
+$token = .\scripts\new-jwt-token.ps1 -Audience 'borrower-service,custodian-service' `
+  -Subject '<borrower-sub>' -OrganizationReference '<borrower-org>'
+```
+
 For Custodian use audience `custodian-service` and its active organization and
 operator subject. For Valuation use audience `valuation-service`, plus
 `-ClientId borrower-service -IdentityKind service -Scope valuation.preview`

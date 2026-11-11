@@ -23,8 +23,10 @@ public interface OrganizationRepository
       """
       select organization
       from Organization organization
-      where organization.organizationId = :custodian
-        or organization.registeredByCustodianId = :custodian
+      where organization.organizationType <>
+            com.hexaware.custodian_service.enums.OrganizationType.CUSTODIAN
+        and (
+        organization.registeredByCustodianId = :custodian
         or exists (
           select mandate.mandateId
           from LenderMandate mandate
@@ -37,6 +39,7 @@ public interface OrganizationRepository
           where agreement.mandateId = mandate.mandateId
             and agreement.borrowerOrgId = organization.organizationId
             and mandate.custodianOrgId = :custodian
+        )
         )
       """)
   Page<Organization> findVisible(Long custodian, Pageable pageable);

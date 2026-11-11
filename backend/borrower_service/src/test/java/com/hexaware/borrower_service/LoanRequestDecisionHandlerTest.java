@@ -16,6 +16,7 @@ import com.hexaware.borrower_service.kafka.event.EventEnvelope;
 import com.hexaware.borrower_service.repository.LoanContractViewRepository;
 import com.hexaware.borrower_service.repository.LoanRequestRepository;
 import com.hexaware.borrower_service.kafka.inbox.LoanRequestDecisionHandler;
+import com.hexaware.borrower_service.quickfix.LoanRequestFixMessageBuilder;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -23,6 +24,7 @@ import java.time.ZoneOffset;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
+import quickfix.Message;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -41,11 +43,15 @@ class LoanRequestDecisionHandlerTest {
   void setUp() {
     handler =
         new LoanRequestDecisionHandler(
-            requests, contracts, Clock.fixed(NOW, ZoneOffset.UTC));
+            requests,
+            contracts,
+            new LoanRequestFixMessageBuilder(),
+            Clock.fixed(NOW, ZoneOffset.UTC));
     request =
         LoanRequest.builder()
             .requestId(10L)
             .requestReference("LR-2026-000042")
+            .mslaReference("MSLA-1")
             .borrowerOrganizationReference("BORROWER-001")
             .custodianOrganizationReference("CUSTODIAN-001")
             .securityIsin("INE002A01018")
@@ -69,6 +75,24 @@ class LoanRequestDecisionHandlerTest {
     assertThat(request.getDecisionSourceVersion()).isEqualTo(1L);
     verify(contracts).save(org.mockito.ArgumentMatchers.argThat(
         view -> view.getTransactionReference().equals("CTR-1")));
+  }
+
+  @Test
+  void decodesAkIntoExistingApprovalAndContractViewFlow() {
+    EventEnvelope event = event("APPROVED", contract());
+    event.setPayload(Map.of("fixMessage", approvalFixMessage(event)));
+
+    handler.handle(event);
+
+    assertThat(request.getStatus()).isEqualTo(LoanRequestStatus.APPROVED);
+    assertThat(request.getDecisionSourceVersion()).isEqualTo(1L);
+    verify(contracts)
+        .save(
+            org.mockito.ArgumentMatchers.argThat(
+                view ->
+                    view.getTransactionReference().equals("CTR-1")
+                        && view.getContractSnapshot().containsKey("acceptedValuationSnapshot")
+                        && view.getContractSnapshot().containsKey("collateralTerms")));
   }
 
   @Test
@@ -160,5 +184,61 @@ class LoanRequestDecisionHandlerTest {
         "acceptedValuationSnapshot",
         Map.of("currency", "INR", "priceReference", "PRICE-1", "priceSource", "TEST"));
     return contract;
+  }
+
+  private String approvalFixMessage(EventEnvelope event) {
+    Message message = new Message();
+    var header = message.getHeader();
+    header.setString(8, "FIX.4.4");
+    header.setString(35, "AK");
+    header.setString(49, "CUSTODIAN-001");
+    header.setString(56, "BORROWER-001");
+    header.setInt(34, 2);
+    header.setString(52, "20261108-05:30:00.000");
+    message.setString(664, "CTR-1");
+    message.setInt(666, 0);
+    message.setInt(773, 2);
+    message.setInt(665, 4);
+    message.setString(60, "20261108-05:30:00.000");
+    message.setString(75, "20261108");
+    message.setString(9001, request.getRequestReference());
+    message.setString(9002, "MSLA-1");
+    message.setString(9100, "1");
+    message.setString(9101, "APPROVED");
+    message.setString(9102, request.getSecurityIsin());
+    message.setString(9103, "100");
+    message.setString(9104, "INR");
+    message.setString(9105, "1.25");
+    message.setString(9106, "ACT_365");
+    message.setString(9107, "105");
+    message.setString(9108, "CASH");
+    message.setString(9109, "INR");
+    message.setString(9110, "42");
+    message.setString(9111, "0");
+    message.setString(9112, "105");
+    message.setString(9113, "10500");
+    message.setString(9114, "10000");
+    message.setString(9115, "VAL-1");
+    message.setString(9116, "VAL-1");
+    message.setString(9117, request.getSecurityIsin());
+    message.setString(9118, "100");
+    message.setString(9119, "100");
+    message.setString(9120, "INR");
+    message.setString(9121, "PRICE-1");
+    message.setString(9122, "TEST");
+    message.setString(9123, "2026-11-08T05:30:00Z");
+    message.setString(9124, "2026-11-08T05:30:00Z");
+    message.setString(9125, "10000");
+    message.setString(9126, "10500");
+    message.setString(9127, "105");
+    message.setString(9128, "0");
+    message.setString(9129, "10500");
+    message.setString(9130, "10000");
+    message.setString(9131, "10500");
+    message.setString(9132, "CAL-1");
+    message.setString(9133, "20261110");
+    message.setString(9134, event.getEventId());
+    message.setString(9135, NOW.toString());
+    return message.toString();
   }
 }

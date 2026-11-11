@@ -23,18 +23,18 @@ import com.hexaware.custodian_service.repository.MslaAgreementRepository;
 import com.hexaware.custodian_service.repository.OrganizationRepository;
 import com.hexaware.custodian_service.repository.UserRepository;
 import com.hexaware.custodian_service.repository.UserRoleRepository;
+import com.hexaware.custodian_service.quickfix.LoanRequestFixMessageParser;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import tools.jackson.databind.ObjectMapper;
 
 @Component
 @RequiredArgsConstructor
 public class LoanRequestSubmittedHandler implements MessageHandler {
-  private final ObjectMapper mapper;
+  private final LoanRequestFixMessageParser fixMessages;
   private final LoanRequestRepository requests;
   private final LocateRequestRepository locates;
   private final MslaAgreementRepository agreements;
@@ -104,11 +104,12 @@ public class LoanRequestSubmittedHandler implements MessageHandler {
 
   private LoanRequestSubmittedPayload payload(EventEnvelope event) {
     try {
-      LoanRequestSubmittedPayload payload =
-          mapper.convertValue(event.getPayload(), LoanRequestSubmittedPayload.class);
+      LoanRequestSubmittedPayload payload = fixMessages.parse(event);
       if (payload == null) throw invalid("INVALID_LOAN_REQUEST_PAYLOAD");
       return payload;
-    } catch (IllegalArgumentException exception) {
+    } catch (InvalidEnvelopeException exception) {
+      throw exception;
+    } catch (RuntimeException exception) {
       throw invalid("INVALID_LOAN_REQUEST_PAYLOAD");
     }
   }

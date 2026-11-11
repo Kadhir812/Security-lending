@@ -16,6 +16,7 @@ import com.hexaware.borrower_service.repository.LocateRequestRepository;
 import com.hexaware.borrower_service.repository.UserRepository;
 import com.hexaware.borrower_service.service.loan.LoanRequestWriter;
 import com.hexaware.borrower_service.service.messaging.OutgoingEventService;
+import com.hexaware.borrower_service.quickfix.LoanRequestFixMessageBuilder;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -36,11 +37,12 @@ class LoanRequestWriterTest {
   @Mock OutgoingEventService outgoing;
 
   @Test
-  void persistsSubmittedIntentAndEnqueuesMatchingV1Event() {
+  void persistsSubmittedIntentAndEnqueuesMatchingV1FixEvent() throws Exception {
     Clock clock =
         Clock.fixed(Instant.parse("2026-11-08T05:30:00Z"), ZoneOffset.UTC);
     LoanRequestWriter writer =
-        new LoanRequestWriter(requests, locates, users, outgoing, clock);
+        new LoanRequestWriter(
+            requests, locates, users, outgoing, new LoanRequestFixMessageBuilder(), clock);
     User user =
         User.builder()
             .userId(42L)
@@ -79,10 +81,15 @@ class LoanRequestWriterTest {
     assertThat(event.getValue().getCorrelationId()).isEqualTo(saved.getRequestReference());
     assertThat(event.getValue().getAggregateReference()).isEqualTo(saved.getRequestReference());
     assertThat(event.getValue().getReceiverOrganizationReference()).isEqualTo("CUSTODIAN-001");
-    assertThat(event.getValue().getPayload())
-        .containsEntry("payloadVersion", 1)
-        .containsEntry("requestReference", "LR-2026-000042")
-        .containsEntry("settlementCurrency", "INR")
-        .containsEntry("locateReference", null);
+    assertThat(event.getValue().getPayload()).containsOnlyKeys("fixMessage");
+    String wireMessage = (String) event.getValue().getPayload().get("fixMessage");
+    var fixMessage = new LoanRequestFixMessageBuilder().parseAndValidate(wireMessage);
+    new LoanRequestFixMessageBuilder().validateForEnvelope(event.getValue(), wireMessage);
+    assertThat(fixMessage.getString(9001)).isEqualTo("LR-2026-000042");
+    assertThat(fixMessage.getString(9002)).isEqualTo("MSLA-2026-001");
+    assertThat(fixMessage.getString(48)).isEqualTo("INE002A01018");
+    assertThat(fixMessage.getString(38)).isEqualTo("1000");
+    assertThat(fixMessage.getString(15)).isEqualTo("INR");
+    assertThat(fixMessage.isSetField(9005)).isFalse();
   }
 }

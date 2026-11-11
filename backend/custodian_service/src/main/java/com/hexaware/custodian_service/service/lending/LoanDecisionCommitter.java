@@ -22,6 +22,7 @@ import com.hexaware.custodian_service.enums.OrganizationType;
 import com.hexaware.custodian_service.enums.RuleStatus;
 import com.hexaware.custodian_service.exception.SetupException;
 import com.hexaware.custodian_service.kafka.event.EventEnvelope;
+import com.hexaware.custodian_service.quickfix.LoanApprovalFixMessageBuilder;
 import com.hexaware.custodian_service.repository.CollateralHaircutRepository;
 import com.hexaware.custodian_service.repository.ContractStatusHistoryRepository;
 import com.hexaware.custodian_service.repository.CounterpartyCreditLimitRepository;
@@ -71,6 +72,7 @@ public class LoanDecisionCommitter {
   private final CollateralHaircutRepository haircuts;
   private final LendingFeePolicy feePolicy;
   private final OutgoingEventService outgoing;
+  private final LoanApprovalFixMessageBuilder approvalFixMessages;
   private final Clock clock;
 
   @Value("${app.approval.max-price-age:PT24H}")
@@ -261,7 +263,13 @@ public class LoanDecisionCommitter {
     request.setRespondedAt(now);
     requests.flush();
     ensureFresh(valuation.getPriceTimestamp(), clock.instant());
-    enqueueDecision(request, borrower.getOrganizationReference(), custodian, contract, valuation);
+    enqueueDecision(
+        request,
+        borrower.getOrganizationReference(),
+        custodian,
+        contract,
+        valuation,
+        agreement.getMslaReference());
     return response(request, contract);
   }
 
@@ -299,7 +307,8 @@ public class LoanDecisionCommitter {
     request.setResponseReason(reason);
     request.setRespondedAt(clock.instant());
     requests.flush();
-    enqueueDecision(request, borrower.getOrganizationReference(), custodian, null, null);
+    enqueueDecision(
+        request, borrower.getOrganizationReference(), custodian, null, null, agreement.getMslaReference());
     return response(request, null);
   }
 
@@ -323,7 +332,17 @@ public class LoanDecisionCommitter {
         contracts
             .findByLoanRequestId(request.getRequestId())
             .orElseThrow(() -> SetupException.conflict("Approved request has no contract"));
-    enqueueDecision(request, borrower.getOrganizationReference(), custodian, contract, null);
+    MslaAgreement agreement =
+        agreements
+            .findById(request.getMslaId())
+            .orElseThrow(() -> SetupException.conflict("Approved request MSLA is unavailable"));
+    enqueueDecision(
+        request,
+        borrower.getOrganizationReference(),
+        custodian,
+        contract,
+        null,
+        agreement.getMslaReference());
     return response(request, contract);
   }
 
@@ -447,7 +466,8 @@ public class LoanDecisionCommitter {
       String borrowerReference,
       Organization custodian,
       LoanContract contract,
-      ValuationCalculationResponse valuation) {
+      ValuationCalculationResponse valuation,
+      String mslaReference) {
     Map<String, Object> payload = new LinkedHashMap<>();
     payload.put("payloadVersion", 1);
     payload.put("requestReference", request.getRequestReference());
@@ -475,6 +495,12 @@ public class LoanDecisionCommitter {
             .receiverOrganizationReference(borrowerReference)
             .payload(payload)
             .build();
+    if (request.getStatus() == LoanRequestStatus.APPROVED) {
+      event.setPayload(
+          Map.of(
+              "fixMessage",
+              approvalFixMessages.build(event, mslaReference, payload)));
+    }
     outgoing.enqueue("LOAN_REQUEST", event);
   }
 

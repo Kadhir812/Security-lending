@@ -14,6 +14,8 @@ import com.hexaware.custodian_service.service.messaging.MessageAuditService;
 import java.time.Clock;
 import lombok.RequiredArgsConstructor;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
@@ -22,6 +24,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Component
 @RequiredArgsConstructor
 public class InboxProcessor {
+  private static final Logger log = LoggerFactory.getLogger(InboxProcessor.class);
+
   private final JdbcTemplate jdbc;
   private final InboxMessageRepository repository;
   private final MessagingProperties properties;
@@ -75,6 +79,25 @@ public class InboxProcessor {
         record.topic(),
         record.partition(),
         record.offset());
+    if (event.getPayload().containsKey("fixMessage")) {
+      if ("LOAN_REQUEST_SUBMITTED".equals(event.getEventType())) {
+        log.info(
+            "FIX U1 loan request consumed: eventId={}, requestReference={}, topic={}, partition={}, offset={}",
+            event.getEventId(),
+            event.getCorrelationId(),
+            record.topic(),
+            record.partition(),
+            record.offset());
+      } else if ("COLLATERAL_INQUIRY_SUBMITTED".equals(event.getEventType())) {
+        log.info(
+            "FIX BB collateral inquiry received: eventId={}, inquiryId={}, topic={}, partition={}, offset={}",
+            event.getEventId(),
+            event.getCorrelationId(),
+            record.topic(),
+            record.partition(),
+            record.offset());
+      }
+    }
     return true;
   }
 }

@@ -37,6 +37,7 @@ import com.hexaware.custodian_service.repository.LendingFeeRepository;
 import com.hexaware.custodian_service.repository.MslaAgreementRepository;
 import com.hexaware.custodian_service.repository.OrganizationRepository;
 import com.hexaware.custodian_service.security.authorization.SetupAccess;
+import com.hexaware.custodian_service.quickfix.LoanApprovalFixMessageBuilder;
 import com.hexaware.custodian_service.service.fees.LendingFeePolicy;
 import com.hexaware.custodian_service.service.lending.LoanDecisionCommitter;
 import com.hexaware.custodian_service.service.messaging.OutgoingEventService;
@@ -105,6 +106,7 @@ class LoanDecisionCommitterTest {
             haircuts,
             new LendingFeePolicy(),
             outgoing,
+            new LoanApprovalFixMessageBuilder(),
             Clock.fixed(NOW, ZoneOffset.UTC));
     ReflectionTestUtils.setField(committer, "maxPriceAge", Duration.ofHours(24));
 

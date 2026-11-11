@@ -38,6 +38,7 @@ import com.hexaware.custodian_service.repository.MslaAgreementRepository;
 import com.hexaware.custodian_service.repository.OrganizationRepository;
 import com.hexaware.custodian_service.repository.UserRepository;
 import com.hexaware.custodian_service.repository.UserRoleRepository;
+import com.hexaware.custodian_service.quickfix.LoanRequestFixMessageParser;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -84,7 +85,7 @@ class LoanRequestSubmittedHandlerTest {
     Clock clock = Clock.fixed(NOW, ZoneOffset.UTC);
     handler =
         new LoanRequestSubmittedHandler(
-            mapper,
+            new LoanRequestFixMessageParser(mapper),
             requests,
             locates,
             agreements,

@@ -30,6 +30,7 @@ import com.hexaware.borrower_service.kafka.outbox.OutboxStore;
 import com.hexaware.borrower_service.kafka.outbox.RetryPolicy;
 import com.hexaware.borrower_service.kafka.producer.DeliveryReceipt;
 import com.hexaware.borrower_service.kafka.producer.EventTransport;
+import com.hexaware.borrower_service.quickfix.LoanRequestFixMessageBuilder;
 import com.hexaware.borrower_service.service.messaging.OutgoingEventService;
 import java.time.Instant;
 import java.util.List;
@@ -314,7 +315,9 @@ class MessagingComponentIT {
     when(crashedStore.claim()).thenAnswer(invocation -> store.claim());
     when(crashedStore.published(any(), any()))
         .thenThrow(new IllegalStateException("SIMULATED_PROCESS_CRASH"));
-    var crashingPublisher = new OutboxPublisher(crashedStore, transport, codec, routing);
+    var crashingPublisher =
+        new OutboxPublisher(
+            crashedStore, transport, codec, routing, new LoanRequestFixMessageBuilder());
     assertThatThrownBy(crashingPublisher::publishOne).isInstanceOf(IllegalStateException.class);
     assertThat(status(event)).isEqualTo("PUBLISHING");
     expire(event);

@@ -20,6 +20,7 @@ import com.hexaware.borrower_service.kafka.outbox.OutboxPublisher;
 import com.hexaware.borrower_service.kafka.outbox.OutboxStore;
 import com.hexaware.borrower_service.kafka.producer.EventTransport;
 import com.hexaware.borrower_service.kafka.producer.KafkaEventTransport;
+import com.hexaware.borrower_service.quickfix.LoanRequestFixMessageBuilder;
 import com.hexaware.borrower_service.service.messaging.OutgoingEventService;
 import java.io.File;
 import java.net.ServerSocket;
@@ -293,7 +294,12 @@ class RoundTripIT {
     var factory = new KafkaMessagingConfiguration().messagingProducerFactory(unavailable);
     var template = new KafkaTemplate<String, String>(factory);
     try {
-      new OutboxPublisher(store, new KafkaEventTransport(template, unavailable), codec, routing)
+      new OutboxPublisher(
+              store,
+              new KafkaEventTransport(template, unavailable),
+              codec,
+              routing,
+              new LoanRequestFixMessageBuilder())
           .publishOne();
     } finally {
       template.destroy();
@@ -310,7 +316,14 @@ class RoundTripIT {
     when(crashedStore.published(any(), any()))
         .thenThrow(new IllegalStateException("SIMULATED_CRASH_AFTER_BROKER_ACK"));
     assertThatThrownBy(
-            () -> new OutboxPublisher(crashedStore, transport, codec, routing).publishOne())
+            () ->
+                new OutboxPublisher(
+                        crashedStore,
+                        transport,
+                        codec,
+                        routing,
+                        new LoanRequestFixMessageBuilder())
+                    .publishOne())
         .isInstanceOf(IllegalStateException.class);
     assertThat(outboxStatus(row.getOutboxId())).isEqualTo("PUBLISHING");
     jdbc.update(
