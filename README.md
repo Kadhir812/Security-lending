@@ -3,7 +3,7 @@
 This project keeps the frontend and backend alongside a local Apache Kafka
 broker. Kafka runs in single-node KRaft mode; no ZooKeeper service is needed.
 
-The backend's Stage 1 persistence and authentication foundation uses Java 21,
+The backend's Stage 1 persistence and authentication foundation uses Java 17,
 Spring Boot 4 and service-local MySQL schemas. See
 [Stage 1 setup and verification](docs/STAGE1_SETUP.md) and
 [implementation progress](docs/PROGRESS.md). Kafka processing and lending business
@@ -46,6 +46,31 @@ be run from any working directory.
 - Java 17 or newer on `PATH`
 - Windows PowerShell and the Windows tools included under `kafka/bin/windows/`
 - Git Bash for the `.sh` wrappers; WSL and Docker are not required
+
+## API additions and access
+
+Borrower locates use `POST/GET /api/locates` and `GET /api/locates/{reference}`
+on port 8082. The Borrower service calls Custodian's borrower-scoped locate
+routes on port 8081; Custodian operators review requests through
+`GET /api/locates`, `GET /api/locates/{reference}`, and the `approve`/`reject`
+actions. Locate approval is checked again by Custodian when a loan request is
+processed.
+
+Both services expose `GET /api/contracts`. Borrower results are limited to that
+borrower's contract projections; Custodian results are limited to contracts
+managed by the authenticated Custodian. Borrowers can list a contract's margin
+calls with `GET /api/contracts/{transactionReference}/margin-calls`.
+
+Security & Market Data requires a trusted JWT for API access, with the configured
+issuer, shared signing secret, audience `security-market-service`, and a `roles`
+claim containing `MARKET_OPERATOR` or `ADMINISTRATOR`. `/actuator/health` remains
+public. Configure `JWT_SHARED_SECRET` consistently across services. Create a
+market token with:
+
+```powershell
+.\scripts\new-jwt-token.ps1 -Audience security-market-service -Subject '<operator>' `
+  -OrganizationReference '<organization>' -Roles MARKET_OPERATOR
+```
 
 ## Windows installation and first-time setup
 

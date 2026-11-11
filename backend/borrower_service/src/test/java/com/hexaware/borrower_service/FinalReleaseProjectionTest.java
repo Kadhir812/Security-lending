@@ -195,6 +195,6 @@ class FinalReleaseProjectionTest {
   private Map<String, Object> releaseRequest() {
     List<Map<String, Object>> rows =
         (List<Map<String, Object>>) contract.getContractSnapshot().get("collateralReleaseRequests");
-    return rows.getFirst();
+    return rows.get(0);
   }
 }

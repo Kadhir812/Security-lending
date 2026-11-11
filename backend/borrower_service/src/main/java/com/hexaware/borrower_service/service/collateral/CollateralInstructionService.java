@@ -61,6 +61,18 @@ public class CollateralInstructionService {
     return response;
   }
 
+  @Transactional(readOnly = true)
+  public List<Map<String, Object>> marginCalls(
+      Authentication authentication, String transactionReference) {
+    LocalUserAuthentication user = trader(authentication);
+    var view = contractViews.findByTransactionReference(transactionReference)
+        .orElseThrow(() -> BorrowerException.missing("Contract not found"));
+    requests.findByRequestReferenceAndBorrowerOrganizationReference(
+        view.getRequestReference(), user.getOrganizationReference())
+        .orElseThrow(() -> BorrowerException.missing("Contract not found"));
+    return instructionList(view.getContractSnapshot().get("marginCalls"));
+  }
+
   @Transactional
   public Map<String, Object> submit(
       Authentication authentication,

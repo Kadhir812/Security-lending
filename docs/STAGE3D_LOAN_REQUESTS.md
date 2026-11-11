@@ -1,14 +1,14 @@
 # Stage 3D: borrower loan requests
 
-## Changed surfaces
-- Borrower APIs: eligible MSLA lookup; idempotent create-and-submit; scoped list/get.
-- Custodian API: borrower-scoped eligible MSLA lookup using local `TRADER` membership.
-- Custodian APIs: list/detail of received requests, scoped through authenticated Custodian → mandate → MSLA.
-- Borrower and Custodian: service-local loan-request records; Custodian Kafka handler validates and stores receipt.
-- Existing outbox/inbox/retry paths are reused; `QUEUED` → `SENT`/`FAILED` tracks broker delivery, while business status remains `PENDING`.
-- Added `settlement_currency` as nullable local request data; existing rows remain `NULL`.
-- No new tables were added in 3D: the supplied schema then contained 48 physical tables; existing service-owned request and messaging tables were used.
-- No inventory/credit reservation, approval, contract, settlement, or FIX mapping was added.
+## Current workflow surfaces
+
+- Borrower APIs provide eligible MSLA lookup, idempotent loan submission, scoped request/contract reads, locate submission/list/detail, contract list, and margin-call list.
+- Custodian APIs provide borrower-scoped locate initiation, Custodian locate queue/detail/approve/reject, request decisions, and a Custodian-scoped contract list.
+- Locate review checks borrower/MSLA ownership, lender inventory, expiry, and approved quantity. Borrower rechecks the authoritative Custodian locate status before loan submission.
+- Loan approval, contract snapshots, collateral, margin, settlement simulation, returns, recalls, fees, releases, and closure are implemented in the current services.
+- Loan and obligation events use service-local outbox/inbox/retry infrastructure.
+- Fresh schema SQL defines 50 tables (5/28/12/5). `python db/validate_structure.py` performs structural checks only.
+- This checkout has no QuickFIX/J engine or BB/BA collateral inquiry/report handlers. The original PDF's AE/f scope has no approved application mapping in the current project notes.
 
 ## API example
 `GET /api/loan-requests/eligible-mslas` returns only active/effective agreements for the authenticated borrower.
@@ -49,11 +49,12 @@ Set `KAFKA_BOOTSTRAP_SERVERS=localhost:9092`; enable `KAFKA_PUBLISHER_ENABLED=tr
 ## Configuration and blockers
 - Borrower forwards the authenticated JWT to Custodian; configure its audiences to include both `borrower-service` and `custodian-service`, and provision the same borrower identity with local `TRADER` membership in Custodian. No service credentials are used.
 - Set `CUSTODIAN_SERVICE_BASE_URL` and `SECURITY_MARKET_BASE_URL`; configure service-owned databases and trusted JWT issuer/audiences as well.
-- No approved FIX mapping exists for initial loan-request submission; this phase sends the existing v1 JSON envelope only, not QuickFIX. Do not assign a FIX type until an approved mapping is supplied.
+- Loan requests currently travel in versioned JSON Kafka envelopes. There is no QuickFIX/J engine or FIX builder/consumer in this checkout.
 - Settlement currency is validated against the MSLA currency. Whether security denomination must also match is a business-rule question; the current flow does not impose that additional restriction.
-- Broker acknowledgement marks `SENT`; there is no receiver acknowledgement event yet, so it does not prove Custodian persistence. Business approval remains separate and unimplemented.
-- Availability is not reserved; it must be rechecked atomically by the later approval workflow.
-- Phase 3E adds the Borrower-owned `loan_contract_view`; the current combined schema has 49 tables.
+- Broker acknowledgement marks `SENT`; it does not prove Custodian persistence. Poll Custodian request state for receipt and decision.
+- Locate approval is not a durable inventory reservation; loan approval performs its own availability and credit checks.
+- The Borrower-owned `loan_contract_view` is present in the current 50-table schema.
 
 ## Verification
-Targeted Maven package build passed; 16 request-flow tests and 10 Custodian authorization tests passed (zero failures/errors/skips). Local Kafka startup, request/DLT topic creation and a real broker producer/consumer smoke check passed; Kafka was stopped afterward. Full Borrower REST → outbox → Kafka → Custodian inbox/request → Custodian REST E2E is blocked: no disposable `STAGE1_MYSQL_URL` or configured service databases were provided. Existing message-component IT covers retry/recovery, DLT, duplicate delivery, wrong destination and rollback, but was not run and is not cross-service E2E evidence.
+
+The Java 17 reactor unit suite passes twice (91 tests per run), and all four services package successfully. Live REST/Kafka/MySQL end-to-end execution was not performed in this environment; database-backed messaging and loan E2E profiles require their documented disposable MySQL and Kafka setup.

@@ -237,7 +237,7 @@ class PersistenceIT {
             .findByIdentityIssuerAndIdentitySubject("https://identity.example.test", "test-subject")
             .orElseThrow();
     assertThat(loaded.getStatus()).isEqualTo(UserStatus.ACTIVE);
-    assertThat(userRoles.findByUserUserId(loaded.getUserId()).getFirst().getRole().getRoleName())
+    assertThat(userRoles.findByUserUserId(loaded.getUserId()).get(0).getRole().getRoleName())
         .isEqualTo("TEST_ROLE");
     assertThat(assignment.getAssignedAt()).isNotNull();
     long oldVersion = loaded.getVersion();

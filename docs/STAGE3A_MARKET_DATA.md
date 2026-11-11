@@ -1,16 +1,19 @@
 # Stage 3A: security master and price storage
 
-This stage uses unauthenticated HTTP REST in Security & Market Data only. Existing
-messaging infrastructure and the other services are unchanged. Price writes do
-not insert outbox events or publish Kafka notifications. No tests were created.
+This stage uses authenticated HTTP REST in Security & Market Data only. All market
+API routes require a trusted JWT with the configured issuer, shared HS256 secret,
+audience `security-market-service`, and `MARKET_OPERATOR` or `ADMINISTRATOR` in
+the `roles` claim. `/actuator/health` remains public. Price writes do not insert
+outbox events or publish Kafka notifications.
 
 ## Running
 
 Apply the existing `db/01_security_market_db.sql` to a new development database
 as described in Stage 1. Do not rerun the fresh-schema SQL against populated tables.
 Set `MARKET_DB_HOST`, `MARKET_DB_PORT`, `MARKET_DB_USERNAME` and
-`MARKET_DB_PASSWORD`. Hibernate remains `ddl-auto=validate`. The application
-account needs SELECT, INSERT and UPDATE on its own database only.
+`MARKET_DB_PASSWORD` and the shared `JWT_SHARED_SECRET`. Hibernate currently
+uses `ddl-auto=validate`. The application account needs SELECT, INSERT and UPDATE
+on its own database only.
 
 From the repository root (PowerShell):
 
@@ -62,6 +65,7 @@ Example registration (on a database where this ISIN is not registered):
 
 ```http
 POST /api/securities
+Authorization: Bearer <market operator JWT>
 Content-Type: application/json
 
 {"symbol":"RELIANCE","securityName":"Reliance Industries Limited","isin":"INE002A01018","securityType":"EQUITY","currency":"INR","exchangeName":"NSE","status":"ACTIVE"}

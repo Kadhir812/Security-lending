@@ -1,14 +1,14 @@
-# Securities lending — four services, 49 physical tables
+# Securities lending — four services, 50 physical tables
 
 This replaces the proposed 72-table design. Fresh creation scripts define the baseline; additive scripts under `migrations/` are applied separately. Service implementation status is tracked in `docs/PROGRESS.md`.
 
 | Database | Tables (includes three messaging tables each) |
 |---|---:|
 | security_market_db | 5 |
-| custodian_db | 27 |
+| custodian_db | 28 |
 | borrower_db | 12 |
 | valuation_accrual_db | 5 |
-| Total | 49 |
+| Total | 50 |
 
 ## Run
 Use a migration administrator on empty databases. Run `00_all_databases.sql` OR the four individual scripts 01–04, not both. MySQL 8.0.16+ is required for enforced CHECK constraints. Replace example passwords/hosts in `05_permissions_template.sql` before use. Runtime credentials have access only to their own database. One MySQL server may host all four databases.
@@ -41,7 +41,7 @@ Calendars are versioned service configuration, not additional tables: calendar c
 All four services retain outbox_event, inbox_message and message_log. A dedicated sequence table is unnecessary: update the persistent owner row `version` under lock with business changes and outbox insertion in one transaction. The event aggregate must be that owner row (not an invented stream with no stored version); event IDs distinguish multiple event types at one state version. Consumers deduplicate by consumer/event ID; do not suppress distinct events solely because they share a state version. Never derive versions from outbox rows that may be purged. Immutable price/result rows use their own stable references as aggregates. Acknowledge consumption after commit. Use leases, retries, dead-letter topics and controlled replay.
 
 ## Identity and FIX
-Assume a shared OIDC identity issuer. users/roles/user_roles are service-local authorization records, not replicated passwords. Borrower organization_reference is externally validated through authenticated claims and Custodian registry. Market/Calculation use service authentication. Every REST/event operation enforces organization scope. QuickFIX/J adapters stay inside Borrower and Custodian.
+Assume a shared JWT signing issuer. `users`/`roles`/`user_roles` are service-local authorization records, not replicated passwords. Borrower `organization_reference` is externally validated through authenticated claims and Custodian registry. Market writes require a trusted market operator role claim. Every REST/event operation enforces its service's authorization scope. QuickFIX/J adapters are a future integration; none are implemented in this checkout.
 
 borrower_order is the AF existing-order source. ExecutionReport (8) responses are audited in message_log/outbox, so no separate order-status-report table is needed. f reports instrument status through an authorized Security & Market Data owner update; it is not loan lifecycle status. BB/BA and AE/AK remain subject to the agreed FIX dictionary/field mapping. Kafka transport does not automatically implement FIX session logon, heartbeat or recovery.
 
