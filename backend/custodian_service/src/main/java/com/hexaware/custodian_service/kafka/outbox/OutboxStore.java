@@ -38,7 +38,8 @@ public class OutboxStore {
                 (current.status = 'PUBLISHING' AND current.locked_until <= UTC_TIMESTAMP(6)))
             AND NOT EXISTS (SELECT 1 FROM outbox_event older
                 WHERE older.service_name = current.service_name AND older.partition_key = current.partition_key
-                  AND older.outbox_id < current.outbox_id AND older.status <> 'PUBLISHED')
+                  AND older.outbox_id < current.outbox_id
+                  AND older.status NOT IN ('PUBLISHED', 'FAILED'))
             ORDER BY current.outbox_id LIMIT 1 FOR UPDATE SKIP LOCKED
             """,
             (rs, row) ->

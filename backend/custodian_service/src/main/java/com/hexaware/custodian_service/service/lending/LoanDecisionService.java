@@ -5,6 +5,7 @@ import com.hexaware.custodian_service.client.SecurityReferenceResponse;
 import com.hexaware.custodian_service.client.ValuationCalculationClient;
 import com.hexaware.custodian_service.client.ValuationCalculationRequest;
 import com.hexaware.custodian_service.client.ValuationCalculationResponse;
+import com.hexaware.custodian_service.client.ValuationServiceTokenProvider;
 import com.hexaware.custodian_service.dto.response.LoanRequestDecisionResponse;
 import com.hexaware.custodian_service.entity.LendingFee;
 import com.hexaware.custodian_service.entity.LoanRequest;
@@ -19,7 +20,6 @@ import com.hexaware.custodian_service.enums.OrganizationType;
 import com.hexaware.custodian_service.exception.SetupException;
 import com.hexaware.custodian_service.repository.CollateralHaircutRepository;
 import com.hexaware.custodian_service.repository.LenderMandateRepository;
-import com.hexaware.custodian_service.repository.LoanContractRepository;
 import com.hexaware.custodian_service.repository.LoanRequestRepository;
 import com.hexaware.custodian_service.repository.LendingFeeRepository;
 import com.hexaware.custodian_service.repository.MslaAgreementRepository;
@@ -44,7 +44,6 @@ import org.springframework.stereotype.Service;
 public class LoanDecisionService {
   private final SetupAccess access;
   private final LoanRequestRepository requests;
-  private final LoanContractRepository contracts;
   private final MslaAgreementRepository agreements;
   private final LenderMandateRepository mandates;
   private final OrganizationRepository organizations;
@@ -53,6 +52,7 @@ public class LoanDecisionService {
   private final SecurityReferenceClient securities;
   private final LendingFeePolicy feePolicy;
   private final ValuationCalculationClient valuation;
+  private final ValuationServiceTokenProvider serviceTokens;
   private final LoanDecisionCommitter committer;
   private final Clock clock;
 
@@ -72,10 +72,8 @@ public class LoanDecisionService {
     LoanRequest request = requireRequest(requestReference);
     var context = requireParties(request, actor.getOrganizationId());
     if (request.getStatus() == LoanRequestStatus.APPROVED) {
-      return contracts
-          .findByLoanRequestId(request.getRequestId())
-          .map(contract -> committer.response(request, contract))
-          .orElseThrow(() -> SetupException.conflict("Approved request has no contract"));
+      return committer.republishApprovedDecision(
+          request, actor, context.borrower());
     }
     if (request.getStatus() != LoanRequestStatus.PENDING) {
       throw SetupException.conflict("Only pending requests can be approved");
@@ -138,7 +136,7 @@ public class LoanDecisionService {
                 .currency(request.getSettlementCurrency())
                 .custodianOrganizationReference(actor.getOrganizationReference())
                 .build(),
-            jwt.getToken().getTokenValue());
+            serviceTokens.token(actor.getOrganizationReference()));
     validateCalculation(request, context.agreement(), calculated);
     SecurityReferenceResponse validatedSecurity = securities.require(request.getSecurityIsin());
     if (!Objects.equals(security.version(), validatedSecurity.version())

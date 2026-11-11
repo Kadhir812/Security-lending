@@ -129,6 +129,74 @@ class SetupIT {
       .containsExactly("INE002A01018");
   assertThat(inventoryService.list(operatorB,0,20).getContent()).isEmpty();
  }
+ @Test void organizationListIncludesAuthorizedNewSetupPartiesAndHistoricalMslasOnly() {
+  String otherCustodianBorrower="OCB-"+UUID.randomUUID();
+  String otherCustodianLender="OCL-"+UUID.randomUUID();
+  registry.create(operatorB,organization(otherCustodianBorrower,OrganizationType.BORROWER));
+  registry.create(operatorB,organization(otherCustodianLender,OrganizationType.LENDER));
+  var otherCustodianMandateRequest=mandateRequest("OM-"+UUID.randomUUID());
+  otherCustodianMandateRequest.setLenderOrganizationReference(otherCustodianLender);
+  mandates.create(operatorB,otherCustodianMandateRequest);
+  var unauthorizedMsla=request();
+  unauthorizedMsla.setBorrowerOrganizationReference(otherCustodianBorrower);
+  assertThatThrownBy(()->mslas.create(operatorA,unauthorizedMsla))
+      .isInstanceOf(SetupException.class)
+      .hasMessageContaining("not found in your scope");
+  assertThat(registry.list(operatorA,0,100).getContent())
+      .extracting(item->item.getOrganizationReference())
+      .containsExactlyInAnyOrder(lender,borrower)
+      .doesNotContain(
+          operatorA.getOrganizationReference(),
+          operatorB.getOrganizationReference(),
+          otherCustodianBorrower,
+          otherCustodianLender);
+  assertThat(registry.list(operatorB,0,100).getContent())
+      .extracting(item->item.getOrganizationReference())
+      .containsExactlyInAnyOrder(otherCustodianBorrower,otherCustodianLender)
+      .doesNotContain(lender,borrower);
+
+  String unrelatedLender="UL-"+UUID.randomUUID();
+  String unrelatedBorrower="UB-"+UUID.randomUUID();
+  registry.create(operatorA,organization(unrelatedLender,OrganizationType.LENDER));
+  registry.create(operatorA,organization(unrelatedBorrower,OrganizationType.BORROWER));
+  assertThat(registry.list(operatorA,0,100).getContent())
+      .extracting(item->item.getOrganizationReference())
+      .containsExactlyInAnyOrder(lender,borrower,unrelatedLender,unrelatedBorrower);
+
+  var expiredRequest=request();
+  expiredRequest.setEffectiveDate(today.minusDays(30));
+  expiredRequest.setExpiryDate(today.minusDays(1));
+  var expired=mslas.create(operatorA,expiredRequest);
+  expiredRequest.setVersion(expired.getVersion());
+  expiredRequest.setAgreementStatus(AgreementStatus.EXPIRED);
+  mslas.update(operatorA,expired.getMslaReference(),expiredRequest);
+
+  String inactiveLender="IL-"+UUID.randomUUID();
+  String inactiveBorrower="IB-"+UUID.randomUUID();
+  registry.create(operatorA,organization(inactiveLender,OrganizationType.LENDER));
+  registry.create(operatorA,organization(inactiveBorrower,OrganizationType.BORROWER));
+  var inactiveMandateRequest=mandateRequest("IM-"+UUID.randomUUID());
+  inactiveMandateRequest.setLenderOrganizationReference(inactiveLender);
+  var inactiveMandate=mandates.create(operatorA,inactiveMandateRequest);
+  var inactiveRequest=request();
+  inactiveRequest.setMandateReference(inactiveMandate.getMandateReference());
+  inactiveRequest.setBorrowerOrganizationReference(inactiveBorrower);
+  var inactive=mslas.create(operatorA,inactiveRequest);
+  inactiveRequest.setVersion(inactive.getVersion());
+  inactiveRequest.setAgreementStatus(AgreementStatus.INACTIVE);
+  mslas.update(operatorA,inactive.getMslaReference(),inactiveRequest);
+
+  assertThat(registry.list(operatorA,0,100).getContent())
+      .extracting(item -> item.getOrganizationReference())
+      .containsExactlyInAnyOrder(
+          lender, borrower, unrelatedLender, unrelatedBorrower, inactiveLender, inactiveBorrower)
+      .doesNotContain(
+          otherCustodianBorrower,
+          otherCustodianLender,
+          operatorA.getOrganizationReference(),
+          operatorB.getOrganizationReference());
+  assertThat(registry.list(operatorB,0,100).getContent()).isEmpty();
+ }
  @Test void undefinedDefaultRulesCannotBeSilentlyActivated() {
   var request=request();request.setDefaultRules(Map.of("threshold",100));var draft=mslas.create(operatorA,request);request.setVersion(draft.getVersion());request.setAgreementStatus(AgreementStatus.ACTIVE);
   assertThatThrownBy(()->mslas.update(operatorA,draft.getMslaReference(),request)).isInstanceOf(SetupException.class).hasMessageContaining("business semantics");

@@ -2,10 +2,14 @@ package com.hexaware.borrower_service.controller;
 
 import com.hexaware.borrower_service.dto.request.LoanRequestSubmission;
 import com.hexaware.borrower_service.dto.response.BorrowerEligibleMslaResponse;
+import com.hexaware.borrower_service.dto.response.CollateralInquiryResponse;
+import com.hexaware.borrower_service.dto.response.CollateralReportResponse;
 import com.hexaware.borrower_service.dto.response.LoanRequestResponse;
 import com.hexaware.borrower_service.dto.response.LoanContractViewResponse;
 import com.hexaware.borrower_service.dto.request.CashCollateralInstructionRequest;
 import com.hexaware.borrower_service.service.collateral.CollateralInstructionService;
+import com.hexaware.borrower_service.service.collateral.CollateralInquiryService;
+import com.hexaware.borrower_service.service.collateral.CollateralReportService;
 import java.util.Map;
 import com.hexaware.borrower_service.dto.response.PageResponse;
 import com.hexaware.borrower_service.service.loan.LoanRequestService;
@@ -30,6 +34,8 @@ import org.springframework.web.bind.annotation.RestController;
 public class LoanRequestController {
   private final LoanRequestService service;
   private final CollateralInstructionService collateralInstructions;
+  private final CollateralInquiryService collateralInquiries;
+  private final CollateralReportService collateralReports;
 
   @GetMapping("/eligible-mslas")
   public List<BorrowerEligibleMslaResponse> eligible(Authentication authentication) {
@@ -58,6 +64,18 @@ public class LoanRequestController {
   public LoanRequestResponse get(
       Authentication authentication, @PathVariable String reference) {
     return service.get(authentication, reference);
+  }
+
+  @PostMapping("/{reference}/collateral-inquiries")
+  public ResponseEntity<CollateralInquiryResponse> submitCollateralInquiry(
+      Authentication authentication, @PathVariable String reference) {
+    return ResponseEntity.accepted().body(collateralInquiries.submit(authentication, reference));
+  }
+
+  @GetMapping("/{reference}/collateral-reports")
+  public List<CollateralReportResponse> collateralReports(
+      Authentication authentication, @PathVariable String reference) {
+    return collateralReports.list(authentication, reference);
   }
 
   @GetMapping("/{reference}/contract")

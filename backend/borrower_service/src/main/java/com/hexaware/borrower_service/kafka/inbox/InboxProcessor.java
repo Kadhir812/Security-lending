@@ -40,8 +40,9 @@ public class InboxProcessor {
     jdbc.update(
         """
         INSERT INTO inbox_message (consumer_name, event_id, correlation_id, aggregate_reference,
-            aggregate_version, event_type, payload, kafka_topic, kafka_partition, kafka_offset)
-        VALUES (?, ?, ?, ?, ?, ?, CAST(? AS JSON), ?, ?, ?)
+            aggregate_version, event_type, payload, kafka_topic, kafka_partition, kafka_offset,
+            received_at)
+        VALUES (?, ?, ?, ?, ?, ?, CAST(? AS JSON), ?, ?, ?, UTC_TIMESTAMP(6))
         ON DUPLICATE KEY UPDATE inbox_id=inbox_id
         """,
         properties.getConsumerName(),

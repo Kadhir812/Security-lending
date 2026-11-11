@@ -40,14 +40,32 @@ public class CounterpartyCreditLimit {
   private BigDecimal limitAmount;
 
   @Builder.Default
-  @Column(name = "used_amount", nullable = false, precision = 20, scale = 2)
+  @Column(
+      name = "used_amount",
+      nullable = false,
+      precision = 20,
+      scale = 2,
+      columnDefinition = "decimal(20,2) NOT NULL DEFAULT 0")
   private BigDecimal usedAmount = BigDecimal.ZERO;
 
   @Builder.Default
-  @Column(name = "reserved_amount", nullable = false, precision = 20, scale = 2)
+  @Column(
+      name = "reserved_amount",
+      nullable = false,
+      precision = 20,
+      scale = 2,
+      columnDefinition = "decimal(20,2) NOT NULL DEFAULT 0")
   private BigDecimal reservedAmount = BigDecimal.ZERO;
 
-  @Column(name = "available_amount", nullable = false, insertable = false, updatable = false)
+  @Column(
+      name = "available_amount",
+      nullable = false,
+      insertable = false,
+      updatable = false,
+      precision = 20,
+      scale = 2,
+      columnDefinition =
+          "decimal(20,2) GENERATED ALWAYS AS (limit_amount-used_amount-reserved_amount) STORED")
   private BigDecimal availableAmount;
 
   @Enumerated(EnumType.STRING)

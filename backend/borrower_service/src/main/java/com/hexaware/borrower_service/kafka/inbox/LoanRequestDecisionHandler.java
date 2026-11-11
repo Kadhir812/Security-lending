@@ -6,6 +6,7 @@ import com.hexaware.borrower_service.enums.LoanRequestStatus;
 import com.hexaware.borrower_service.exception.InvalidEnvelopeException;
 import com.hexaware.borrower_service.kafka.consumer.MessageHandler;
 import com.hexaware.borrower_service.kafka.event.EventEnvelope;
+import com.hexaware.borrower_service.quickfix.LoanRequestFixMessageBuilder;
 import com.hexaware.borrower_service.repository.LoanContractViewRepository;
 import com.hexaware.borrower_service.repository.LoanRequestRepository;
 import java.time.Clock;
@@ -21,6 +22,7 @@ import org.springframework.stereotype.Component;
 public class LoanRequestDecisionHandler implements MessageHandler {
   private final LoanRequestRepository requests;
   private final LoanContractViewRepository contracts;
+  private final LoanRequestFixMessageBuilder fixMessages;
   private final Clock clock;
 
   @Override
@@ -31,10 +33,22 @@ public class LoanRequestDecisionHandler implements MessageHandler {
   @Override
   public void handle(EventEnvelope event) {
     Map<String, Object> payload = event.getPayload();
+    Object rawFixMessage = payload.get("fixMessage");
+    if (payload.containsKey("fixMessage")) {
+      if (!(rawFixMessage instanceof String fixMessage) || payload.size() != 1) {
+        throw invalid("INVALID_FIX_AK_OUTBOX_PAYLOAD");
+      }
+      try {
+        payload = fixMessages.parseApprovalConfirmationAndValidate(event, fixMessage);
+      } catch (IllegalArgumentException exception) {
+        throw invalid("INVALID_FIX_AK_APPROVAL_CONFIRMATION");
+      }
+    }
     String requestReference = text(payload.get("requestReference"));
     String borrowerReference = text(payload.get("borrowerOrganizationReference"));
     String custodianReference = text(payload.get("custodianOrganizationReference"));
     long payloadVersion = integer(payload.get("payloadVersion"));
+    String mslaReference = optionalText(payload.get("mslaReference"));
     LoanRequest request =
         requests
             .findByRequestReference(requestReference)
@@ -59,6 +73,7 @@ public class LoanRequestDecisionHandler implements MessageHandler {
         || payloadVersion != 1
         || !Objects.equals(request.getBorrowerOrganizationReference(), borrowerReference)
         || !Objects.equals(request.getCustodianOrganizationReference(), custodianReference)
+        || (mslaReference != null && !Objects.equals(request.getMslaReference(), mslaReference))
         || decisionVersion < 1
         || respondedAt == null
         || respondedAt.isAfter(clock.instant())

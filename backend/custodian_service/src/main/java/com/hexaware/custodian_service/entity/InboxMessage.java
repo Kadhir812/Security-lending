@@ -85,7 +85,10 @@ public class InboxMessage {
 
   @Builder.Default
   @JdbcTypeCode(java.sql.Types.TIMESTAMP)
-  @Column(name = "received_at", nullable = false, columnDefinition = "datetime(6)")
+  @Column(
+      name = "received_at",
+      nullable = false,
+      columnDefinition = "datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)")
   private Instant receivedAt = Instant.now();
 
   @JdbcTypeCode(java.sql.Types.TIMESTAMP)

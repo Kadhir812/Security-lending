@@ -12,6 +12,10 @@ public record BorrowerEligibleMslaResponse(
     String custodianOrganizationReference,
     LocalDate effectiveDate,
     LocalDate expiryDate,
+    String agreementStatus,
+    LocalDate mandateEffectiveFrom,
+    LocalDate mandateEffectiveTo,
+    String mandateStatus,
     String baseCurrency,
     List<String> allowedAssetTypes,
     Map<String, Object> eligibleSecurities) {}

@@ -5,6 +5,7 @@ import com.hexaware.borrower_service.entity.LoanRequest;
 import com.hexaware.borrower_service.exception.InvalidEnvelopeException;
 import com.hexaware.borrower_service.kafka.consumer.MessageHandler;
 import com.hexaware.borrower_service.kafka.event.EventEnvelope;
+import com.hexaware.borrower_service.quickfix.LoanRequestFixMessageBuilder;
 import com.hexaware.borrower_service.repository.LoanContractViewRepository;
 import com.hexaware.borrower_service.repository.LoanRequestRepository;
 import java.math.BigDecimal;
@@ -23,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class SettlementInstructionUpdatedHandler implements MessageHandler {
   private final LoanContractViewRepository contracts;
   private final LoanRequestRepository requests;
+  private final LoanRequestFixMessageBuilder fixMessages;
   private final Clock clock;
 
   @Override
@@ -34,6 +36,16 @@ public class SettlementInstructionUpdatedHandler implements MessageHandler {
   @Transactional
   public void handle(EventEnvelope event) {
     Map<String, Object> payload = event.getPayload();
+    if (payload.containsKey("fixMessage")) {
+      if (payload.size() != 1 || !(payload.get("fixMessage") instanceof String fixMessage)) {
+        throw invalid("INVALID_FIX_U2_SETTLEMENT_CONFIRMATION");
+      }
+      try {
+        payload = fixMessages.parseSettlementStatusAndValidate(event, fixMessage);
+      } catch (IllegalArgumentException exception) {
+        throw invalid("INVALID_FIX_U2_SETTLEMENT_CONFIRMATION");
+      }
+    }
     String transactionReference = text(payload.get("transactionReference"));
     String instructionReference = text(payload.get("instructionReference"));
     String borrowerReference = text(payload.get("borrowerOrganizationReference"));
