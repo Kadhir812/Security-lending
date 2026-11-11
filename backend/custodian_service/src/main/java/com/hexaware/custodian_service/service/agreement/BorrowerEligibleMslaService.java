@@ -73,6 +73,10 @@ public class BorrowerEligibleMslaService {
         custodian.getOrganizationReference(),
         agreement.getEffectiveDate(),
         agreement.getExpiryDate(),
+        agreement.getAgreementStatus(),
+        mandate.getEffectiveFrom(),
+        mandate.getEffectiveTo(),
+        mandate.getStatus(),
         agreement.getBaseCurrency(),
         types,
         eligible);

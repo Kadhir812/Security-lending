@@ -15,6 +15,7 @@ import com.hexaware.borrower_service.kafka.inbox.ContractClosedHandler;
 import com.hexaware.borrower_service.kafka.inbox.SettlementInstructionUpdatedHandler;
 import com.hexaware.borrower_service.repository.LoanContractViewRepository;
 import com.hexaware.borrower_service.repository.LoanRequestRepository;
+import com.hexaware.borrower_service.quickfix.LoanRequestFixMessageBuilder;
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Instant;
@@ -48,7 +49,8 @@ class FinalReleaseProjectionTest {
 
   @BeforeEach
   void setUp() {
-    settlements = new SettlementInstructionUpdatedHandler(contracts, requests, Clock.fixed(NOW, ZoneOffset.UTC));
+    settlements = new SettlementInstructionUpdatedHandler(
+        contracts, requests, new LoanRequestFixMessageBuilder(), Clock.fixed(NOW, ZoneOffset.UTC));
     closures = new ContractClosedHandler(contracts, requests, Clock.fixed(NOW, ZoneOffset.UTC));
     Map<String, Object> releaseRequest = new LinkedHashMap<>();
     releaseRequest.put("releaseReference", "REL-001");

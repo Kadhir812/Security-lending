@@ -54,7 +54,12 @@ public class LoanContract {
   @Column(name = "returned_quantity", nullable = false)
   private Long returnedQuantity = 0L;
 
-  @Column(name = "outstanding_quantity", insertable = false, updatable = false)
+  @Column(
+      name = "outstanding_quantity",
+      insertable = false,
+      updatable = false,
+      columnDefinition =
+          "bigint GENERATED ALWAYS AS (delivered_quantity-returned_quantity) STORED")
   private Long outstandingQuantity;
 
   @Column(name = "settlement_currency", nullable = false, length = 3)
@@ -105,7 +110,12 @@ public class LoanContract {
   private Instant latestValuationAt;
 
   @Builder.Default
-  @Column(name = "reserved_credit_amount", nullable = false, precision = 20, scale = 2)
+  @Column(
+      name = "reserved_credit_amount",
+      nullable = false,
+      precision = 20,
+      scale = 2,
+      columnDefinition = "decimal(20,2) NOT NULL DEFAULT 0")
   private BigDecimal reservedCreditAmount = BigDecimal.ZERO;
 
   @Builder.Default

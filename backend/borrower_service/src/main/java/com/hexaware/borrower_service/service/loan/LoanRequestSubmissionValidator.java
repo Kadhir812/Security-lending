@@ -74,6 +74,10 @@ public class LoanRequestSubmissionValidator {
         || msla.custodianOrganizationReference().isBlank()) {
       throw BorrowerException.conflict("Selected MSLA is not owned by this borrower");
     }
+    if (!"ACTIVE".equals(msla.agreementStatus())
+        || !"ACTIVE".equals(msla.mandateStatus())) {
+      throw BorrowerException.conflict("Selected MSLA or mandate is not active");
+    }
     if (msla.effectiveDate() == null
         || msla.effectiveDate().isAfter(today)
         || (msla.expiryDate() != null
@@ -82,7 +86,11 @@ public class LoanRequestSubmissionValidator {
       throw BorrowerException.conflict("Selected MSLA is not effective for the request dates");
     }
     if (submission.requestedSettlementDate().isBefore(today)
-        || submission.requestedSettlementDate().isBefore(msla.effectiveDate())) {
+        || submission.requestedSettlementDate().isBefore(msla.effectiveDate())
+        || msla.mandateEffectiveFrom() == null
+        || submission.requestedSettlementDate().isBefore(msla.mandateEffectiveFrom())
+        || (msla.mandateEffectiveTo() != null
+            && submission.requestedSettlementDate().isAfter(msla.mandateEffectiveTo()))) {
       throw BorrowerException.invalid("Requested settlement date is not valid");
     }
     if (!msla.baseCurrency().equals(submission.settlementCurrency())) {

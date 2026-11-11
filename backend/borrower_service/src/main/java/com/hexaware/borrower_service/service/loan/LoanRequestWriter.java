@@ -5,18 +5,17 @@ import com.hexaware.borrower_service.entity.LoanRequest;
 import com.hexaware.borrower_service.entity.LocateRequest;
 import com.hexaware.borrower_service.entity.User;
 import com.hexaware.borrower_service.enums.LoanRequestStatus;
-import com.hexaware.borrower_service.enums.LocateStatus;
 import com.hexaware.borrower_service.enums.SubmissionStatus;
 import com.hexaware.borrower_service.enums.UserStatus;
 import com.hexaware.borrower_service.exception.BorrowerException;
 import com.hexaware.borrower_service.kafka.event.EventEnvelope;
+import com.hexaware.borrower_service.quickfix.LoanRequestFixMessageBuilder;
 import com.hexaware.borrower_service.repository.LoanRequestRepository;
 import com.hexaware.borrower_service.repository.LocateRequestRepository;
 import com.hexaware.borrower_service.repository.UserRepository;
 import com.hexaware.borrower_service.service.messaging.OutgoingEventService;
 import java.time.Clock;
 import java.time.Instant;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +29,7 @@ public class LoanRequestWriter {
   private final LocateRequestRepository locates;
   private final UserRepository users;
   private final OutgoingEventService outgoing;
+  private final LoanRequestFixMessageBuilder fixMessages;
   private final Clock clock;
 
   @Transactional
@@ -85,22 +85,18 @@ public class LoanRequestWriter {
                 .build());
 
     Instant occurredAt = clock.instant();
-    Map<String, Object> payload = new LinkedHashMap<>();
-    payload.put("payloadVersion", 1);
-    payload.put("requestReference", requestReference);
-    payload.put("borrowerOrganizationReference", borrowerReference);
-    payload.put("custodianOrganizationReference", custodianReference);
-    payload.put("mslaReference", submission.mslaReference());
-    payload.put("locateReference", locateReference(locateId));
-    payload.put("securityIsin", submission.securityIsin());
-    payload.put("quantity", submission.quantity());
-    payload.put("requestedSettlementDate", submission.requestedSettlementDate().toString());
-    payload.put("settlementCurrency", submission.settlementCurrency());
-    payload.put("submittedByIssuer", issuer);
-    payload.put("submittedBySubject", subject);
+    Map<String, Object> businessFields = new java.util.LinkedHashMap<>();
+    businessFields.put("requestReference", requestReference);
+    businessFields.put("mslaReference", submission.mslaReference());
+    businessFields.put("locateReference", locateReference(locateId));
+    businessFields.put("securityIsin", submission.securityIsin());
+    businessFields.put("quantity", submission.quantity());
+    businessFields.put("requestedSettlementDate", submission.requestedSettlementDate());
+    businessFields.put("settlementCurrency", submission.settlementCurrency());
+    businessFields.put("submittedByIssuer", issuer);
+    businessFields.put("submittedBySubject", subject);
 
-    outgoing.enqueue(
-        "LOAN_REQUEST",
+    EventEnvelope event =
         EventEnvelope.builder()
             .eventId(UUID.randomUUID().toString())
             .eventType("LOAN_REQUEST_SUBMITTED")
@@ -113,8 +109,12 @@ public class LoanRequestWriter {
             .occurredAt(occurredAt)
             .senderOrganizationReference(borrowerReference)
             .receiverOrganizationReference(custodianReference)
-            .payload(payload)
-            .build());
+            .payload(Map.of())
+            .build();
+    event.setPayload(Map.of("fixMessage", fixMessages.build(event, businessFields)));
+    outgoing.enqueue(
+        "LOAN_REQUEST",
+        event);
     return request;
   }
 

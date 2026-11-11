@@ -6,6 +6,7 @@ import com.hexaware.custodian_service.exception.SetupException;
 import com.hexaware.custodian_service.kafka.event.EventEnvelope;
 import com.hexaware.custodian_service.repository.*;
 import com.hexaware.custodian_service.security.authorization.SetupAccess;
+import com.hexaware.custodian_service.quickfix.SettlementStatusFixMessageBuilder;
 import com.hexaware.custodian_service.service.margin.MarginCallService;
 import com.hexaware.custodian_service.service.messaging.OutgoingEventService;
 import java.math.BigDecimal;
@@ -38,6 +39,7 @@ public class InitialSettlementService {
   private final OrganizationRepository organizations;
   private final InventoryMovementRepository inventoryMovements;
   private final OutgoingEventService outgoing;
+  private final SettlementStatusFixMessageBuilder settlementFix;
   private final Clock clock;
 
   @Transactional(readOnly = true)
@@ -408,6 +410,10 @@ public class InitialSettlementService {
           && settled.getStatus() == SettlementInstructionStatus.SETTLED
           && Objects.equals(settled.getExternalConfirmationReference(),
               request.confirmationReference())) {
+        if (contract.getReservedCreditAmount().signum() > 0) {
+          contract.setReservedCreditAmount(BigDecimal.ZERO);
+          contracts.saveAndFlush(contract);
+        }
         return settled;
       }
       throw SetupException.conflict("Contract delivery is already confirmed");
@@ -499,12 +505,14 @@ public class InitialSettlementService {
 
     CounterpartyCreditLimit credit = creditLimits.findLockedByMslaId(agreement.getMslaId())
         .orElseThrow(() -> SetupException.conflict("Counterparty credit limit not found"));
-    if (credit.getReservedAmount().compareTo(contract.getReservedCreditAmount()) < 0) {
+    BigDecimal creditToConvert = contract.getReservedCreditAmount();
+    if (credit.getReservedAmount().compareTo(creditToConvert) < 0) {
       throw SetupException.conflict("Reserved credit is insufficient");
     }
-    credit.setReservedAmount(credit.getReservedAmount().subtract(contract.getReservedCreditAmount()));
-    credit.setUsedAmount(credit.getUsedAmount().add(contract.getReservedCreditAmount()));
-    contract.setUsedCreditAmount(contract.getReservedCreditAmount());
+    credit.setReservedAmount(credit.getReservedAmount().subtract(creditToConvert));
+    credit.setUsedAmount(credit.getUsedAmount().add(creditToConvert));
+    contract.setReservedCreditAmount(BigDecimal.ZERO);
+    contract.setUsedCreditAmount(creditToConvert);
     LoanContractStatus oldContractStatus = contract.getContractStatus();
     contract.setDeliveredQuantity(contract.getQuantity());
     contract.setContractStatus(LoanContractStatus.ON_LOAN);
@@ -555,7 +563,7 @@ public class InitialSettlementService {
     payload.put("instructionStatus", "SETTLED");
     payload.put("aggregateVersion", aggregateVersion);
     String eventType = "SETTLEMENT_INSTRUCTION_UPDATED";
-    outgoing.enqueue("SETTLEMENT_INSTRUCTION", EventEnvelope.builder()
+    EventEnvelope event = EventEnvelope.builder()
         .eventId(UUID.nameUUIDFromBytes(
             (eventType + ":" + instruction.getInstructionReference() + ":" + aggregateVersion)
                 .getBytes(StandardCharsets.UTF_8)).toString())
@@ -570,7 +578,12 @@ public class InitialSettlementService {
         .senderOrganizationReference(custodian.getOrganizationReference())
         .receiverOrganizationReference(borrower.getOrganizationReference())
         .payload(payload)
-        .build());
+        .build();
+    if ("SECURITY_DELIVERY".equals(instruction.getInstructionType())
+        && aggregateVersion == 1L) {
+      event.setPayload(Map.of("fixMessage", settlementFix.build(event, payload)));
+    }
+    outgoing.enqueue("SETTLEMENT_INSTRUCTION", event);
   }
 
   private Map<String, Object> settlementPayload(

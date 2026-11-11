@@ -57,6 +57,9 @@ public class MslaService {
         organizations
             .findLocked(SetupValidation.reference(request.getBorrowerOrganizationReference()))
             .orElseThrow(() -> SetupException.missing("Borrower organization not found"));
+    if (!access.visible(borrower.getOrganizationId(), actor.getOrganizationId())) {
+      throw SetupException.missing("Borrower organization not found in your scope");
+    }
     access.activeType(borrower, OrganizationType.BORROWER);
 
     var lender =

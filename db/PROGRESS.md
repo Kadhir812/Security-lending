@@ -1,16 +1,92 @@
 # Implementation progress
 
-## Current checkout snapshot (2026-11-12)
+## FIX U2 initial securities settlement confirmation
 
-This file retains dated historical verification records below; older entries may
-describe an earlier schema, Java level, or implementation stage. Current source
-uses Java 17, `ddl-auto=validate`, and four fresh schemas with 50 tables (5/28/12/5).
-The Borrower/Custodian locate workflow and contract/margin discovery APIs are
-implemented. Security & Market Data requires a signed JWT and market operator
-role. Frontend integration is not in scope. This checkout has no BB/BA collateral
-inquiry/report handlers or QuickFIX/J adapter; JSON Kafka events remain separate
-from the FIX sequence in the assignment PDF. Live MySQL/Kafka end-to-end execution
-is not verified by the current environment.
+- Custodian emits custom FIX 4.4 `U2` only for the existing successful
+  initial `SECURITY_DELIVERY` event, after its transactional settlement and
+  state changes. The same transactional outbox enqueue preserves event
+  identity, correlation, aggregate/version, parties, and event type.
+- Borrower validates/parses U2 into the existing settlement projection
+  handler. Both service dictionaries define the same custom fields `9140`–
+  `9154`; business details are FIX fields, with the envelope containing only
+  `fixMessage`. CASH, failed/pending, returns, releases, and later lifecycle
+  messaging are unchanged. No new tables or settlement effects.
+- `FIX_MAPPING.md` documents the project extension, field types, units,
+  routing, correlation, idempotency, and status rules. AE remains pending.
+- Borrower and Custodian test-source compilation passed. Focused tests passed:
+  Borrower 4 (including U2 parsing and settlement projection); Custodian 3
+  (including U2 generation and approval regression). Both dictionaries are
+  byte-identical and well-formed XML; `git diff --check` passed.
+- No live Kafka tests were run. U1/BB/BA/AK live verification and
+  rejection/replay/concurrency checks remain pending.
+
+## FIX AK approval confirmation
+
+- Custodian now emits approved `LOAN_REQUEST_DECISION` events with FIX `AK`;
+  envelope event ID, request correlation, aggregate/version, parties, and the
+  contract plus nested collateral/valuation snapshot are preserved. The
+  payload contains one FIX message; creation remains in the existing approval
+  transaction/outbox.
+- Borrower validates/parses AK into the existing decision handler. Existing
+  inbox deduplication, ownership/counterparty, stale-version, and contract-view
+  checks remain in place. Rejections retain their existing JSON path; old
+  queued JSON approvals remain readable. No table or settlement mutation.
+- AK is standard FIX 4.4 `Confirmation`, not a standard loan-approval message.
+  The lending-specific interpretation/profile and scalar extensions
+  `9001`/`9002` and `9100`–`9135` are documented in `FIX_MAPPING.md`; both
+  dictionaries now define the same required AK profile.
+- Main/test compilation passed. Targeted Borrower decision tests (5) and
+  Custodian approval tests (2) passed; no live tests were run.
+
+## FIX BA collateral report
+
+- Implemented Custodian `BA` (`CollateralReport`) generation from validated
+  BB inquiries using authoritative MSLA CASH, effective 0% haircut, coverage,
+  and currency; coverage respects the existing MSLA minimum of 100%.
+- BA outbox creation shares the BB inbox transaction. Borrower validates the
+  FIX payload, parties, request/MSLA/currency, and original BB outbox record;
+  receipt uses existing inbox deduplication. Added an ownership-scoped
+  `GET /api/loan-requests/{requestReference}/collateral-reports` backed by
+  processed inbox payloads. No new table, valuation amount, price/as-of,
+  approval, collateral receipt, reservation, or balance mutation.
+- Standard FIX 4.4 BA fields: `CollRptID(908)`, `CollInquiryID(909)`,
+  `CollStatus(910=0 UNASSIGNED)`, `AgreementCurrency(918)`. Project extensions:
+  `9001` request, `9002` MSLA, `9010` collateral type, `9011` haircut percent,
+  `9012` separate coverage percent. Both custom dictionaries remain identical.
+- Borrower and Custodian main-source compile passed with Maven wrapper.
+  Live tests were deferred; U1/BB/BA integration, rejection, replay, and
+  concurrency checks remain pending.
+
+## FIX U1 request and BB collateral inquiry (2026-11-11)
+
+- U1 implements the Borrower loan request and Custodian receipt. BB adds the
+  scoped Borrower action `POST /api/loan-requests/{requestReference}/collateral-inquiries`
+  and Custodian receipt for a request-scoped collateral inquiry.
+- Added QuickFIX/J 3.0.2 to Borrower and Custodian and identical
+  `quickfix/FIX44_SL.xml` dictionaries. BB uses standard `CollInquiryID(909)`
+  plus existing lending-extension tags `9001`/`9002` to link an inquiry to the
+  existing request and MSLA. The authenticated Borrower owns/scopes the request;
+  Custodian validates request/MSLA and counterparties. The inbox stores/dedups
+  receipt; the BB receipt step adds no new table, loan mutation, reservation,
+  or balance update.
+- `docs/FIX_MAPPING.md` records the contracts and pending checks. U1 remains
+  FIX-only for new events; queued legacy JSON U1 outbox rows convert before
+  publication, and Custodian retains compatibility parsing for already
+  published legacy U1 events.
+- Borrower and Custodian main-source compilation passed with the Maven wrapper
+  for the U1/BB changes. The two BB dictionaries are byte-identical and
+  well-formed XML. No tests or live services were run for this BB step.
+- Live integration tests for both U1 and BB are pending. U1's single test was
+  attempted once previously but stopped before HTTP/Kafka because
+  `LOAN_E2E_BORROWER_TOKEN` was not configured; no live FIX payload or
+  Custodian row was verified. BB live testing is deferred as requested.
+- Readiness check: MySQL `localhost:3306` is listening; Borrower `8082`,
+  Custodian `8081`, and Kafka `9092` are not. Existing lifecycle notes also
+  record missing `JWT_SHARED_SECRET` and no seeded borrower/custodian users.
+  Authenticated live integration remains blocked; no credentials, principals,
+  or business fixtures were invented and no services were started.
+- Rejection/replay/concurrency and authenticated U1/BB/BA end-to-end checks
+  remain pending. No approval or later FIX type was implemented.
 
 ## Lifecycle verification (2026-11-09)
 

@@ -28,10 +28,14 @@ function ConvertTo-Base64Url([byte[]]$Value) {
 $now = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
 $issuer = [Environment]::GetEnvironmentVariable('JWT_ISSUER')
 if ([string]::IsNullOrWhiteSpace($issuer)) { $issuer = 'securities-lending' }
+$audiences = @($Audience -split '[,\s]+' | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+if ($audiences.Count -eq 0) {
+    throw 'At least one JWT audience is required.'
+}
 $claims = [ordered]@{
     iss = $issuer
     sub = $Subject
-    aud = $Audience
+    aud = if ($audiences.Count -eq 1) { $audiences[0] } else { $audiences }
     iat = $now
     nbf = $now - 5
     exp = $now + ($ExpiresMinutes * 60)

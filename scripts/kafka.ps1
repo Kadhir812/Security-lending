@@ -1,10 +1,19 @@
 [CmdletBinding()]
-param([ValidateSet('Start', 'Stop', 'Status', 'Verify')][string]$Action = 'Status')
+param(
+    [ValidateSet('Start', 'Stop', 'Status', 'Verify')][string]$Action = 'Status',
+    [string]$LogDirectory
+)
 
 $ErrorActionPreference = 'Stop'
 $ProjectRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $Runtime = Join-Path $ProjectRoot 'kafka-runtime'
-$Logs = Join-Path $ProjectRoot 'app-logs'
+$Logs = if ([string]::IsNullOrWhiteSpace($LogDirectory)) {
+    Join-Path $ProjectRoot 'app-logs'
+} elseif ([System.IO.Path]::IsPathRooted($LogDirectory)) {
+    $LogDirectory
+} else {
+    Join-Path $ProjectRoot $LogDirectory
+}
 $PidFile = Join-Path $Runtime 'broker.pid'
 $Java = (Get-Command java.exe -ErrorAction Stop).Source
 New-Item -ItemType Directory -Force -Path $Runtime, $Logs | Out-Null

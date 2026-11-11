@@ -146,6 +146,45 @@ class LoanRequestServiceTest {
   }
 
   @Test
+  void rejectsInactiveAgreementBeforeSecurityLookup() {
+    when(requests.findByRequestReference("LR-2026-000042")).thenReturn(Optional.empty());
+    when(custodianMslas.require(authentication, "MSLA-2026-001"))
+        .thenReturn(msla("BORROWER-001", TODAY.minusDays(10), TODAY.plusDays(30), "INACTIVE", "ACTIVE"));
+
+    assertThatThrownBy(() -> service.submit(authentication, "LR-2026-000042", submission))
+        .isInstanceOf(BorrowerException.class)
+        .hasMessageContaining("not active");
+
+    verifyNoInteractions(securities, writer);
+  }
+
+  @Test
+  void rejectsSettlementOutsideMandateDatesBeforeSecurityLookup() {
+    when(requests.findByRequestReference("LR-2026-000042")).thenReturn(Optional.empty());
+    when(custodianMslas.require(authentication, "MSLA-2026-001"))
+        .thenReturn(msla("BORROWER-001", TODAY.minusDays(10), TODAY.plusDays(1), "ACTIVE", "ACTIVE"));
+
+    assertThatThrownBy(() -> service.submit(authentication, "LR-2026-000042", submission))
+        .isInstanceOf(BorrowerException.class)
+        .hasMessageContaining("Requested settlement date");
+
+    verifyNoInteractions(securities, writer);
+  }
+
+  @Test
+  void rejectsInactiveAgreementOrMandateBeforeSecurityLookup() {
+    when(requests.findByRequestReference("LR-2026-000042")).thenReturn(Optional.empty());
+    when(custodianMslas.require(authentication, "MSLA-2026-001"))
+        .thenReturn(msla("BORROWER-001", TODAY.minusDays(10), TODAY.plusDays(30), "ACTIVE", "INACTIVE"));
+
+    assertThatThrownBy(() -> service.submit(authentication, "LR-2026-000042", submission))
+        .isInstanceOf(BorrowerException.class)
+        .hasMessageContaining("not active");
+
+    verifyNoInteractions(securities, writer);
+  }
+
+  @Test
   void rejectsSecurityAssetTypeOutsideMslaEligibility() {
     when(requests.findByRequestReference("LR-2026-000042")).thenReturn(Optional.empty());
     when(custodianMslas.require(authentication, "MSLA-2026-001")).thenReturn(msla("BORROWER-001"));
@@ -222,6 +261,16 @@ class LoanRequestServiceTest {
   }
 
   private BorrowerEligibleMslaResponse msla(String borrower) {
+    return msla(
+        borrower, TODAY.minusDays(10), TODAY.plusDays(365), "ACTIVE", "ACTIVE");
+  }
+
+  private BorrowerEligibleMslaResponse msla(
+      String borrower,
+      LocalDate mandateEffectiveFrom,
+      LocalDate mandateEffectiveTo,
+      String agreementStatus,
+      String mandateStatus) {
     return new BorrowerEligibleMslaResponse(
         "MSLA-2026-001",
         "MANDATE-2026-001",
@@ -230,6 +279,10 @@ class LoanRequestServiceTest {
         "CUSTODIAN-001",
         TODAY.minusDays(1),
         TODAY.plusDays(30),
+        agreementStatus,
+        mandateEffectiveFrom,
+        mandateEffectiveTo,
+        mandateStatus,
         "INR",
         List.of("EQUITY"),
         Map.of("allowed_types", List.of("EQUITY")));
