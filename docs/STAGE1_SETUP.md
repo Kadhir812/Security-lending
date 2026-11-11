@@ -1,6 +1,6 @@
 # Stage 1: persistence and identity foundation
 
-Java 21 and Spring Boot 4.1.2 are pinned in the root Maven POM. Each child builds
+Java 17 and Spring Boot 4.1.2 are pinned in the root Maven POM. Each child builds
 an independent executable JAR; no child depends on another service's code.
 The existing directory names are retained, including `valuation_accural`.
 
@@ -24,11 +24,12 @@ empty databases, using a migration administrator. Do not also apply the combined
 script. Adapt `db/05_permissions_template.sql` with separate secrets supplied
 outside Git. Runtime accounts need SELECT, INSERT and UPDATE only on their own
 database. Hibernate uses `ddl-auto=validate`; automatic SQL initialization and
-open-session-in-view are disabled.
+open-session-in-view are disabled. Services currently configure Hibernate with
+`ddl-auto=update`; the SQL scripts remain the source for explicit schema setup.
 
 | Service | Port | Database | Environment prefix | JWT audience |
 |---|---:|---|---|---|
-| Security & Market Data | 8080 | security_market_db | MARKET | none |
+| Security & Market Data | 8080 | security_market_db | MARKET | security-market-service |
 | Custodian | 8081 | custodian_db | CUSTODIAN | custodian-service |
 | Borrower | 8082 | borrower_db | BORROWER | borrower-service |
 | Valuation & Accrual | 8083 | valuation_accrual_db | VALUATION | valuation-service |
@@ -38,7 +39,7 @@ For each service, set `<PREFIX>_DB_PASSWORD`. Optional overrides are
 The database name itself is fixed to the service's owned database. Default users
 are `<database>_app`. Do not use root/application-wide credentials.
 
-Borrower, Custodian and Valuation verify HS256 JWTs signed with the same
+All four services verify HS256 JWTs signed with the same
 `JWT_SHARED_SECRET`. `JWT_ISSUER` defaults to `securities-lending`; optional
 `<PREFIX>_JWT_AUDIENCE` overrides must match the token audience. Valuation additionally requires
 `VALUATION_PREVIEW_SUBJECT` and `VALUATION_CUSTODIAN_SUBJECT`; these must be
@@ -64,8 +65,10 @@ $env:JWT_SHARED_SECRET
 ```
 
 In another terminal, set that same secret and generate a token. Each `sub` must
-already exist as an active user in the service database and the organization
-claim must match. Roles continue to come only from local database assignments:
+already exist as an active user in Borrower/Custodian and the organization
+claim must match. Roles in those services continue to come only from local
+database assignments. Security & Market Data is the exception: its JWT must
+carry a trusted `MARKET_OPERATOR` or `ADMINISTRATOR` role claim.
 
 ```powershell
 $env:JWT_SHARED_SECRET = '<same-base64-secret>'

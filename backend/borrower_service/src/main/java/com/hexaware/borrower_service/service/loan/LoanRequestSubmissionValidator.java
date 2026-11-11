@@ -2,6 +2,7 @@ package com.hexaware.borrower_service.service.loan;
 
 import com.hexaware.borrower_service.client.BorrowerSecurityReference;
 import com.hexaware.borrower_service.client.CustodianMslaClient;
+import com.hexaware.borrower_service.client.CustodianLocateClient;
 import com.hexaware.borrower_service.client.SecurityReferenceClient;
 import com.hexaware.borrower_service.dto.request.LoanRequestSubmission;
 import com.hexaware.borrower_service.dto.response.BorrowerEligibleMslaResponse;
@@ -26,6 +27,7 @@ public class LoanRequestSubmissionValidator {
   private final CustodianMslaClient custodianMslas;
   private final SecurityReferenceClient securities;
   private final LocateRequestRepository locates;
+  private final CustodianLocateClient custodianLocates;
   private final Clock clock;
 
   public List<BorrowerEligibleMslaResponse> eligibleMslaList(Authentication authentication) {
@@ -47,7 +49,7 @@ public class LoanRequestSubmissionValidator {
 
     BorrowerSecurityReference security = securities.require(submission.securityIsin());
     validateSecurity(security, msla, submission);
-    Long locateId = validateLocate(borrower, submission);
+    Long locateId = validateLocate(authentication, borrower, submission);
     return new ValidatedSubmission(borrower, msla.custodianOrganizationReference(), locateId);
   }
 
@@ -108,21 +110,28 @@ public class LoanRequestSubmissionValidator {
   }
 
   private Long validateLocate(
-      LocalUserAuthentication user, LoanRequestSubmission submission) {
+      Authentication authentication,
+      LocalUserAuthentication user,
+      LoanRequestSubmission submission) {
     if (submission.locateReference() == null) return null;
     LocateRequest locate =
         locates
             .findByLocateReferenceAndBorrowerOrganizationReference(
                 submission.locateReference(), user.getOrganizationReference())
             .orElseThrow(() -> BorrowerException.invalid("Locate is not owned by this borrower"));
-    if (!locate.getMslaReference().equals(submission.mslaReference())
-        || !locate.getSecurityIsin().equals(submission.securityIsin())
-        || locate.getStatus() != LocateStatus.APPROVED
-        || locate.getExpiryTime().isBefore(clock.instant())
-        || locate.getApprovedQuantity() == null
-        || locate.getApprovedQuantity() < submission.quantity()) {
+    var approved = custodianLocates.get(authentication, locate.getLocateReference());
+    if (!locate.getMslaReference().equals(approved.mslaReference())
+        || !locate.getSecurityIsin().equals(approved.securityIsin())
+        || !"APPROVED".equals(approved.status())
+        || approved.expiryTime().isBefore(clock.instant())
+        || approved.approvedQuantity() == null
+        || approved.approvedQuantity() < submission.quantity()) {
       throw BorrowerException.invalid("Locate does not match the loan request");
     }
+    locate.setStatus(LocateStatus.APPROVED);
+    locate.setApprovedQuantity(approved.approvedQuantity());
+    locate.setExpiryTime(approved.expiryTime());
+    locates.save(locate);
     return locate.getLocateId();
   }
 

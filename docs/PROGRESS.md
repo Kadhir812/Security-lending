@@ -1,5 +1,17 @@
 # Implementation progress
 
+## Current checkout snapshot (2026-11-12)
+
+This file retains dated historical verification records below; older entries may
+describe an earlier schema, Java level, or implementation stage. Current source
+uses Java 17, `ddl-auto=validate`, and four fresh schemas with 50 tables (5/28/12/5).
+The Borrower/Custodian locate workflow and contract/margin discovery APIs are
+implemented. Security & Market Data requires a signed JWT and market operator
+role. Frontend integration is not in scope. This checkout has no BB/BA collateral
+inquiry/report handlers or QuickFIX/J adapter; JSON Kafka events remain separate
+from the FIX sequence in the assignment PDF. Live MySQL/Kafka end-to-end execution
+is not verified by the current environment.
+
 ## Lifecycle verification (2026-11-09)
 
 - Part 1 runtime/schema alignment: no active Spring profile; each service's

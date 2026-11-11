@@ -58,4 +58,19 @@ public class LoanRequestQueryService {
         view.getContractSnapshot(),
         view.getReceivedAt());
   }
+
+  public java.util.List<LoanContractViewResponse> contracts(Authentication authentication) {
+    var borrower = validator.requireBorrower(authentication);
+    return requests
+        .findByBorrowerOrganizationReferenceOrderByRequestedAtDesc(
+            borrower.getOrganizationReference())
+        .stream()
+        .map(request -> contractViews.findByRequestReference(request.getRequestReference())
+            .map(view -> new LoanContractViewResponse(
+                view.getRequestReference(), view.getTransactionReference(),
+                view.getContractSnapshot(), view.getReceivedAt()))
+            .orElse(null))
+        .filter(java.util.Objects::nonNull)
+        .toList();
+  }
 }

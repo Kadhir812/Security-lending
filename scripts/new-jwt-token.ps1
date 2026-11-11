@@ -5,6 +5,7 @@ param(
     [Parameter(Mandatory)][string]$OrganizationReference,
     [string]$ClientId,
     [ValidateSet('human', 'service')][string]$IdentityKind,
+    [string[]]$Roles = @(),
     [string]$Scope,
     [ValidateRange(1, 60)][int]$ExpiresMinutes = 15
 )
@@ -38,6 +39,7 @@ $claims = [ordered]@{
 }
 if ($ClientId) { $claims.client_id = $ClientId }
 if ($IdentityKind) { $claims.identity_kind = $IdentityKind }
+if ($Roles.Count -gt 0) { $claims.roles = @($Roles | Select-Object -Unique) }
 if ($Scope) { $claims.scope = $Scope }
 
 $header = [ordered]@{ alg = 'HS256'; typ = 'JWT' } | ConvertTo-Json -Compress

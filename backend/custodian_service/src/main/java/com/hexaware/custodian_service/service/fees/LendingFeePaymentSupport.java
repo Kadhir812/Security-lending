@@ -57,7 +57,7 @@ class LendingFeePaymentSupport {
       List<Map<String, Object>> charges = chargeGroups.get(itemKey);
       if (charges == null || charges.isEmpty()
           || !Objects.equals(
-              charges.getLast().get("resultReference"), resultReference)) {
+              charges.get(charges.size() - 1).get("resultReference"), resultReference)) {
         throw new InvalidEnvelopeException("FEE_PAYMENT_CHARGE_REFERENCE_MISMATCH");
       }
       requestedByItem.merge(
@@ -116,7 +116,7 @@ class LendingFeePaymentSupport {
     payload.put("failureReason", failureReason);
     payload.put("updatedAt", clock.instant().toString());
     String causationEventId = source == null
-        ? findPaymentGroup(contract, paymentReference).getFirst()
+        ? findPaymentGroup(contract, paymentReference).get(0)
             .getCalculationSnapshot().get("sourceEventId").toString()
         : source.getEventId();
     outgoing.enqueue("FEE_PAYMENT", EventEnvelope.builder()
@@ -153,20 +153,20 @@ class LendingFeePaymentSupport {
       String paymentReference, List<LendingFeePayment> rows, boolean simulated) {
     Map<String, Object> response = new LinkedHashMap<>();
     response.put("paymentReference", paymentReference);
-    response.put("transactionReference", contracts.findById(rows.getFirst().getContractId())
+    response.put("transactionReference", contracts.findById(rows.get(0).getContractId())
         .orElseThrow(() -> SetupException.missing("Loan contract not found"))
         .getTransactionReference());
     response.put("amount", rows.stream()
         .map(LendingFeePayment::getPaymentAmount)
         .reduce(BigDecimal.ZERO, BigDecimal::add).toPlainString());
-    response.put("currency", rows.getFirst().getCurrency());
-    response.put("status", rows.getFirst().getStatus());
+    response.put("currency", rows.get(0).getCurrency());
+    response.put("status", rows.get(0).getStatus());
     response.put("allocations", paymentAllocations(rows));
     response.put("externalConfirmationReference", rows.stream()
         .map(LendingFeePayment::getExternalReference)
         .filter(Objects::nonNull).findFirst().orElse(null));
     response.put("simulated", simulated
-        || Boolean.TRUE.equals(rows.getFirst().getCalculationSnapshot().get("simulatedPaymentAdapter")));
+        || Boolean.TRUE.equals(rows.get(0).getCalculationSnapshot().get("simulatedPaymentAdapter")));
     response.put("updatedAt", rows.stream()
         .map(row -> row.getPaidAt() == null
             ? text(row.getCalculationSnapshot().get("failedAt"))

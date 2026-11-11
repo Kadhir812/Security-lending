@@ -52,6 +52,12 @@ public class LocateRequest {
   @Column(name = "expiry_time", nullable = false, columnDefinition = "datetime(6)")
   private Instant expiryTime;
 
+  @Column(name = "responded_at", columnDefinition = "datetime(6)")
+  private Instant respondedAt;
+
+  @Column(name = "response_reason", length = 500)
+  private String responseReason;
+
   @Column(name = "status", nullable = false)
   private String status;
 }

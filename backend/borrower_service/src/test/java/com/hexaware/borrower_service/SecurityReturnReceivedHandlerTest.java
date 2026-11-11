@@ -139,6 +139,6 @@ class SecurityReturnReceivedHandlerTest {
   private Map<String, Object> returnInstruction() {
     List<Map<String, Object>> instructions =
         (List<Map<String, Object>>) contract.getContractSnapshot().get("returnInstructions");
-    return instructions.getFirst();
+    return instructions.get(0);
   }
 }

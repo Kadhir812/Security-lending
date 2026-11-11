@@ -16,7 +16,7 @@ public class EventRouting {
       throw new InvalidEnvelopeException("WRONG_PRODUCER");
     var routes = properties.getRoutes().stream().filter(route -> matches(route, event)).toList();
     if (routes.size() != 1) throw new InvalidEnvelopeException("UNSUPPORTED_OUTBOUND_ROUTE");
-    return routes.getFirst().getTopic();
+    return routes.get(0).getTopic();
   }
 
   public void validateIncoming(EventEnvelope event, String topic, String key) {
