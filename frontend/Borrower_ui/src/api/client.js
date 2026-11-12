@@ -3,6 +3,8 @@ import axios from 'axios'
 /** Borrower-only Axios transport; this is the ONLY HTTP implementation in the app. */
 const SESSION_KEY = 'seclend.borrower.jwt'
 const envToken = import.meta.env.VITE_BORROWER_JWT || ''
+const publicAuthPaths = new Set(['/auth/signup', '/auth/login'])
+const isPublicAuth = config => publicAuthPaths.has(config?.url)
 export const getToken = () => { const saved = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem(SESSION_KEY) : null; return saved === null ? envToken : saved }
 export function setSessionToken(value) {
   if (value?.trim()) sessionStorage.setItem(SESSION_KEY, value.trim().replace(/^Bearer\s+/i, ''))
@@ -16,7 +18,8 @@ export const http = axios.create({ baseURL: prefix, timeout: 20000, headers: { A
 /** Request interceptor: never mint/refresh JWTs, add per-request correlation, preserve caller idempotency. */
 http.interceptors.request.use(config => {
   const token = getToken()
-  if (token) config.headers.set('Authorization', `Bearer ${token}`)
+  if (token && !isPublicAuth(config)) config.headers.set('Authorization', `Bearer ${token}`)
+  else config.headers.delete('Authorization')
   config.headers.set('X-Correlation-ID', newReference('BRW').slice(0, 79))
   return config
 })
@@ -30,7 +33,7 @@ http.interceptors.response.use(response => {
   const status = failure.response?.status
   const correlation = failure.response?.headers?.['x-correlation-id'] || failure.config?.headers?.['X-Correlation-ID']
   if (correlation) window.dispatchEvent(new CustomEvent('borrower:correlation', { detail: correlation }))
-  if (status === 401) window.dispatchEvent(new Event('borrower:unauthorized'))
+  if (status === 401 && !isPublicAuth(failure.config)) window.dispatchEvent(new Event('borrower:unauthorized'))
   const body = failure.response?.data
   const details = typeof body === 'string' ? body : body?.detail || body?.message || body?.error || body?.title
   const labels = {

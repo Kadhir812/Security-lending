@@ -23,6 +23,6 @@ npm run build
 npm run dev
 ```
 
-Then connect a trusted `ROLE_TRADER` dual-audience token in Session & Access, verify `/api/foundation/status`, and test locate → loan → contract → collateral → return/fees/release with a running backend.
+Then sign in or create a demo Borrower account, verify `/api/foundation/status`, and test locate → loan → contract → collateral → return/fees/release with a running backend.
 
 See `API_COVERAGE.md` for source-grounded gaps from the older audit.

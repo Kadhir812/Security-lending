@@ -10,6 +10,7 @@ $KafkaArchiveName = 'kafka_2.13-{0}.tgz' -f $KafkaVersion
 $KafkaArchiveUrl = 'https://dlcdn.apache.org/kafka/{0}/{1}' -f $KafkaVersion, $KafkaArchiveName
 $KafkaChecksumUrl = "$KafkaArchiveUrl.sha512"
 $KafkaHome = Join-Path $ProjectRoot 'kafka'
+$DownloadedKafkaHome = Join-Path $ProjectRoot "kafka_2.13-$KafkaVersion"
 $KafkaStorageJar = Join-Path $KafkaHome "libs\kafka-storage-$KafkaVersion.jar"
 $ProjectConfig = Join-Path $ProjectRoot 'config\kraft\server.properties'
 $KafkaConfigDirectory = Join-Path $KafkaHome 'config\kraft'
@@ -27,11 +28,14 @@ function Invoke-NativeCommand {
     )
 
     Push-Location $ProjectRoot
+    $previousErrorActionPreference = $ErrorActionPreference
     try {
+        $ErrorActionPreference = 'Continue'
         $output = @(& $FilePath @Arguments 2>&1)
         $exitCode = $LASTEXITCODE
     }
     finally {
+        $ErrorActionPreference = $previousErrorActionPreference
         Pop-Location
     }
     if ($exitCode -ne 0) {
@@ -48,7 +52,9 @@ function Invoke-KafkaStorageTool {
     )
 
     Push-Location $ProjectRoot
+    $previousErrorActionPreference = $ErrorActionPreference
     try {
+        $ErrorActionPreference = 'Continue'
         $output = @(& java.exe `
             '-Dkafka.logs.dir=kafka-runtime/brokER-logs' `
             '-Dlog4j2.configurationFile=kafka/config/tools-log4j2.yaml' `
@@ -57,6 +63,7 @@ function Invoke-KafkaStorageTool {
         $exitCode = $LASTEXITCODE
     }
     finally {
+        $ErrorActionPreference = $previousErrorActionPreference
         Pop-Location
     }
     if ($exitCode -ne 0) {
@@ -88,6 +95,13 @@ if ($clusterIdLines.Count -ne 1) {
 }
 $clusterId = ($clusterIdLines[0] -replace '^KAFKA_CLUSTER_ID=', '').Trim()
 
+if (-not (Test-Path -LiteralPath $KafkaStorageJar -PathType Leaf) -and
+    -not (Test-Path -LiteralPath $KafkaHome) -and
+    (Test-Path -LiteralPath (Join-Path $DownloadedKafkaHome "libs\kafka-storage-$KafkaVersion.jar") -PathType Leaf)) {
+    Move-Item -LiteralPath $DownloadedKafkaHome -Destination $KafkaHome
+    Write-Host "Moved the existing Kafka distribution from $DownloadedKafkaHome to $KafkaHome."
+}
+
 if (-not (Test-Path -LiteralPath $KafkaStorageJar -PathType Leaf)) {
     if (Test-Path -LiteralPath $KafkaHome) {
         $existingItems = @(Get-ChildItem -LiteralPath $KafkaHome -Force -ErrorAction SilentlyContinue)
@@ -109,7 +123,25 @@ if (-not (Test-Path -LiteralPath $KafkaStorageJar -PathType Leaf)) {
 
     $ArchivePath = (Resolve-Path -LiteralPath $ArchivePath).Path
     Write-Host 'Fetching the official SHA-512 checksum...'
-    $checksumText = (Invoke-WebRequest -UseBasicParsing -Uri $KafkaChecksumUrl -TimeoutSec 60).Content
+    try {
+        $checksumText = (Invoke-WebRequest -UseBasicParsing -Uri $KafkaChecksumUrl -TimeoutSec 60).Content
+    }
+    catch {
+        Write-Warning "PowerShell checksum request failed; retrying with Windows BITS: $($_.Exception.Message)"
+        $checksumPath = Join-Path ([System.IO.Path]::GetTempPath()) (
+            'kafka-{0}.sha512' -f [guid]::NewGuid().ToString('N')
+        )
+        try {
+            Start-BitsTransfer -Source $KafkaChecksumUrl -Destination $checksumPath `
+                -RetryInterval 60 -RetryTimeout 120
+            $checksumText = Get-Content -LiteralPath $checksumPath -Raw
+        }
+        finally {
+            if (Test-Path -LiteralPath $checksumPath) {
+                Remove-Item -LiteralPath $checksumPath -Force
+            }
+        }
+    }
     $expectedHash = (($checksumText -replace '^[^:]*:\s*', '') -replace '\s', '').ToLowerInvariant()
     if ($expectedHash -notmatch '^[0-9a-f]{128}$') {
         throw "Could not parse Apache's SHA-512 checksum from $KafkaChecksumUrl"

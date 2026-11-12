@@ -18,7 +18,7 @@ export function Button({ children, icon: Icon, variant = 'primary', busy = false
 export function EmptyState({ title = 'No records to display', text = 'No matching records were returned by the Borrower service.', icon: Icon = Database, action }) { return <div className="empty-state"><Icon size={26} /><strong>{title}</strong><p>{text}</p>{action}</div> }
 /** ApiState: explicit loading/error/no-token messaging for server-backed modules. */
 export function ApiState({ loading, error, token, children, reload, empty, emptyText }) {
-  if (!token) return <EmptyState icon={CircleHelp} title="Borrower token required" text="Paste a trusted, pre-issued Borrower JWT in Session & Access to load live records." action={<Link className="btn btn--outline" to="/auth">Open token setup <ArrowRight size={14} /></Link>} />
+  if (!token) return <EmptyState icon={CircleHelp} title="Borrower sign-in required" text="Sign in with your Borrower account to load live records." action={<Link className="btn btn--outline" to="/auth">Sign in <ArrowRight size={14} /></Link>} />
   if (loading) return <div className="loading-state"><LoaderCircle className="spin" size={20} /> Loading authoritative service data…</div>
   if (error) return <div role="alert" className="api-error"><AlertCircle size={19} /><div><strong>{error.status ? `HTTP ${error.status}` : 'Connection error'}</strong><p>{error.message}</p>{error.correlationId && <small>Correlation: {error.correlationId}</small>}</div>{reload && <Button onClick={reload} icon={RefreshCw} variant="outline">Refresh</Button>}</div>
   if (empty) return <EmptyState text={emptyText} />
