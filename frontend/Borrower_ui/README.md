@@ -1,6 +1,6 @@
 # SEC LEND — Borrower Operations UI v0.2
 
-Standalone, **Borrower-only** React + Vite frontend styled to match the Custodian Securities Lending Command Center. All HTTP requests use **Axios** and the supplied `Security-lending-fixedapi.zip` Borrower Java controllers / DTOs, without making changes to the backend.
+Standalone, **Borrower-only** React + Vite frontend styled to match the Custodian Securities Lending Command Center. All HTTP requests use **Axios** and the Borrower Java controllers / DTOs.
 
 ## Run
 
@@ -15,7 +15,16 @@ npm run dev
 
 Open `http://localhost:5174` (Vite may choose another port if it is occupied). When installed inside the supplied repo, use `cd frontend/Borrower_ui` instead. For production use `npm run build`; deploy `dist/` with an appropriate same-origin `/api` reverse proxy.
 
-**Sign in:** Use the Borrower portal's sign-in page to authenticate with your email and password, or create a demo account. The Borrower service issues a short-lived JWT with the fixed `ROLE_TRADER` authority and the account's `organization_reference`; the browser stores it in `sessionStorage` and switches to **Live**. For eligible MSLAs, locates and loan submission through the Custodian dependency, the service-side token must include both `borrower-service` and `custodian-service` audiences, as specified in `docs/STAGE1_SETUP.md` from the backend project. The frontend never issues JWTs or stores signing secrets. Optional `VITE_BORROWER_JWT` remains available for trusted local testing; don't commit credentials.
+**Sign in:** Use the Borrower portal's sign-in page to authenticate with your email and password, or create an account through `POST /api/auth/signup`. The Borrower service issues a 24-hour JWT with the fixed `ROLE_TRADER` authority and the account's `organization_reference`; by default it includes both `borrower-service` and `custodian-service` audiences for the scoped eligible-MSLA lookup. The browser stores it in `sessionStorage` and switches to **Live**. Configure `BORROWER_TOKEN_AUDIENCES` when the service audience names differ from those defaults. The frontend never issues JWTs or stores signing secrets. Optional `VITE_BORROWER_JWT` remains available for trusted local testing; don't commit credentials.
+
+## Link a Borrower identity to Custodian
+
+1. Sign in to Borrower, open **Operations → Link with Custodian**, and generate a code. Send it securely to your Custodian operator; it expires in 24 hours and works once.
+2. The operator signs in to Custodian, opens **Organizations**, pastes the code into **Link Borrower identity**, and selects **Link Borrower**.
+3. Custodian creates the matching Borrower organization and grants that identity `TRADER` access only. The operator then creates an active lender mandate and MSLA through the existing setup pages.
+4. Sign in to Borrower again (or refresh the eligible-MSLAs page) and submit a request using an eligible MSLA.
+
+The link does not create an MSLA or authorize a loan; no administrator role is needed. Existing databases must apply `db/migrations/005_borrower_identity_link.sql`; fresh databases already include the table in the Custodian schema script.
 
 ## API and Axios integration
 
@@ -30,23 +39,25 @@ Open `http://localhost:5174` (Vite may choose another port if it is occupied). W
 
 | Screen | Borrower endpoint(s) |
 |---|---|
-| Locates | `GET/POST /api/locates`, `GET /api/locates/{reference}` |
+| Locates | Not exposed by the current Borrower controller; optional locate field is disabled and omitted |
 | Requests | `GET/POST /api/loan-requests`, `GET /api/loan-requests/{reference}` |
 | Eligible MSLAs | `GET /api/loan-requests/eligible-mslas` |
+| Custodian identity link code | `POST /api/auth/custodian-link-token` |
+| Collateral inquiry / reports | `POST /api/loan-requests/{reference}/collateral-inquiries`, `GET /api/loan-requests/{reference}/collateral-reports` |
 | Contract by request | `GET /api/loan-requests/{reference}/contract` |
-| Contract portfolio | `GET /api/contracts` |
+| Contract portfolio | No list endpoint; approved requests resolve one contract at a time through the request-scoped route |
 | Initial CASH collateral | `POST /api/loan-requests/{reference}/collateral/cash-instructions` |
 | Settlement | `GET /api/contracts/{transactionReference}/settlement` |
-| Margin calls | `GET /api/contracts/{transactionReference}/margin-calls`, `GET /api/contracts/{transactionReference}/margin-calls/{marginCallReference}` |
+| Margin call details | `GET /api/contracts/{transactionReference}/margin-calls/{marginCallReference}`; no contract-wide list endpoint |
 | Top-ups | `GET/POST /api/contracts/{transactionReference}/margin-calls/{marginCallReference}/top-ups` |
 | Returns and recalls projection | `GET/POST /api/contracts/{transactionReference}/returns` |
 | Charges and payments | `GET /api/contracts/{transactionReference}/charges`, `GET/POST /api/contracts/{transactionReference}/payments` |
 | Final collateral release | `GET/POST /api/contracts/{transactionReference}/collateral-releases` |
 | Health | `GET /api/foundation/status` (Bearer required) |
 
-**Important API revision discrepancy:** `securities_lending_full_api_audit.md` was written for an older ZIP and lists REST `POST .../collateral-inquiries` and `GET .../collateral-reports`. They are **not registered** in the `LoanRequestController.java` inside the uploaded `Security-lending-fixedapi.zip`. Conversely, that updated ZIP **does** include newer `/api/locates`, `/api/contracts` and per-contract margin-call list GET routes. The frontend follows the **updated code**. Collateral BB/BA appears as an explicit API gap, not a fake working button.
+The controller source is authoritative: both BB/BA routes are available, while locate routes, a general contract-list route and a contract-wide margin-call list are not. Inquiry receipts mean only that the request was queued; they are not reports or proof of cash settlement. The frontend does not call unsupported routes.
 
-**Other missing aggregates:** no per-security portfolio exposure trend, consolidated Borrower credit/utilization, realtime market quotes, FIX journal feed, alert stream, or tamper-evident unified activity endpoint. These display Demo badges or unavailable states. The Activity screen is clearly labelled as a recent-timestamp view assembled from actual request/contract projections and is **not** a backend audit log. Custodian-only approval, settlement confirmations, MTM, contract closure and release approval are intentionally excluded.
+**Other missing aggregates:** no per-security portfolio exposure trend, consolidated Borrower credit/utilization, realtime market quotes, FIX journal feed, alert stream, contract list or tamper-evident unified activity endpoint. These display Demo badges or unavailable states. The Activity screen is clearly labelled as a recent-timestamp view assembled from actual request projections and is **not** a backend audit log. Custodian-only approval, settlement confirmations, MTM, contract closure and release approval are intentionally excluded.
 
 ## Repository layout
 

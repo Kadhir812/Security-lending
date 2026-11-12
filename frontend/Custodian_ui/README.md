@@ -30,7 +30,7 @@ Use the **Sign in** or **Create an account** form at `/auth`. Login calls
 Custodian database.
 
 Successful login returns a Custodian-audience JWT that is retained in
-tab-scoped `sessionStorage`; the UI clears it after its 15-minute expiry. The
+tab-scoped `sessionStorage`; the UI clears it after its 24-hour expiry. The
 backend still validates the token and local role for every protected request.
 Never put JWT signing keys or real tokens in the browser or source control.
 Anyone who can reach the service can sign up; use a trusted identity provider
@@ -39,6 +39,10 @@ or controlled provisioning for real deployments.
 Each request carries `Authorization: Bearer ...` (when configured) and a unique `X-Correlation-ID`; the service's returned correlation ID appears in the bottom status bar. The status bar also shows the service status (`GET /api/foundation/status`), configured environment and **Live / Demo** mode.
 
 `400`, `401`, `403`, `404`, `409`, `422` and `503` return distinct human-readable errors. `401` clears a pasted session token. `409` does not auto-retry and prompts a resource refresh. Mutation buttons disable during their in-flight execution. Approve/reject, payment processing, settlement simulations, collateral-release approval and contract closure require explicit confirmation. Rejection/failure require reasons. MTM uses an `Idempotency-Key`. All lists using `PageResponse` use the returned zero-based `page`, `size`, `totalElements` and `totalPages`.
+
+### Link a Borrower identity
+
+After the Borrower generates a one-time code in **Borrower → Operations → Link with Custodian**, sign in as a Custodian operator and open **Organizations → Link Borrower identity**. Paste and submit the code within 24 hours. This creates the Borrower organization and its matching user with `TRADER` access only; it does not create an administrator or an MSLA. Next create the active lender mandate and MSLA using the existing **Mandates** and **MSLAs** pages. Existing databases must apply `db/migrations/005_borrower_identity_link.sql`; fresh schema scripts include the table.
 
 ## Available Custodian pages
 

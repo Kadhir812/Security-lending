@@ -2,9 +2,7 @@ import { request } from './client'
 const base = ref => `/contracts/${encodeURIComponent(ref)}`
 /** Scoped live borrower contract projection and its action-specific children. */
 export const contracts = {
-  list: () => request.get('/contracts'),
   settlement: ref => request.get(`${base(ref)}/settlement`),
-  marginCalls: ref => request.get(`${base(ref)}/margin-calls`),
   marginCall: (ref, call) => request.get(`${base(ref)}/margin-calls/${encodeURIComponent(call)}`),
   topUps: (ref, call) => request.get(`${base(ref)}/margin-calls/${encodeURIComponent(call)}/top-ups`),
   topUp: (ref, call, body) => request.post(`${base(ref)}/margin-calls/${encodeURIComponent(call)}/top-ups`, body),

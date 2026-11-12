@@ -1,13 +1,11 @@
-# 50-table ownership map
+# 48-table ownership map
 
 | Database | Table | Ownership |
 |---|---|---|
 | security_market_db | `security_master` | AUTHORITATIVE LOCAL RECORD |
-| security_market_db | `message_log` | TECHNICAL |
-| security_market_db | `outbox_event` | TECHNICAL |
-| security_market_db | `inbox_message` | TECHNICAL |
 | security_market_db | `security_price` | AUTHORITATIVE LOCAL RECORD |
 | custodian_db | `organization` | AUTHORITATIVE LOCAL RECORD |
+| custodian_db | `borrower_identity_link` | ONE-TIME IDENTITY-LINK AUDIT / REPLAY PREVENTION |
 | custodian_db | `roles` | AUTHORITATIVE LOCAL RECORD |
 | custodian_db | `message_log` | TECHNICAL |
 | custodian_db | `outbox_event` | TECHNICAL |

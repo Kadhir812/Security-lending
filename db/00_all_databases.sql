@@ -210,6 +210,18 @@ CREATE TABLE user_roles (
   FOREIGN KEY (role_id) REFERENCES roles(role_id)
 ) ENGINE=InnoDB;
 
+-- TECHNICAL: one-time link-token replay prevention and audit.
+CREATE TABLE borrower_identity_link (
+  jti CHAR(36) NOT NULL PRIMARY KEY,
+  organization_reference VARCHAR(80) NOT NULL,
+  consumed_by_custodian_id BIGINT NOT NULL,
+  consumed_by_user_id BIGINT NOT NULL,
+  consumed_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  FOREIGN KEY (organization_reference) REFERENCES organization(organization_reference),
+  FOREIGN KEY (consumed_by_custodian_id) REFERENCES organization(organization_id),
+  FOREIGN KEY (consumed_by_user_id) REFERENCES users(user_id)
+) ENGINE=InnoDB;
+
 -- AUTHORITATIVE LOCAL RECORD
 CREATE TABLE msla_agreement (
   created_by_user_id BIGINT NULL,

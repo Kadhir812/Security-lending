@@ -1,20 +1,51 @@
-import { useRef, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
-import { ArrowRight, ClipboardList, Plus, Search } from 'lucide-react'
-import { Button, ConfirmDialog, DataTable, DetailGrid, Field, Panel, StatusBadge } from '../components/UI'
-import { WorkPage, LiveGate, ResourceBody, Refresh, FormMessage } from '../components/Work'
-import { locates } from '../api/locates'
-import { loans } from '../api/loans'
-import { useRemote } from '../hooks/useRemote'
-import { useApp } from '../hooks/useApp'
-import { number, stamp } from '../utils/format'
-const pattern = '[A-Z0-9]{12}'
-/** Locates: newly implemented create/list/detail routes, custodial decision stays remote. */
-export function LocatesPage(){const {mode}=useApp();const query=useRemote(()=>locates.list(),[],{enabled:mode==='live'});const rows=query.data||[];return <WorkPage title="Locate Desk" subtitle="Request pre-trade availability and monitor Custodian-approved quantities and expiry windows." action={<Link to="/locates/new" className="btn btn--primary"><Plus size={15}/> Request locate</Link>} stats={[{label:'My Locates',value:mode==='live'?query.data?.length??'—':'—',detail:'Borrower-scoped live records'},{label:'Approved',value:mode==='live'?rows.filter(x=>x.status==='APPROVED').length:'—',detail:'Ready for loan request'},{label:'Awaiting decision',value:mode==='live'?rows.filter(x=>x.status==='PENDING').length:'—',detail:'Custodian review'},{label:'Expiry',value:'Time bound',detail:'Check before submission'}]} fix="Locate → Custodian availability decision" guide={['Submit an ISIN, MSLA and positive quantity.','The Custodian verifies inventory and lending prerequisites.','Only approved, unexpired locates of sufficient quantity may be referenced by a loan request.']}><LiveGate><Panel title="My locate requests" icon={ClipboardList} actions={<Refresh onClick={query.reload}/>} subtitle="Current statuses from GET /api/locates"><ResourceBody query={query} empty={!rows.length} emptyText="No locate records yet. Submit one to start the availability check."><DataTable keyField="locateReference" columns={[{key:'locateReference',label:'Locate reference',render:v=><Link className="record-link" to={`/locates/${encodeURIComponent(v)}`}>{v}</Link>},{key:'mslaReference',label:'MSLA'},{key:'securityIsin',label:'ISIN'},{key:'quantity',label:'Requested',render:number},{key:'approvedQuantity',label:'Approved',render:number},{key:'expiryTime',label:'Expires',render:stamp},{key:'status',label:'Status'}]} rows={rows}/></ResourceBody></Panel></LiveGate></WorkPage>}
-/** NewLocate: validates LocateSubmission fields exactly before explicit confirmation. */
-export function NewLocatePage(){const navigate=useNavigate();const {mode,notify,refresh}=useApp();const {data:mslas,error:eligibleError}=useRemote(()=>loans.eligible(),[],{enabled:mode==='live'});const [form,setForm]=useState({mslaReference:'',securityIsin:'',quantity:''});const [error,setError]=useState('');const [dialog,setDialog]=useState(null);const busy=useRef(false)
-const set=(key,value)=>setForm(s=>({...s,[key]:value}))
-function prepare(e){e.preventDefault();setError('');if(!form.mslaReference){setError('Select an eligible MSLA.');return}if(!/^[A-Z0-9]{12}$/.test(form.securityIsin)||!Number.isSafeInteger(Number(form.quantity))||Number(form.quantity)<=0){setError('Provide a valid 12-character uppercase ISIN and positive whole quantity.');return}const payload={mslaReference:form.mslaReference,securityIsin:form.securityIsin,quantity:Number(form.quantity)};setDialog({title:'Submit locate to Custodian',message:'This live action requests availability; approval is not guaranteed. No inventory is reserved until the Custodian confirms the locate.',subject:`${payload.securityIsin} · ${number(payload.quantity)} units`,confirmText:'Submit locate',execute:async()=>{if(busy.current)throw Error('Submission already in progress');busy.current=true;try{const result=await locates.submit(payload);notify(`Locate created: ${result.locateReference}`,'success');refresh();navigate(`/locates/${encodeURIComponent(result.locateReference)}`);return result}finally{busy.current=false}}})}
-return <WorkPage title="Request New Locate" subtitle="Send a real pre-borrow inventory check to the Custodian before loan initiation." guide={['Select an effective MSLA eligible for your Borrower organization.','Enter an active 12-character ISIN and positive whole-unit quantity.','A locate requires Custodian approval; status may remain PENDING while services synchronize.']} fix="Locate request → Custodian decision" stats={[{label:'API',value:'POST /locates',detail:'Borrower :8082'},{label:'Response',value:'201',detail:'Reference and PENDING status'},{label:'Quantity',value:'Whole',detail:'Positive Long'},{label:'Approval',value:'Remote',detail:'Custodian-owned'}]}><LiveGate><Panel title="Locate instruction" icon={Search} subtitle="Exact fields: mslaReference, securityIsin, quantity"><form onSubmit={prepare} className="resource-form">{eligibleError&&<FormMessage error={eligibleError}/>}<div className="form-grid"><Field name="mslaReference" label="Eligible MSLA reference" required value={form.mslaReference} onChange={v=>set('mslaReference',v)} options={(mslas||[]).map(m=>({value:m.mslaReference,label:`${m.mslaReference} · ${m.baseCurrency}`}))} hint="Load eligible MSLAs with a valid dual-audience JWT."/><Field name="securityIsin" label="Security ISIN" required value={form.securityIsin} onChange={v=>set('securityIsin',v.toUpperCase().trim())} pattern={pattern} max={12} placeholder="INE002A01018" hint="Exactly 12 uppercase letters/digits"/><Field name="quantity" label="Quantity (whole units)" required type="number" min="1" step="1" value={form.quantity} onChange={v=>set('quantity',v)} hint="A positive integer within Custodian inventory limits"/></div><FormMessage error={error}/><div className="form-actions"><Button type="submit" icon={ArrowRight} disabled={!mslas?.length}>Review locate request</Button><Link className="btn btn--outline" to="/locates">Cancel</Link></div></form></Panel></LiveGate>{dialog&&<ConfirmDialog config={dialog} onClose={()=>setDialog(null)}/>}</WorkPage>}
-/** LocateDetail: retrieve status from Custodian-backed Borrower GET by reference. */
-export function LocateDetailPage(){const {reference}=useParams();const {mode}=useApp();const query=useRemote(()=>locates.get(reference),[reference],{enabled:mode==='live'});const row=query.data;return <WorkPage title={`Locate · ${reference}`} subtitle="Inspect the original locate, currently approved quantity, decision and expiry." action={<Link to="/requests/new" className="btn btn--primary">New borrow request <ArrowRight size={15}/></Link>} stats={[{label:'Current status',value:row?.status||'—',detail:'Actual Custodian decision'},{label:'Requested',value:number(row?.quantity),detail:'Security units'},{label:'Approved',value:number(row?.approvedQuantity),detail:'May be smaller than requested'},{label:'Expiry',value:stamp(row?.expiryTime),detail:'Check before placing loan'}]} guide={['An APPROVED locate must be unexpired at loan submission.','The locate, MSLA and ISIN must all match the loan request.','If the approved quantity is insufficient, request a new locate.']}><LiveGate><Panel title="Locate decision" icon={Search} actions={<Refresh onClick={query.reload}/>}><ResourceBody query={query}><DetailGrid data={row} fields={['locateReference','mslaReference','borrowerOrganizationReference','securityIsin','quantity','approvedQuantity','status','requestTime','expiryTime','respondedAt','responseReason']}/>{row&&<p className="info-banner">Decision is returned by the Custodian through the Borrower service. <StatusBadge value={row.status}/></p>}</ResourceBody></Panel></LiveGate></WorkPage>}
+import { Link, useParams } from 'react-router-dom'
+import { ArrowRight, Search } from 'lucide-react'
+import { Panel } from '../components/UI'
+import { WorkPage } from '../components/Work'
+
+function LocateUnavailable({ title, reference }) {
+  return (
+    <WorkPage
+      title={title}
+      subtitle="The current Borrower service does not expose locate endpoints."
+      stats={[
+        { label: 'Locate API', value: 'Unavailable', detail: 'No /api/locates controller' },
+        { label: 'Loan submission', value: 'Available', detail: 'Locate reference is optional' },
+        { label: 'Selector', value: 'Disabled', detail: 'No locate call is made' },
+        { label: 'Service', value: 'Borrower', detail: 'Port 8082' },
+      ]}
+      guide={[
+        'The Borrower service accepts loan requests without a locateReference.',
+        'This page does not fabricate locate records or contact the Custodian directly.',
+        'Submit a loan request from the Requests workspace.',
+      ]}
+      footer="Locate selection is unavailable until the Borrower backend exposes a supported locate API. Loan submission remains available without a locate reference."
+    >
+      <Panel title="Locate workflow unavailable" icon={Search}>
+        <div className="empty-inline" role="status">
+          <strong>{reference ? `Locate ${reference} cannot be loaded.` : 'No locate endpoint is available.'}</strong>
+          <p>
+            This service has no GET or POST /api/locates route. The optional locate field is
+            omitted from loan submissions, so this does not block borrowing.
+          </p>
+        </div>
+        <Link className="action-link" to="/requests/new">
+          Submit a borrow request without a locate <ArrowRight size={15} />
+        </Link>
+      </Panel>
+    </WorkPage>
+  )
+}
+
+export function LocatesPage() {
+  return <LocateUnavailable title="Locate API Status" />
+}
+
+export function NewLocatePage() {
+  return <LocateUnavailable title="Request Locate" />
+}
+
+export function LocateDetailPage() {
+  const { reference } = useParams()
+  return <LocateUnavailable title="Locate Details" reference={reference} />
+}

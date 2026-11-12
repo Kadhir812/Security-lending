@@ -7,6 +7,7 @@ import { ContractPortfolioPage, ContractDetailPage, SettlementPage, CashCollater
 import { MarginPage, ReturnsPage, FeesPage, ReleasesPage, ActivityPage } from './pages/Operations'
 import AuthPage from './pages/AuthPage'
 import { GlossaryPage } from './pages/Misc'
+import CustodianLinkPage from './pages/CustodianLinkPage'
 import { useApp } from './hooks/useApp'
 
 /** Borrower-only routes; no Custodian writes, loan approve/reject or settlement simulation. */
@@ -27,20 +28,21 @@ export default function App() {
         <Route path="eligible-mslas" element={<EligibleMslaPage />} />
         <Route path="collateral-inquiries" element={<CollateralInquiryPage />} />
         <Route path="contracts" element={<ContractPortfolioPage />} />
-        <Route path="contracts/:transactionReference" element={<ContractDetailPage />} />
+        <Route path="contracts/:requestReference" element={<ContractDetailPage />} />
         <Route path="settlement" element={<SettlementPage />} />
-        <Route path="settlement/:transactionReference" element={<SettlementPage />} />
+        <Route path="settlement/:requestReference" element={<SettlementPage />} />
         <Route path="collateral" element={<CashCollateralPage />} />
         <Route path="collateral/:requestReference" element={<CashCollateralPage />} />
         <Route path="margin" element={<MarginPage />} />
-        <Route path="margin/:transactionReference" element={<MarginPage />} />
+        <Route path="margin/:requestReference" element={<MarginPage />} />
         <Route path="returns" element={<ReturnsPage />} />
-        <Route path="returns/:transactionReference" element={<ReturnsPage />} />
+        <Route path="returns/:requestReference" element={<ReturnsPage />} />
         <Route path="fees" element={<FeesPage />} />
-        <Route path="fees/:transactionReference" element={<FeesPage />} />
+        <Route path="fees/:requestReference" element={<FeesPage />} />
         <Route path="releases" element={<ReleasesPage />} />
-        <Route path="releases/:transactionReference" element={<ReleasesPage />} />
+        <Route path="releases/:requestReference" element={<ReleasesPage />} />
         <Route path="activity" element={<ActivityPage />} />
+        <Route path="custodian-link" element={<CustodianLinkPage />} />
         <Route path="glossary" element={<GlossaryPage />} />
         <Route path="*" element={<Navigate replace to="/" />} />
       </Route>

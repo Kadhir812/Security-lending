@@ -1,5 +1,21 @@
 # Implementation progress
 
+## Borrower-Custodian identity linking
+
+- Borrowers generate a 24-hour, single-use token from
+  `POST /api/auth/custodian-link-token`; a Custodian operator consumes it with
+  `POST /api/organizations/borrower-links`. Custodian creates the Borrower
+  organization and grants only `TRADER`; the existing mandate/MSLA setup
+  remains a separate operator step. Borrower and Custodian sign-in tokens also
+  expire after 24 hours.
+- Added the `borrower_identity_link` replay/audit table to fresh Custodian
+  schemas and `migrations/005_borrower_identity_link.sql` for existing ones.
+  The current fresh schemas now contain 48 physical tables, within the 50-table
+  ceiling.
+- Focused Borrower/Custodian token-link tests and both frontend production
+  builds passed. Live login, authenticated link/MSLA lookup, and live BB/BA
+  integration checks remain pending; no live service test was run.
+
 ## FIX U2 initial securities settlement confirmation
 
 - Custodian emits custom FIX 4.4 `U2` only for the existing successful

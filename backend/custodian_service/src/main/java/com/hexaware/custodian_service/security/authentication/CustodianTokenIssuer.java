@@ -18,7 +18,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class CustodianTokenIssuer {
 
-  private static final Duration TOKEN_LIFETIME = Duration.ofMinutes(15);
+  private static final Duration TOKEN_LIFETIME = Duration.ofDays(1);
   private final String issuer;
   private final String audience;
   private final NimbusJwtEncoder encoder;

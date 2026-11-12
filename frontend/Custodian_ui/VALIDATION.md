@@ -22,7 +22,8 @@
 - **NOT VERIFIED**: Maven backend build, which requires Maven distribution, dependency downloads and service configuration unavailable here.
 
 ## Functional architecture notes
-- The current Java backend exposes **no login endpoint**. JWT comes from the trusted existing issuer/bootstrap flow and is stored in sessionStorage when pasted.
+- Both Java services expose `POST /api/auth/signup` and `POST /api/auth/login`. The Custodian UI submits the documented email/password DTO and stores the returned `accessToken` in sessionStorage.
+- New Custodian accounts receive the fixed `CUSTODIAN_OPERATOR` role from the backend. The UI never creates JWTs or handles signing secrets.
 - No general contract list, exposure trend, portfolio aggregation, FIX event read stream, unified audit feed, BB/BA inbox, or official price feed exist. Dashboard mock widgets carry provenance labels; Live mode does not fabricate data.
 - Cash/return/release settlement confirmations and local fee payment confirm/fail are **simulations**, not external attestations. They are guarded by confirmation dialogs and an explicit enable switch.
 - Requests and setup list APIs use service PageResponse pagination where applicable; updates use version fields.
@@ -30,7 +31,7 @@
 ## Local acceptance test procedure
 1. Start the original backend services using `docs/STAGE1_SETUP.md`, including MySQL, Kafka and required local service dependencies.
 2. Run `cd frontend/Custodian_ui && npm install && npm run build && npm run dev`.
-3. Open http://localhost:5173; paste a valid Custodian JWT at `/auth`. Saving it switches to Live mode.
+3. Open http://localhost:5173; sign in or register a demo Custodian account at `/auth`. A successful response must contain `accessToken`; the UI stores it in sessionStorage and switches to Live mode.
 4. Confirm `GET /api/foundation/status` succeeds through the Vite proxy. Confirm the server-returned `X-Correlation-ID` appears in the bottom dock.
 5. Verify pending queue GET, review GET, authorized approval/rejection confirmation, and rejected/expired-token errors.
 6. Review actual contract settlement, margin, recall, fee payment, release approval, and closure states with server-issued transaction references. Use simulation only in the designated local demo setup.

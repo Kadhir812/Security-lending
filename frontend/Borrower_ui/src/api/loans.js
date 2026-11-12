@@ -6,8 +6,8 @@ export const loans = {
   eligible: () => request.get('/loan-requests/eligible-mslas'),
   submit: (body, idempotencyKey) => request.post('/loan-requests', body, idempotencyKey),
   get: ref => request.get(`/loan-requests/${url(ref)}`),
+  collateralInquiry: ref => request.post(`/loan-requests/${url(ref)}/collateral-inquiries`),
+  collateralReports: ref => request.get(`/loan-requests/${url(ref)}/collateral-reports`),
   contract: ref => request.get(`/loan-requests/${url(ref)}/contract`),
   cash: (ref, body) => request.post(`/loan-requests/${url(ref)}/collateral/cash-instructions`, body),
-  // BB/BA REST mappings shown in the OLD audit are absent in the updated controller.
-  // Do not call them or claim a supported API until the server exposes them again.
 }

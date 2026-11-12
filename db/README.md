@@ -1,20 +1,20 @@
-# Securities lending — four services, 50 physical tables
+# Securities lending — four services, 48 physical tables
 
 This replaces the proposed 72-table design. Fresh creation scripts define the baseline; additive scripts under `migrations/` are applied separately. Service implementation status is tracked in `docs/PROGRESS.md`.
 
-| Database | Tables (includes three messaging tables each) |
+| Database | Tables in current fresh-creation scripts |
 |---|---:|
-| security_market_db | 5 |
-| custodian_db | 28 |
+| security_market_db | 2 |
+| custodian_db | 29 |
 | borrower_db | 12 |
 | valuation_accrual_db | 5 |
-| Total | 50 |
+| Total | 48 |
 
 ## Run
 Use a migration administrator on empty databases. Run `00_all_databases.sql` OR the four individual scripts 01–04, not both. MySQL 8.0.16+ is required for enforced CHECK constraints. Replace example passwords/hosts in `05_permissions_template.sql` before use. Runtime credentials have access only to their own database. One MySQL server may host all four databases.
 
 ## Ownership and simplifications
-See TABLE_OWNERSHIP.md for every table. Security master/prices live only in Security & Market Data. Custodian owns organization registry, agreements, credit, lender inventory, contract/settlement obligations and payment states. Borrower owns submitted requests, the decision-fed `loan_contract_view`, orders and borrower activity. Calculation owns versioned financial runs/results. The contract view is the sole added projection table and keeps the schema under the 50-table limit. A request appears in both Borrower and Custodian because submission intent and processing decisions have different owners; shared request references correlate them.
+See TABLE_OWNERSHIP.md for every table. Security master/prices live only in Security & Market Data. Custodian owns organization registry, agreements, credit, lender inventory, contract/settlement obligations and payment states. Borrower owns submitted requests, the decision-fed `loan_contract_view`, orders and borrower activity. Calculation owns versioned financial runs/results. The contract view is the sole added business projection table; `borrower_identity_link` records one-time link-code consumption. The current schema uses 48 of the 50 allowed physical tables. A request appears in both Borrower and Custodian because submission intent and processing decisions have different owners; shared request references correlate them.
 
 External references replace remote foreign keys: `security_isin`, `msla_reference`, `transaction_reference`, organization references and calculation result UUIDs. Local FKs are retained. Custodian owns MSLA and therefore retains its local MSLA FKs. Borrower fetches current security/MSLA/contracts/obligations over REST. Historical terms required for decisions are snapshots, not live remote joins. The UI shows queued/sent separately from approved and handles unavailable reference services explicitly.
 
@@ -50,7 +50,7 @@ borrower_order is the AF existing-order source. ExecutionReport (8) responses ar
 2. Create four databases with isolated credentials.
 3. Implement external-reference validation and keep local FKs.
 4. Implement REST/Kafka contracts (COMMUNICATION.md).
-5. Implement request response updates and required event consumers; run integration tests. Add no new physical tables without staying under the agreed 50-table total.
+5. Implement request response updates and required event consumers; run integration tests. Add no new physical tables without exceeding the agreed 50-table ceiling.
 
 ## Required backend checks
 MSLA validity and borrower/mandate relationship; eligible asset type; available credit; atomic inventory reservation; effective non-overlapping terms; same-contract settlement links; permitted statuses; one active margin/recall according to policy; no double settlement, payment or release; authorization; immutable history. Revalidate current versions after REST calculation before committing approval; do not hold database locks across network calls. Invalid/stale calculations are rejected and recalculated. Service outages must return pending/error, not fabricate financial results.

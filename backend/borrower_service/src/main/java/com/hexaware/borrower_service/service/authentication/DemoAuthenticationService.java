@@ -3,6 +3,7 @@ package com.hexaware.borrower_service.service.authentication;
 import com.hexaware.borrower_service.dto.request.DemoSignupRequest;
 import com.hexaware.borrower_service.dto.request.LoginRequest;
 import com.hexaware.borrower_service.dto.response.AuthResponse;
+import com.hexaware.borrower_service.dto.response.CustodianLinkTokenResponse;
 import com.hexaware.borrower_service.entity.Role;
 import com.hexaware.borrower_service.entity.User;
 import com.hexaware.borrower_service.entity.UserRole;
@@ -17,6 +18,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -25,6 +28,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class DemoAuthenticationService {
 
   private static final String TRADER_ROLE = "TRADER";
@@ -99,6 +103,34 @@ public class DemoAuthenticationService {
             .findById(authentication.getUserId())
             .orElseThrow(DemoAuthenticationService::invalidCredentials);
     return view(user);
+  }
+
+  @Transactional(readOnly = true)
+  public CustodianLinkTokenResponse custodianLinkToken(
+      LocalUserAuthentication authentication) {
+    Long userId = authentication == null ? null : authentication.getUserId();
+    try {
+      User user =
+          users
+              .findById(userId)
+              .filter(value -> value.getStatus() == UserStatus.ACTIVE)
+              .orElseThrow(DemoAuthenticationService::invalidCredentials);
+      boolean canTrade =
+          userRoles.findByUserUserId(user.getUserId()).stream()
+              .anyMatch(assignment -> TRADER_ROLE.equals(assignment.getRole().getRoleName()));
+      if (!canTrade) throw invalidCredentials();
+      return new CustodianLinkTokenResponse(
+          tokenIssuer.issueCustodianLink(user), tokenIssuer.linkTokenLifetimeSeconds());
+    } catch (ResponseStatusException exception) {
+      throw exception;
+    } catch (RuntimeException exception) {
+      log.error(
+          "Failed to generate Borrower-Custodian link token for userId={} correlationId={}",
+          userId,
+          MDC.get("correlationId"),
+          exception);
+      throw exception;
+    }
   }
 
   private AuthResponse response(User user) {

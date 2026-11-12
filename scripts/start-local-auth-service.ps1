@@ -46,6 +46,7 @@ $env:JWT_SHARED_SECRET = $sharedSecret
 $env:JWT_ISSUER = $issuer
 $env:BORROWER_JWT_AUDIENCE = $borrowerAudience
 $env:CUSTODIAN_JWT_AUDIENCE = $custodianAudience
+$env:BORROWER_TOKEN_AUDIENCES = "$borrowerAudience,$custodianAudience"
 
 $serviceDirectory = Join-Path $root "backend\$($Service.ToLowerInvariant())_service"
 $logName = $Service.ToLowerInvariant() + '.log'

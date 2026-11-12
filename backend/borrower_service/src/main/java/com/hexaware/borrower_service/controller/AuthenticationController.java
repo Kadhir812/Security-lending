@@ -3,6 +3,7 @@ package com.hexaware.borrower_service.controller;
 import com.hexaware.borrower_service.dto.request.DemoSignupRequest;
 import com.hexaware.borrower_service.dto.request.LoginRequest;
 import com.hexaware.borrower_service.dto.response.AuthResponse;
+import com.hexaware.borrower_service.dto.response.CustodianLinkTokenResponse;
 import com.hexaware.borrower_service.security.authentication.LocalUserAuthentication;
 import com.hexaware.borrower_service.service.authentication.DemoAuthenticationService;
 import jakarta.validation.Valid;
@@ -37,5 +38,11 @@ public class AuthenticationController {
   @GetMapping("/me")
   public AuthResponse.UserView current(@AuthenticationPrincipal LocalUserAuthentication user) {
     return authentication.current(user);
+  }
+
+  @PostMapping("/custodian-link-token")
+  public CustodianLinkTokenResponse custodianLinkToken(
+      @AuthenticationPrincipal LocalUserAuthentication user) {
+    return authentication.custodianLinkToken(user);
   }
 }

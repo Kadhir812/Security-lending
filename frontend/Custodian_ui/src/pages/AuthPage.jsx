@@ -30,6 +30,7 @@ export default function AuthPage() {
       const result = signup
         ? await auth.signup(form)
         : await auth.login({ email: form.email, password: form.password })
+      if (!result?.accessToken) throw new Error('The Custodian service did not return an access token.')
       saveToken(result.accessToken)
       notify(signup ? 'Custodian demo account created.' : 'Signed in to Custodian.', 'success')
       navigate('/', { replace: true })
