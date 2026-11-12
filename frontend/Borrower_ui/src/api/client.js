@@ -1,44 +1,52 @@
 import axios from 'axios'
 
-const TOKEN_KEY = 'borrower.jwt.session'
-const API_BASE = (import.meta.env.VITE_BORROWER_API_URL || 'http://localhost:8082').replace(/\/$/, '')
-const useLocalProxy = import.meta.env.DEV && API_BASE === 'http://localhost:8082'
-
-export const borrowerApi = axios.create({
-  baseURL: useLocalProxy ? '' : API_BASE,
-  headers: { 'Cache-Control': 'no-store' },
-})
-
-function isPublicAuth(config) {
-  return config.url === '/api/auth/signup' || config.url === '/api/auth/login'
+/** Borrower-only Axios transport; this is the ONLY HTTP implementation in the app. */
+const SESSION_KEY = 'seclend.borrower.jwt'
+const envToken = import.meta.env.VITE_BORROWER_JWT || ''
+export const getToken = () => { const saved = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem(SESSION_KEY) : null; return saved === null ? envToken : saved }
+export function setSessionToken(value) {
+  if (value?.trim()) sessionStorage.setItem(SESSION_KEY, value.trim().replace(/^Bearer\s+/i, ''))
+  else sessionStorage.setItem(SESSION_KEY, '')
+  window.dispatchEvent(new CustomEvent('borrower:token'))
 }
+export const newReference = (prefix = 'BRW') => `${prefix}-${crypto.randomUUID()}`
+const prefix = String(import.meta.env.VITE_BORROWER_API_URL || '/api').replace(/\/$/, '')
+export const http = axios.create({ baseURL: prefix, timeout: 20000, headers: { Accept: 'application/json' } })
 
-borrowerApi.interceptors.request.use(config => {
-  config.headers['X-Correlation-ID'] = crypto.randomUUID()
-  let token = ''
-  if (!isPublicAuth(config)) {
-    try { token = sessionStorage.getItem(TOKEN_KEY) || '' } catch { /* storage disabled */ }
-  }
-  if (token) config.headers.Authorization = `Bearer ${token}`
-  else delete config.headers.Authorization
+/** Request interceptor: never mint/refresh JWTs, add per-request correlation, preserve caller idempotency. */
+http.interceptors.request.use(config => {
+  const token = getToken()
+  if (token) config.headers.set('Authorization', `Bearer ${token}`)
+  config.headers.set('X-Correlation-ID', newReference('BRW').slice(0, 79))
   return config
 })
 
-borrowerApi.interceptors.response.use(
-  response => response,
-  error => {
-    if (error.response?.status === 401 && !isPublicAuth(error.config || {})) {
-      window.dispatchEvent(new CustomEvent('borrower:unauthorized'))
-    }
-    return Promise.reject(error)
-  },
-)
-
-export function getApiErrorMessage(error, fallback) {
-  if (error.response) {
-    const data = error.response.data
-    return data?.detail || data?.message || `Request failed (HTTP ${error.response.status}).`
+/** Response interceptor: store server echo ID; classify failures; no automatic retries. */
+http.interceptors.response.use(response => {
+  const correlation = response.headers?.['x-correlation-id'] || response.config.headers?.['X-Correlation-ID']
+  if (correlation) window.dispatchEvent(new CustomEvent('borrower:correlation', { detail: correlation }))
+  return response
+}, failure => {
+  const status = failure.response?.status
+  const correlation = failure.response?.headers?.['x-correlation-id'] || failure.config?.headers?.['X-Correlation-ID']
+  if (correlation) window.dispatchEvent(new CustomEvent('borrower:correlation', { detail: correlation }))
+  if (status === 401) window.dispatchEvent(new Event('borrower:unauthorized'))
+  const body = failure.response?.data
+  const details = typeof body === 'string' ? body : body?.detail || body?.message || body?.error || body?.title
+  const labels = {
+    400: 'Invalid request fields or format', 401: 'JWT missing, invalid, or expired',
+    403: 'Access denied for this Borrower identity', 404: 'Resource not found or not owned by this Borrower',
+    409: 'Business prerequisite or version conflict', 422: 'Domain validation failed',
+    503: 'A dependent service is unavailable',
   }
-  if (error.code === 'ERR_NETWORK') return 'Cannot reach the Borrower service. Check that the backend is running and the API URL or proxy is correct.'
-  return error.message || fallback
+  const error = new Error([labels[status] || (status ? `HTTP ${status}` : 'Cannot contact Borrower service'), details].filter(Boolean).join(' — '))
+  error.status = status || null
+  error.correlationId = correlation
+  error.original = failure
+  return Promise.reject(error)
+})
+
+export const request = {
+  get: (path, params) => http.get(path, { params }).then(r => r.data),
+  post: (path, body, key) => http.post(path, body, key ? { headers: { 'Idempotency-Key': key } } : {}).then(r => r.data),
 }
