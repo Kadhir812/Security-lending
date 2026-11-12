@@ -6,8 +6,6 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
-import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
@@ -31,18 +29,7 @@ public class SecurityConfiguration {
                     .requestMatchers("/actuator/**")
                     .denyAll()
                     .anyRequest()
-                    .hasAnyAuthority("ROLE_MARKET_OPERATOR", "ROLE_ADMINISTRATOR"))
-        .oauth2ResourceServer(
-            oauth -> oauth.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())))
+                    .permitAll())
         .build();
-  }
-
-  private JwtAuthenticationConverter jwtAuthenticationConverter() {
-    var authorities = new JwtGrantedAuthoritiesConverter();
-    authorities.setAuthoritiesClaimName("roles");
-    authorities.setAuthorityPrefix("ROLE_");
-    var converter = new JwtAuthenticationConverter();
-    converter.setJwtGrantedAuthoritiesConverter(authorities);
-    return converter;
   }
 }

@@ -119,7 +119,7 @@ public class LoanDecisionService {
             .filter(rule -> !rule.getEffectiveFrom().isAfter(clock.instant()))
             .filter(rule -> rule.getEffectiveTo() == null || rule.getEffectiveTo().isAfter(clock.instant()))
             .toList();
-    if (haircut.size() != 1 || haircut.get(0).getHaircutPercentage().signum() != 0) {
+    if (haircut.size() != 1 || haircut.getFirst().getHaircutPercentage().signum() != 0) {
       throw SetupException.conflict("Exactly one effective zero-percent CASH haircut is required");
     }
 
@@ -154,8 +154,8 @@ public class LoanDecisionService {
         context.mandate().getVersion(),
         fee.getFeeId(),
         fee.getVersion(),
-        haircut.get(0).getHaircutId(),
-        haircut.get(0).getVersion(),
+        haircut.getFirst().getHaircutId(),
+        haircut.getFirst().getVersion(),
         validatedSecurity.securityType(),
         validatedSecurity.currency(),
         calculated);

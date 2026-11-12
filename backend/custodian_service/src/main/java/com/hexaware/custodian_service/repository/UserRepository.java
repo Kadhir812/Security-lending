@@ -8,4 +8,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface UserRepository extends JpaRepository<User, Long> {
   @EntityGraph(attributePaths = {"organization"})
   Optional<User> findByIdentityIssuerAndIdentitySubject(String issuer, String subject);
+
+  boolean existsByEmailIgnoreCase(String email);
+
+  @EntityGraph(attributePaths = {"organization"})
+  Optional<User> findByEmailIgnoreCase(String email);
 }

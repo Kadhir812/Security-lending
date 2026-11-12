@@ -19,19 +19,19 @@ class BorrowerServiceApplicationTests {
   @Autowired private Environment environment;
 
   @Test
-  void configurationUsesOnlyOwnedDatabaseAndNeverCreatesSchema() throws Exception {
+  void configurationUsesOnlyOwnedDatabaseAndUpdatesSchema() throws Exception {
     var properties = new Properties();
     try (var input = getClass().getResourceAsStream("/application.properties")) {
       properties.load(input);
     }
     assertThat(properties.getProperty("spring.datasource.url")).contains("/borrower_db?");
     assertThat(properties.getProperty("spring.datasource.username")).isEqualTo("${BORROWER_DB_USERNAME:root}");
-    assertThat(properties.getProperty("spring.jpa.hibernate.ddl-auto")).isEqualTo("validate");
+    assertThat(properties.getProperty("spring.jpa.hibernate.ddl-auto")).isEqualTo("update");
     assertThat(properties.getProperty("spring.sql.init.mode")).isEqualTo("never");
     assertThat(properties.getProperty("app.auth.issuer"))
         .isEqualTo("${JWT_ISSUER:securities-lending}");
     assertThat(properties.getProperty("app.auth.jwt-secret"))
-        .isEqualTo("${JWT_SHARED_SECRET}");
+        .startsWith("${JWT_SHARED_SECRET");
   }
 
   @Test

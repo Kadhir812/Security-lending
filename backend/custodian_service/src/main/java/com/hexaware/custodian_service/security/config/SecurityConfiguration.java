@@ -30,10 +30,12 @@ public class SecurityConfiguration {
                     .permitAll()
                     .requestMatchers("/actuator/**")
                     .denyAll()
-                .requestMatchers("/api/borrower/**")
+                    .requestMatchers("/api/auth/signup", "/api/auth/login")
+                        .permitAll()
+                    .requestMatchers("/api/borrower/**")
                 .hasAuthority("ROLE_TRADER")
                 .anyRequest()
-                .hasAnyAuthority("ROLE_CUSTODIAN_OPERATOR", "ROLE_ADMINISTRATOR"))
+                    .hasAuthority("ROLE_CUSTODIAN_OPERATOR"))
         .oauth2ResourceServer(oauth -> oauth.jwt(jwt -> jwt.jwtAuthenticationConverter(converter)))
         .build();
   }

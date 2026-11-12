@@ -51,6 +51,9 @@ public class User {
   @Column(name = "organization_reference", nullable = false, length = 80)
   private String organizationReference;
 
+  @Column(name = "organization_name", length = 255)
+  private String organizationName;
+
   @Column(name = "identity_subject", nullable = false, length = 255)
   private String identitySubject;
 
@@ -59,6 +62,9 @@ public class User {
 
   @Column(name = "email", nullable = false, unique = true, length = 255)
   private String email;
+
+  @Column(name = "password_hash", nullable = true, length = 100)
+  private String passwordHash;
 
   @Column(name = "phone", nullable = true, length = 50)
   private String phone;

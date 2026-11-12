@@ -45,7 +45,7 @@ public class OutboxStore {
                 OutboxCandidate.builder().id(rs.getLong(1)).attemptCount(rs.getInt(2)).build(),
             properties.getServiceName());
     if (candidates.isEmpty()) return Optional.empty();
-    OutboxCandidate candidate = candidates.get(0);
+    OutboxCandidate candidate = candidates.getFirst();
     if (candidate.getAttemptCount() >= properties.getMaxAttempts()) {
       jdbc.update(
           "UPDATE outbox_event SET status='FAILED', locked_by=NULL, locked_until=NULL,"

@@ -326,8 +326,7 @@ class MessagingComponentIT {
   @Test
   void concurrentClaimsNeverShareOneLease() throws Exception {
     enqueue();
-    var workers = Executors.newFixedThreadPool(2);
-    try {
+    try (var workers = Executors.newFixedThreadPool(2)) {
       var first = workers.submit(store::claim);
       var second = workers.submit(store::claim);
       assertThat(
@@ -335,9 +334,6 @@ class MessagingComponentIT {
                   .filter(Optional::isPresent)
                   .count())
           .isEqualTo(1);
-
-    } finally {
-      workers.shutdownNow();
     }
   }
 
@@ -375,14 +371,10 @@ class MessagingComponentIT {
   @Test
   void concurrentDuplicateConsumersCommitOneEffect() throws Exception {
     var message = record(input());
-    var workers = Executors.newFixedThreadPool(2);
-    try {
+    try (var workers = Executors.newFixedThreadPool(2)) {
       var first = workers.submit(() -> inbox.process(message));
       var second = workers.submit(() -> inbox.process(message));
       assertThat(List.of(first.get(), second.get())).containsExactlyInAnyOrder(true, false);
-
-    } finally {
-      workers.shutdownNow();
     }
     assertThat(count("outbox_event")).isEqualTo(1);
   }

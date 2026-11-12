@@ -201,7 +201,7 @@ public class LendingFeePaymentService {
       throw SetupException.conflict("External confirmation reference was reused");
     }
     support.enqueueUpdate(null, contract, parties, paymentReference, "FEE_PAYMENT_UPDATED", "PAID",
-        amount, rows.get(0).getCurrency(), allocations, 2, externalReference, null);
+        amount, rows.getFirst().getCurrency(), allocations, 2, externalReference, null);
     return support.paymentResponse(paymentReference, rows, true);
   }
 
@@ -238,7 +238,7 @@ public class LendingFeePaymentService {
     }
     payments.saveAllAndFlush(rows);
     support.enqueueUpdate(null, contract, parties, paymentReference, "FEE_PAYMENT_UPDATED", "FAILED",
-        amount, rows.get(0).getCurrency(), allocations, 2, null, request.getReason());
+        amount, rows.getFirst().getCurrency(), allocations, 2, null, request.getReason());
     return support.paymentResponse(paymentReference, rows, true);
   }
 

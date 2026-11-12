@@ -170,9 +170,9 @@ public class LoanDecisionCommitter {
             .filter(rule -> rule.getEffectiveTo() == null || rule.getEffectiveTo().isAfter(clock.instant()))
             .toList();
     if (effectiveHaircuts.size() != 1
-        || !effectiveHaircuts.get(0).getHaircutId().equals(haircutId)
-        || !Objects.equals(effectiveHaircuts.get(0).getVersion(), haircutVersion)
-        || effectiveHaircuts.get(0).getHaircutPercentage().signum() != 0
+        || !effectiveHaircuts.getFirst().getHaircutId().equals(haircutId)
+        || !Objects.equals(effectiveHaircuts.getFirst().getVersion(), haircutVersion)
+        || effectiveHaircuts.getFirst().getHaircutPercentage().signum() != 0
         || !Objects.equals(agreement.getVersion(), agreementVersion)
         || !Objects.equals(mandate.getVersion(), mandateVersion)
         || !Objects.equals(fee.getVersion(), feeVersion)
@@ -209,7 +209,7 @@ public class LoanDecisionCommitter {
     String transactionReference = transactionReference(request.getRequestReference());
     Map<String, Object> valuationSnapshot = valuationSnapshot(valuation);
     Map<String, Object> collateralTerms =
-        collateralTerms(agreement, valuation, effectiveHaircuts.get(0).getHaircutId());
+        collateralTerms(agreement, valuation, effectiveHaircuts.getFirst().getHaircutId());
     LoanContract contract =
         contracts.saveAndFlush(
             LoanContract.builder()

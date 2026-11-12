@@ -30,8 +30,10 @@ public class SecurityConfiguration {
                     .permitAll()
                     .requestMatchers("/actuator/**")
                     .denyAll()
-                    .anyRequest()
-                    .hasAnyAuthority("ROLE_TRADER", "ROLE_ADMINISTRATOR"))
+                        .requestMatchers("/api/auth/signup", "/api/auth/login")
+                        .permitAll()
+                        .anyRequest()
+                    .hasAuthority("ROLE_TRADER"))
         .oauth2ResourceServer(oauth -> oauth.jwt(jwt -> jwt.jwtAuthenticationConverter(converter)))
         .build();
   }

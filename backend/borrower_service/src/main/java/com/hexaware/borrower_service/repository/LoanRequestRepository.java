@@ -14,7 +14,4 @@ public interface LoanRequestRepository extends JpaRepository<LoanRequest, Long> 
 
   Page<LoanRequest> findByBorrowerOrganizationReferenceOrderByRequestedAtDesc(
       String borrowerOrganizationReference, Pageable pageable);
-
-  java.util.List<LoanRequest> findByBorrowerOrganizationReferenceOrderByRequestedAtDesc(
-      String borrowerOrganizationReference);
 }

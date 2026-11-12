@@ -10,6 +10,10 @@ import org.springframework.data.jpa.repository.Query;
 public interface UserRepository extends JpaRepository<User, Long> {
   Optional<User> findByIdentityIssuerAndIdentitySubject(String issuer, String subject);
 
+  boolean existsByEmailIgnoreCase(String email);
+
+  Optional<User> findByEmailIgnoreCase(String email);
+
   @Lock(LockModeType.PESSIMISTIC_WRITE)
   @Query("select user from User user where user.userId = :userId")
   Optional<User> findLockedByUserId(Long userId);

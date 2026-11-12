@@ -11,7 +11,6 @@ import static org.mockito.Mockito.when;
 
 import com.hexaware.borrower_service.client.BorrowerSecurityReference;
 import com.hexaware.borrower_service.client.CustodianMslaClient;
-import com.hexaware.borrower_service.client.CustodianLocateClient;
 import com.hexaware.borrower_service.client.SecurityReferenceClient;
 import com.hexaware.borrower_service.dto.request.LoanRequestSubmission;
 import com.hexaware.borrower_service.dto.response.BorrowerEligibleMslaResponse;
@@ -50,7 +49,6 @@ class LoanRequestServiceTest {
   private static final LocalDate TODAY = LocalDate.of(2026, 11, 8);
 
   @Mock CustodianMslaClient custodianMslas;
-  @Mock CustodianLocateClient custodianLocates;
   @Mock SecurityReferenceClient securities;
   @Mock LoanRequestRepository requests;
   @Mock LoanContractViewRepository contractViews;
@@ -65,7 +63,7 @@ class LoanRequestServiceTest {
   void setUp() {
     Clock clock = Clock.fixed(Instant.parse("2026-11-08T05:30:00Z"), ZoneOffset.UTC);
     LoanRequestSubmissionValidator validator =
-        new LoanRequestSubmissionValidator(custodianMslas, securities, locates, custodianLocates, clock);
+        new LoanRequestSubmissionValidator(custodianMslas, securities, locates, clock);
     LoanRequestResponseMapper responseMapper = new LoanRequestResponseMapper(locates);
     service =
         new LoanRequestService(

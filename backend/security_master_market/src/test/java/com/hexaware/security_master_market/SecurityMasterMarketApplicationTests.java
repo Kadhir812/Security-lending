@@ -17,7 +17,6 @@ class SecurityMasterMarketApplicationTests {
         .isEqualTo("${MARKET_DB_USERNAME:root}");
     assertThat(properties.getProperty("spring.jpa.hibernate.ddl-auto")).isEqualTo("validate");
     assertThat(properties.getProperty("spring.sql.init.mode")).isEqualTo("never");
-    assertThat(properties.getProperty("app.auth.issuer")).isEqualTo("${JWT_ISSUER:securities-lending}");
-    assertThat(properties.getProperty("app.auth.jwt-secret")).isEqualTo("${JWT_SHARED_SECRET}");
+    assertThat(properties.getProperty("app.auth.issuer")).isNull();
   }
 }

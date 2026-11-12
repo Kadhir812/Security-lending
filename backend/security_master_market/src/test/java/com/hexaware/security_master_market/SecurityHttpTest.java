@@ -3,7 +3,6 @@ package com.hexaware.security_master_market;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 
 import com.hexaware.security_master_market.controller.SecurityMasterController;
 import com.hexaware.security_master_market.security.config.SecurityConfiguration;
@@ -13,10 +12,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 import org.springframework.test.context.web.WebAppConfiguration;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
@@ -33,7 +30,6 @@ class SecurityHttpTest {
 
   @Autowired WebApplicationContext context;
   @MockitoBean SecurityMasterService securities;
-  @MockitoBean JwtDecoder jwtDecoder;
   MockMvc mvc;
 
   @BeforeEach
@@ -42,19 +38,13 @@ class SecurityHttpTest {
   }
 
   @Test
-  void securityApiRequiresTrustedMarketRole() throws Exception {
-    mvc.perform(get("/api/securities")).andExpect(status().isUnauthorized());
-    mvc.perform(get("/api/securities").with(jwt().authorities(
-        new SimpleGrantedAuthority("ROLE_TRADER"))))
-        .andExpect(status().isForbidden());
-    mvc.perform(get("/api/securities").with(jwt().authorities(
-        new SimpleGrantedAuthority("ROLE_MARKET_OPERATOR"))))
-        .andExpect(status().isOk());
+  void publicSecurityApiNeedsNoToken() throws Exception {
+    mvc.perform(get("/api/securities")).andExpect(status().isOk());
   }
 
   @Test
   void noLoginPageOrExposedMetrics() throws Exception {
-    mvc.perform(get("/login")).andExpect(status().isUnauthorized());
-    mvc.perform(get("/actuator/env")).andExpect(status().isUnauthorized());
+    mvc.perform(get("/login")).andExpect(status().isNotFound());
+    mvc.perform(get("/actuator/env")).andExpect(status().isForbidden());
   }
 }

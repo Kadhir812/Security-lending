@@ -456,7 +456,7 @@ public class MarginCallService {
               "Collateral requirement satisfied", "SATISFIED");
         }
       }
-      return active.isEmpty() ? null : response(active.get(0), contract);
+      return active.isEmpty() ? null : response(active.getFirst(), contract);
     }
 
     MarginCall call;
@@ -485,7 +485,7 @@ public class MarginCallService {
           .calculationSnapshot(snapshot)
           .build();
     } else {
-      call = active.get(0);
+      call = active.getFirst();
       call.setRequiredCollateral(required);
       call.setCurrentCollateral(current);
       call.setValuationResultReference(contract.getLatestValuationResultReference());
