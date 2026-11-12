@@ -43,7 +43,7 @@ public class LendingFeePolicy {
       throw SetupException.conflict("Multiple effective security-specific lending fees exist");
     }
     if (!specific.isEmpty()) {
-      return specific.getFirst();
+      return specific.get(0);
     }
     var defaults = applicable.stream().filter(rule -> rule.getSecurityIsin() == null).toList();
     if (defaults.size() > 1) {
@@ -52,6 +52,6 @@ public class LendingFeePolicy {
     if (defaults.isEmpty()) {
       throw SetupException.missing("No effective lending fee rule exists");
     }
-    return defaults.getFirst();
+    return defaults.get(0);
   }
 }
