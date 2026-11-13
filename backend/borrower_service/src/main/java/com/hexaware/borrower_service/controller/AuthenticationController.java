@@ -9,7 +9,7 @@ import com.hexaware.borrower_service.service.authentication.DemoAuthenticationSe
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.annotation.CurrentSecurityContext;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -36,13 +36,14 @@ public class AuthenticationController {
   }
 
   @GetMapping("/me")
-  public AuthResponse.UserView current(@AuthenticationPrincipal LocalUserAuthentication user) {
+  public AuthResponse.UserView current(
+      @CurrentSecurityContext(expression = "authentication") LocalUserAuthentication user) {
     return authentication.current(user);
   }
 
   @PostMapping("/custodian-link-token")
   public CustodianLinkTokenResponse custodianLinkToken(
-      @AuthenticationPrincipal LocalUserAuthentication user) {
+      @CurrentSecurityContext(expression = "authentication") LocalUserAuthentication user) {
     return authentication.custodianLinkToken(user);
   }
 }

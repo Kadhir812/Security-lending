@@ -99,7 +99,7 @@ public class CollateralInquirySubmittedHandler implements MessageHandler {
             .filter(rule -> rule.getEffectiveTo() == null || rule.getEffectiveTo().isAfter(clock.instant()))
             .toList();
     if (effectiveHaircuts.size() != 1
-        || effectiveHaircuts.getFirst().getHaircutPercentage().compareTo(BigDecimal.ZERO) != 0) {
+        || effectiveHaircuts.get(0).getHaircutPercentage().compareTo(BigDecimal.ZERO) != 0) {
       throw invalid("FIX_BB_CASH_HAIRCUT_NOT_ZERO_OR_UNAMBIGUOUS");
     }
 
@@ -137,7 +137,7 @@ public class CollateralInquirySubmittedHandler implements MessageHandler {
             inquiry.requestReference(),
             agreement.getMslaReference(),
             agreement.getBaseCurrency(),
-            effectiveHaircuts.getFirst().getHaircutPercentage(),
+            effectiveHaircuts.get(0).getHaircutPercentage(),
             agreement.getCollateralCoveragePct());
     reportEvent.setPayload(Map.of("fixMessage", reportMessage));
     outgoing.enqueue("COLLATERAL_REPORT", reportEvent);

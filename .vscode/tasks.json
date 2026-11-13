@@ -12,6 +12,9 @@
 				"-File",
 				"${workspaceFolder}\\scripts\\setup-kafka.ps1"
 			],
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
 			"problemMatcher": []
 		},
 		{
@@ -27,6 +30,13 @@
 				"-Action",
 				"Start"
 			],
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"dependsOn": [
+				"Prepare workspace Kafka"
+			],
+			"dependsOrder": "sequence",
 			"problemMatcher": []
 		},
 		{
@@ -34,10 +44,13 @@
 			"type": "shell",
 			"command": "${workspaceFolder}\\backend\\security_master_market\\mvnw.cmd",
 			"args": [
+				"clean",
+				"compile",
 				"spring-boot:run"
 			],
 			"options": {
-				"cwd": "${workspaceFolder}\\backend\\security_master_market"
+				"cwd": "${workspaceFolder}\\backend\\security_master_market",
+				"env": { "MAVEN_ARGS": "-Dmaven.test.skip=true" }
 			},
 			"isBackground": true,
 			"problemMatcher": {
@@ -57,10 +70,13 @@
 			"type": "shell",
 			"command": "${workspaceFolder}\\backend\\custodian_service\\mvnw.cmd",
 			"args": [
+				"clean",
+				"compile",
 				"spring-boot:run"
 			],
 			"options": {
-				"cwd": "${workspaceFolder}\\backend\\custodian_service"
+				"cwd": "${workspaceFolder}\\backend\\custodian_service",
+				"env": { "MAVEN_ARGS": "-Dmaven.test.skip=true" }
 			},
 			"isBackground": true,
 			"problemMatcher": {
@@ -80,10 +96,13 @@
 			"type": "shell",
 			"command": "${workspaceFolder}\\backend\\borrower_service\\mvnw.cmd",
 			"args": [
+				"clean",
+				"compile",
 				"spring-boot:run"
 			],
 			"options": {
-				"cwd": "${workspaceFolder}\\backend\\borrower_service"
+				"cwd": "${workspaceFolder}\\backend\\borrower_service",
+				"env": { "MAVEN_ARGS": "-Dmaven.test.skip=true" }
 			},
 			"isBackground": true,
 			"problemMatcher": {
@@ -103,10 +122,13 @@
 			"type": "shell",
 			"command": "${workspaceFolder}\\backend\\valuation_accural\\mvnw.cmd",
 			"args": [
+				"clean",
+				"compile",
 				"spring-boot:run"
 			],
 			"options": {
-				"cwd": "${workspaceFolder}\\backend\\valuation_accural"
+				"cwd": "${workspaceFolder}\\backend\\valuation_accural",
+				"env": { "MAVEN_ARGS": "-Dmaven.test.skip=true" }
 			},
 			"isBackground": true,
 			"problemMatcher": {
@@ -122,6 +144,36 @@
 			}
 		},
 		{
+			"label": "Start Borrower frontend",
+			"type": "shell",
+			"command": "npm",
+			"args": ["run", "dev"],
+			"options": {
+				"cwd": "${workspaceFolder}\\frontend\\Borrower_ui"
+			},
+			"isBackground": true,
+			"problemMatcher": []
+		},
+		{
+			"label": "Start Custodian frontend",
+			"type": "shell",
+			"command": "npm",
+			"args": ["run", "dev"],
+			"options": {
+				"cwd": "${workspaceFolder}\\frontend\\Custodian_ui"
+			},
+			"isBackground": true,
+			"problemMatcher": []
+		},
+		{
+			"label": "Start both frontends",
+			"dependsOn": [
+				"Start Borrower frontend",
+				"Start Custodian frontend"
+			],
+			"dependsOrder": "parallel"
+		},
+		{
 			"label": "Start all four microservices",
 			"dependsOn": [
 				"Start Security Market microservice",
@@ -132,14 +184,16 @@
 			"dependsOrder": "parallel"
 		},
 		{
-			"label": "Start Kafka and all microservices",
+			"label": "Start Kafka, all services, and both frontends",
 			"dependsOn": [
 				"Start workspace Kafka",
-				"Start all four microservices"
+				"Start all four microservices",
+				"Start both frontends"
 			],
 			"dependsOrder": "sequence",
 			"group": {
-				"kind": "build"
+				"kind": "build",
+				"isDefault": true
 			}
 		},
 		{

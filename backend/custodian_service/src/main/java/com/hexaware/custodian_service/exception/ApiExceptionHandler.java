@@ -15,9 +15,14 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 @RestControllerAdvice
 public class ApiExceptionHandler {
+
+  private static final Logger log = LoggerFactory.getLogger(ApiExceptionHandler.class);
 
   @ExceptionHandler(SetupException.class)
   ProblemDetail setup(SetupException exception) {
@@ -60,9 +65,13 @@ public class ApiExceptionHandler {
   @ExceptionHandler(Exception.class)
   ProblemDetail unexpected(Exception exception) {
     if (exception instanceof ErrorResponse response) {
+      if (response.getStatusCode().is5xxServerError()) {
+        log.error("Unhandled server error [correlationId={}]", MDC.get("correlationId"), exception);
+      }
       return ProblemDetail.forStatusAndDetail(
           response.getStatusCode(), "Request could not be completed");
     }
+    log.error("Unhandled server error [correlationId={}]", MDC.get("correlationId"), exception);
     return ProblemDetail.forStatusAndDetail(
         HttpStatus.INTERNAL_SERVER_ERROR, "Request could not be completed");
   }
