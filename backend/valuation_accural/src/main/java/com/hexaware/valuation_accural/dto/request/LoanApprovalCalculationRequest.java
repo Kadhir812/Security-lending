@@ -27,6 +27,6 @@ public class LoanApprovalCalculationRequest {
   private String currency;
 
   @NotBlank
-  @Pattern(regexp = "[A-Z0-9_-]{1,80}")
+  @Pattern(regexp = "[A-Za-z0-9][A-Za-z0-9._:-]{0,79}")
   private String custodianOrganizationReference;
 }

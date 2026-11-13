@@ -2,7 +2,7 @@
 export const number = (value, locale = 'en-IN') => value === undefined || value === null || value === '' ? '—' : new Intl.NumberFormat(locale, { maximumFractionDigits: 2 }).format(Number(value))
 export const money = (value, currency = 'INR') => value === undefined || value === null || value === '' ? '—' : new Intl.NumberFormat('en-IN', { style: 'currency', currency, minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(value))
 export const crores = (value) => `${money(value)} Cr`
-export const stamp = (value) => { if (!value) return '—'; const date = new Date(value); return Number.isNaN(date.valueOf()) ? String(value) : new Intl.DateTimeFormat('en-IN', { dateStyle: 'medium', timeStyle: 'short' }).format(date) }
+export const stamp = (value) => { if (!value) return '—'; const date = new Date(value); return Number.isNaN(date.valueOf()) ? String(value) : new Intl.DateTimeFormat('en-IN', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Kolkata' }).format(date) }
 export const display = (v, key = '') => {
   if (v === null || v === undefined || v === '') return '—'
   if (typeof v === 'boolean') return v ? 'Yes' : 'No'

@@ -1,6 +1,7 @@
 package com.hexaware.valuation_accural.config;
 
 import java.time.Clock;
+import java.time.ZoneId;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -8,6 +9,6 @@ import org.springframework.context.annotation.Configuration;
 public class FoundationConfiguration {
   @Bean
   public Clock clock() {
-    return Clock.systemUTC();
+    return Clock.system(ZoneId.of("Asia/Kolkata"));
   }
 }

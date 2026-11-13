@@ -146,7 +146,7 @@
 		{
 			"label": "Start Borrower frontend",
 			"type": "shell",
-			"command": "npm",
+			"command": "npm.cmd",
 			"args": ["run", "dev"],
 			"options": {
 				"cwd": "${workspaceFolder}\\frontend\\Borrower_ui"
@@ -157,7 +157,7 @@
 		{
 			"label": "Start Custodian frontend",
 			"type": "shell",
-			"command": "npm",
+			"command": "npm.cmd",
 			"args": ["run", "dev"],
 			"options": {
 				"cwd": "${workspaceFolder}\\frontend\\Custodian_ui"

@@ -4,6 +4,8 @@ import com.hexaware.custodian_service.exception.SetupException;
 import lombok.RequiredArgsConstructor;
 import java.time.LocalDate;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
@@ -16,6 +18,9 @@ import org.springframework.web.client.RestClientException;
 @Component
 @RequiredArgsConstructor
 public class ValuationCalculationClient {
+  private static final Logger LOGGER = LoggerFactory.getLogger(ValuationCalculationClient.class);
+  private static final int MAX_ERROR_BODY_LENGTH = 512;
+
   private final RestClient.Builder builder;
 
   @Value("${app.valuation.base-url:http://localhost:8083}")
@@ -39,6 +44,14 @@ public class ValuationCalculationClient {
       }
       return response;
     } catch (RestClientResponseException exception) {
+      String responseBody = exception.getResponseBodyAsString().replaceAll("\\s+", " ");
+      if (responseBody.length() > MAX_ERROR_BODY_LENGTH) {
+        responseBody = responseBody.substring(0, MAX_ERROR_BODY_LENGTH);
+      }
+      LOGGER.warn(
+          "Valuation loan approval failed with HTTP {}: {}",
+          exception.getStatusCode().value(),
+          responseBody);
       if (exception.getStatusCode().value() == HttpStatus.UNPROCESSABLE_ENTITY.value()) {
         throw SetupException.conflict("Valuation inputs are not eligible for approval");
       }
