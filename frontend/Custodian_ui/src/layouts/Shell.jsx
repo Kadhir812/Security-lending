@@ -1,0 +1,50 @@
+import { useEffect, useState } from 'react'
+import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { Activity, ArrowLeftRight, Bell, BriefcaseBusiness, ChevronDown, ChevronRight, CircleUserRound, ClipboardList, Clock3, Command, Database, FileText, Layers3, LayoutGrid, LogOut, Menu, Search, Settings2, ShieldCheck, SlidersHorizontal, X } from 'lucide-react'
+import { ticker } from '../mock/dashboard'
+import { useApp } from '../hooks/useApp'
+import { DemoTag, Notice, StatusBadge } from '../components/UI'
+export const navigation = [
+  { name: 'Overview', to: '/', icon: LayoutGrid, category: 'Overview' },
+  { name: 'Requests', to: '/requests', icon: ArrowLeftRight, category: 'Requests' },
+  { name: 'Contracts', to: '/contracts', icon: FileText, category: 'Contracts' },
+  { name: 'Inventory', to: '/inventory', icon: Layers3, category: 'Inventory' },
+  { name: 'Agreements', to: '/mslas', icon: Layers3, category: 'Agreements' },
+  { name: 'Operations', to: '/settlement', icon: Settings2, category: 'Operations' },
+]
+export const sections = {
+  Requests: [{ to: '/requests', text: 'Request queue' }, { to: '/requests/review', text: 'Request review' }, { to: '/locate-requests', text: 'Locate review' }],
+  Inventory: [{ to: '/inventory', text: 'Lender inventory' }, { to: '/organizations', text: 'Organizations' }, { to: '/mandates', text: 'Mandates' }],
+  Agreements: [{ to: '/mslas', text: 'MSLA agreements' }, { to: '/credit-limits', text: 'Credit limits & history' }, { to: '/haircuts', text: 'Collateral haircuts' }, { to: '/lending-fees', text: 'Lending fees' }],
+  Contracts: [{ to: '/contracts', text: 'Active contracts' }, { to: '/settlement', text: 'Settlement operations' }, { to: '/margin', text: 'Margin calls & MTM' }, { to: '/recalls', text: 'Recalls & returns' }, { to: '/payments', text: 'Fees & payments' }],
+  Operations: [{ to: '/settlement', text: 'Settlement operations' }, { to: '/release-queue', text: 'Collateral release queue' }, { to: '/close', text: 'Contract close' }, { to: '/audit', text: 'Activity & audit' }, { to: '/collateral-inquiries', text: 'Collateral BB / BA' }, { to: '/auth', text: 'Session & access' }],
+}
+const allRoutes = [
+  { to: '/', text: 'Overview command center' },
+  ...Object.values(sections).flat().filter((item, i, arr) => arr.findIndex(x => x.to === item.to) === i),
+]
+function resolveSection(path) {
+  if (path === '/') return 'Overview'
+  if (path.startsWith('/requests') || path.startsWith('/locate-requests')) return 'Requests'
+  if (['/organizations', '/mandates', '/inventory'].some(p => path.startsWith(p))) return 'Inventory'
+  if (['/mslas', '/credit-limits', '/haircuts', '/lending-fees'].some(p => path.startsWith(p))) return 'Agreements'
+  if (['/contracts', '/margin', '/recalls', '/payments'].some(p => path.startsWith(p))) return 'Contracts'
+  return 'Operations'
+}
+function MarketClock() { const [date, setDate] = useState(new Date()); useEffect(() => { const id = setInterval(() => setDate(new Date()), 1000); return () => clearInterval(id) }, []); return <time dateTime={date.toISOString()}>{new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Kolkata', day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }).format(date).replace(',', ',')} IST</time> }
+/** TopTicker: static design-reference quotes in Demo, never interpreted as live market feed. */
+function TopTicker() { const { mode } = useApp(); return <div className="ticker"><Link className="ticker__brand" to="/"><span className="brand-mark">⁄⁄</span><strong>SEC LEND</strong><span className="brand-version">v0.2</span></Link><div className="ticker__list">{mode === 'demo' ? ticker.map(x => <div className="ticker__quote" key={x.symbol}><b>{x.symbol}</b><strong>{x.price}</strong><span className={x.up ? 'quote-up' : 'quote-down'}>{x.up ? '▲' : '▼'} {x.move}</span></div>) : <div className="ticker__unavailable"><Database size={13} /> Market quotes unavailable · API pending</div>}</div><div className="ticker__end"><span className={mode === 'demo' ? 'market-pill' : 'market-pill market-pill--muted'}>{mode === 'demo' ? 'Market: Open · Demo' : 'Market: Unknown'}</span><MarketClock /></div></div> }
+/** Sidebar: screenshot-accurate primary navigation, compact on smaller viewports. */
+function Sidebar({ open, setOpen, active }) { const { mode } = useApp(); return <aside className={`sidebar ${open ? 'sidebar--open' : ''}`}><div className="sidebar__logo"><span className="brand-mark">⁄⁄</span><button className="sidebar__close" onClick={() => setOpen(false)} aria-label="Close navigation"><X size={18} /></button></div><nav aria-label="Main navigation">{navigation.map(item => <NavLink to={item.to} key={item.name} onClick={() => setOpen(false)} className={`sidebar__link ${active === item.category ? 'sidebar__link--active' : ''}`}><item.icon size={27} strokeWidth={1.9} /><span>{item.name}</span>{item.name === 'Requests' && mode === 'demo' && <span className="sidebar__count">6</span>}</NavLink>)}</nav><div className="sidebar__bottom"><span className="brand-mark">⁄⁄</span></div></aside> }
+/** WorkspaceTabs: secondary routing for all custodian-only screens. */
+export function WorkspaceTabs() { const { pathname } = useLocation(); const section = resolveSection(pathname); if (section === 'Overview') return null; return <nav aria-label={`${section} pages`} className="workspace-tabs"><span>{section} /</span>{sections[section]?.map(item => <NavLink key={item.to} className={({ isActive }) => isActive ? 'workspace-tabs__link workspace-tabs__link--active' : 'workspace-tabs__link'} to={item.to}>{item.text}</NavLink>)}</nav> }
+/** Shell: global chrome with service, environment and correlation status. */
+export default function Shell() {
+  const { token, saveToken, mode, setMode, service, correlationId, checkService } = useApp()
+  const { pathname } = useLocation(); const active = resolveSection(pathname)
+  const [menu, setMenu] = useState(false); const [open, setOpen] = useState(false); const [query, setQuery] = useState(''); const [searchOpen, setSearchOpen] = useState(false)
+  const navigate = useNavigate()
+  useEffect(() => { const listener = (event) => { if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') { event.preventDefault(); setSearchOpen(v => !v) }; if (event.key === 'Escape') setSearchOpen(false) }; document.addEventListener('keydown', listener); return () => document.removeEventListener('keydown', listener) }, [])
+  const results = allRoutes.filter(i => `${i.text} ${i.to}`.toLowerCase().includes(query.toLowerCase()))
+  return <div className="app-shell"><TopTicker /><Sidebar open={open} setOpen={setOpen} active={active} />{open && <button className="sidebar-scrim" onClick={() => setOpen(false)} aria-label="Close sidebar" />}<div className="app-shell__body"><header className="app-header"><div className="app-header__identity"><button className="icon-button app-header__mobile-menu" aria-label="Open navigation" onClick={() => setOpen(true)}><Menu size={22} /></button><div><h1>Custodian — Securities Lending Command Center</h1><p>{mode === 'demo' ? 'State Street Custodian' : 'Custodian Operator'} <span>|</span> Agent Lender Operations</p></div></div><div className="app-header__tools"><button className="search-box" onClick={() => setSearchOpen(true)}><Search size={19} /> <span>Search ISIN, Symbol, Contract...</span><kbd>⌘ K</kbd></button><Link className="header-notify" to="/audit" aria-label="Operational notifications"><Bell size={22} /><span /></Link><div className="profile"><button className="profile__trigger" onClick={() => setMenu(m => !m)}><span className="avatar">C</span><b>Custodian Ops</b><ChevronDown size={15} /></button>{menu && <div className="profile__menu"><p>{token ? 'Custodian JWT present' : 'No JWT configured'}</p><Link to="/auth" onClick={() => setMenu(false)}><CircleUserRound size={15} /> Session & access</Link><button onClick={() => { saveToken(''); setMenu(false); navigate('/auth') }}><LogOut size={15} /> Clear session token</button></div>}</div></div></header><main className="app-main"><div className="app-main__content"><WorkspaceTabs /><Outlet /></div></main><div className="global-status"><span className={`global-status__dot global-status__dot--${service.state}`} /><button type="button" onClick={checkService} title={service.message}>Service: {service.state === 'online' ? 'Connected' : service.state === 'checking' ? 'Checking' : 'Offline / unauthorized'}</button><span><BriefcaseBusiness size={12} /> {import.meta.env.VITE_CUSTODIAN_ENV || 'local'} environment</span><span className="global-status__correlation">Correlation ID: <code>{correlationId}</code></span><div className="global-status__right"><div className="mode-switch" role="group" aria-label="Data display mode"><button className={mode === 'live' ? 'mode-switch__active' : ''} onClick={() => setMode('live')}>Live</button><button className={mode === 'demo' ? 'mode-switch__active' : ''} onClick={() => setMode('demo')}>Demo</button></div>{mode === 'demo' && <span className="global-status__demo"><Database size={12} /> Dashboard visuals are illustrative</span>}</div></div></div><Notice />{searchOpen && <div className="search-overlay" onClick={() => setSearchOpen(false)}><div className="search-command" onClick={e => e.stopPropagation()}><div className="search-command__input"><Search size={21} /><input autoFocus placeholder="Find a custodian page or workflow…" value={query} onChange={e => setQuery(e.target.value)} /><kbd>Esc</kbd></div><div className="search-command__results">{results.slice(0, 11).map(item => <button key={item.to} onClick={() => { navigate(item.to); setSearchOpen(false); setQuery('') }}><span>{item.text}</span><ChevronRight size={16} /></button>)}{!results.length && <p>No matching pages. Search a resource reference inside its page.</p>}</div><p className="search-command__foot">Command palette routes within the Custodian application. Resource lookup happens in live service pages.</p></div></div>}</div>
+}

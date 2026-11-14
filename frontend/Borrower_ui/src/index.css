@@ -1,0 +1,6 @@
+:root{font-family:Inter,Segoe UI,Arial,sans-serif;font-synthesis:none;text-rendering:optimizeLegibility;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;font-weight:400;background:#f4f6f8;color:#182534}
+*{box-sizing:border-box}
+html,body,#root{min-height:100%;margin:0}
+body{min-width:320px}
+button,input{font:inherit}
+button:focus-visible,input:focus-visible{outline:3px solid #d69a43;outline-offset:2px}

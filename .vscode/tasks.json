@@ -1,0 +1,236 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Prepare workspace Kafka",
+			"type": "shell",
+			"command": "powershell.exe",
+			"args": [
+				"-NoProfile",
+				"-ExecutionPolicy",
+				"Bypass",
+				"-File",
+				"${workspaceFolder}\\scripts\\setup-kafka.ps1"
+			],
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "Start workspace Kafka",
+			"type": "shell",
+			"command": "powershell.exe",
+			"args": [
+				"-NoProfile",
+				"-ExecutionPolicy",
+				"Bypass",
+				"-File",
+				"${workspaceFolder}\\scripts\\kafka.ps1",
+				"-Action",
+				"Start"
+			],
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"dependsOn": [
+				"Prepare workspace Kafka"
+			],
+			"dependsOrder": "sequence",
+			"problemMatcher": []
+		},
+		{
+			"label": "Start Security Market microservice",
+			"type": "shell",
+			"command": "${workspaceFolder}\\backend\\security_master_market\\mvnw.cmd",
+			"args": [
+				"clean",
+				"compile",
+				"spring-boot:run"
+			],
+			"options": {
+				"cwd": "${workspaceFolder}\\backend\\security_master_market",
+				"env": { "MAVEN_ARGS": "-Dmaven.test.skip=true" }
+			},
+			"isBackground": true,
+			"problemMatcher": {
+				"owner": "local-services",
+				"pattern": {
+					"regexp": "^(?!.*$)"
+				},
+				"background": {
+					"activeOnStart": true,
+					"beginsPattern": "^.*$",
+					"endsPattern": "^.*Started .+ in .+ seconds.*$"
+				}
+			}
+		},
+		{
+			"label": "Start Custodian microservice",
+			"type": "shell",
+			"command": "${workspaceFolder}\\backend\\custodian_service\\mvnw.cmd",
+			"args": [
+				"clean",
+				"compile",
+				"spring-boot:run"
+			],
+			"options": {
+				"cwd": "${workspaceFolder}\\backend\\custodian_service",
+				"env": { "MAVEN_ARGS": "-Dmaven.test.skip=true" }
+			},
+			"isBackground": true,
+			"problemMatcher": {
+				"owner": "local-services",
+				"pattern": {
+					"regexp": "^(?!.*$)"
+				},
+				"background": {
+					"activeOnStart": true,
+					"beginsPattern": "^.*$",
+					"endsPattern": "^.*Started .+ in .+ seconds.*$"
+				}
+			}
+		},
+		{
+			"label": "Start Borrower microservice",
+			"type": "shell",
+			"command": "${workspaceFolder}\\backend\\borrower_service\\mvnw.cmd",
+			"args": [
+				"clean",
+				"compile",
+				"spring-boot:run"
+			],
+			"options": {
+				"cwd": "${workspaceFolder}\\backend\\borrower_service",
+				"env": { "MAVEN_ARGS": "-Dmaven.test.skip=true" }
+			},
+			"isBackground": true,
+			"problemMatcher": {
+				"owner": "local-services",
+				"pattern": {
+					"regexp": "^(?!.*$)"
+				},
+				"background": {
+					"activeOnStart": true,
+					"beginsPattern": "^.*$",
+					"endsPattern": "^.*Started .+ in .+ seconds.*$"
+				}
+			}
+		},
+		{
+			"label": "Start Valuation microservice",
+			"type": "shell",
+			"command": "${workspaceFolder}\\backend\\valuation_accural\\mvnw.cmd",
+			"args": [
+				"clean",
+				"compile",
+				"spring-boot:run"
+			],
+			"options": {
+				"cwd": "${workspaceFolder}\\backend\\valuation_accural",
+				"env": { "MAVEN_ARGS": "-Dmaven.test.skip=true" }
+			},
+			"isBackground": true,
+			"problemMatcher": {
+				"owner": "local-services",
+				"pattern": {
+					"regexp": "^(?!.*$)"
+				},
+				"background": {
+					"activeOnStart": true,
+					"beginsPattern": "^.*$",
+					"endsPattern": "^.*Started .+ in .+ seconds.*$"
+				}
+			}
+		},
+		{
+			"label": "Start Borrower frontend",
+			"type": "shell",
+			"command": "npm.cmd",
+			"args": ["run", "dev"],
+			"options": {
+				"cwd": "${workspaceFolder}\\frontend\\Borrower_ui"
+			},
+			"isBackground": true,
+			"problemMatcher": []
+		},
+		{
+			"label": "Start Custodian frontend",
+			"type": "shell",
+			"command": "npm.cmd",
+			"args": ["run", "dev"],
+			"options": {
+				"cwd": "${workspaceFolder}\\frontend\\Custodian_ui"
+			},
+			"isBackground": true,
+			"problemMatcher": []
+		},
+		{
+			"label": "Start both frontends",
+			"dependsOn": [
+				"Start Borrower frontend",
+				"Start Custodian frontend"
+			],
+			"dependsOrder": "parallel"
+		},
+		{
+			"label": "Start all four microservices",
+			"dependsOn": [
+				"Start Security Market microservice",
+				"Start Custodian microservice",
+				"Start Borrower microservice",
+				"Start Valuation microservice"
+			],
+			"dependsOrder": "parallel"
+		},
+		{
+			"label": "Start Kafka, all services, and both frontends",
+			"dependsOn": [
+				"Start workspace Kafka",
+				"Start all four microservices",
+				"Start both frontends"
+			],
+			"dependsOrder": "sequence",
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			}
+		},
+		{
+			"label": "Start only Security Market",
+			"dependsOn": [
+				"Start workspace Kafka",
+				"Start Security Market microservice"
+			],
+			"dependsOrder": "sequence",
+			"group": "build"
+		},
+		{
+			"label": "Start only Custodian",
+			"dependsOn": [
+				"Start workspace Kafka",
+				"Start Custodian microservice"
+			],
+			"dependsOrder": "sequence",
+			"group": "build"
+		},
+		{
+			"label": "Start only Borrower",
+			"dependsOn": [
+				"Start workspace Kafka",
+				"Start Borrower microservice"
+			],
+			"dependsOrder": "sequence",
+			"group": "build"
+		},
+		{
+			"label": "Start only Valuation",
+			"dependsOn": [
+				"Start workspace Kafka",
+				"Start Valuation microservice"
+			],
+			"dependsOrder": "sequence",
+			"group": "build"
+		}
+	]
+}

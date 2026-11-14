@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:securities-lending:loan-request-submitted:v1",
+  "title": "Loan request submitted payload v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "payloadVersion",
+    "requestReference",
+    "borrowerOrganizationReference",
+    "custodianOrganizationReference",
+    "mslaReference",
+    "locateReference",
+    "securityIsin",
+    "quantity",
+    "requestedSettlementDate",
+    "settlementCurrency",
+    "submittedByIssuer",
+    "submittedBySubject"
+  ],
+  "properties": {
+    "payloadVersion": {"const": 1},
+    "requestReference": {"type": "string", "minLength": 1, "maxLength": 80},
+    "borrowerOrganizationReference": {"type": "string", "minLength": 1, "maxLength": 80},
+    "custodianOrganizationReference": {"type": "string", "minLength": 1, "maxLength": 80},
+    "mslaReference": {"type": "string", "minLength": 1, "maxLength": 80},
+    "locateReference": {"type": ["string", "null"], "maxLength": 80},
+    "securityIsin": {"type": "string", "pattern": "^[A-Z0-9]{12}$"},
+    "quantity": {"type": "integer", "minimum": 1},
+    "requestedSettlementDate": {"type": "string", "format": "date"},
+    "settlementCurrency": {"type": "string", "pattern": "^[A-Z]{3}$"},
+    "submittedByIssuer": {"type": "string", "minLength": 1, "maxLength": 255},
+    "submittedBySubject": {"type": "string", "minLength": 1, "maxLength": 255}
+  }
+}

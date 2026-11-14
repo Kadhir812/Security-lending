@@ -1,0 +1,27 @@
+{
+  "eventId": "c70ab756-2e5e-45c8-a307-4b79eabf2921",
+  "eventType": "LOAN_REQUEST_SUBMITTED",
+  "schemaVersion": 1,
+  "producerService": "BORROWER",
+  "destinationService": "CUSTODIAN",
+  "correlationId": "LR-2026-000042",
+  "aggregateReference": "LR-2026-000042",
+  "aggregateVersion": 0,
+  "occurredAt": "2026-11-08T05:30:00Z",
+  "senderOrganizationReference": "BORROWER-001",
+  "receiverOrganizationReference": "CUSTODIAN-001",
+  "payload": {
+    "payloadVersion": 1,
+    "requestReference": "LR-2026-000042",
+    "borrowerOrganizationReference": "BORROWER-001",
+    "custodianOrganizationReference": "CUSTODIAN-001",
+    "mslaReference": "MSLA-2026-001",
+    "locateReference": null,
+    "securityIsin": "INE002A01018",
+    "quantity": 1000,
+    "requestedSettlementDate": "2026-11-10",
+    "settlementCurrency": "INR",
+    "submittedByIssuer": "https://identity.example.test/realms/lending",
+    "submittedBySubject": "borrower-user-42"
+  }
+}
