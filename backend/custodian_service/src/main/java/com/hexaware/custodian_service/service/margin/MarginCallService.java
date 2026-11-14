@@ -321,7 +321,8 @@ public class MarginCallService {
       }
       return calls.findByValuationResultReference(previous.get().getValuationResultReference())
           .map(call -> response(call, input))
-          .orElse(null);
+          .orElseGet(() -> noCallResponse(
+              input, nvl(input.getLatestRequiredCollateral()), current));
     }
     MtmCalculationRequest calculation = MtmCalculationRequest.builder()
         .securityIsin(request.getSecurityIsin())
@@ -456,7 +457,9 @@ public class MarginCallService {
               "Collateral requirement satisfied", "SATISFIED");
         }
       }
-      return active.isEmpty() ? null : response(active.get(0), contract);
+      return active.isEmpty()
+          ? noCallResponse(contract, required, current)
+          : response(active.get(0), contract);
     }
 
     MarginCall call;
@@ -626,6 +629,33 @@ public class MarginCallService {
         call.getDueAt(),
         call.getResolvedAt(),
         call.getCalculationSnapshot());
+  }
+
+  private MarginCallResponse noCallResponse(
+      LoanContract contract, BigDecimal required, BigDecimal current) {
+    BigDecimal shortfall = required.subtract(current).max(BigDecimal.ZERO);
+    Map<String, Object> snapshot = new LinkedHashMap<>();
+    snapshot.put("marketPrice", contract.getLatestMarketPrice());
+    snapshot.put("loanMarketValue", contract.getLatestLoanValue());
+    snapshot.put("coveragePercentage", contract.getLatestCoveragePct());
+    snapshot.put(
+        "calculatedAt",
+        contract.getLatestValuationAt() == null
+            ? null
+            : contract.getLatestValuationAt().toString());
+    return new MarginCallResponse(
+        null,
+        contract.getTransactionReference(),
+        contract.getLatestValuationResultReference(),
+        required,
+        current,
+        shortfall,
+        shortfall,
+        "NO_CALL_REQUIRED",
+        null,
+        null,
+        null,
+        snapshot);
   }
 
   private BigDecimal confirmedCash(Long contractId) {

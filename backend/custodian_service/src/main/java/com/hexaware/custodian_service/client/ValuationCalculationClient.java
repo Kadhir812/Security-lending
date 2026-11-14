@@ -75,15 +75,34 @@ public class ValuationCalculationClient {
               .retrieve()
               .body(MtmCalculationResponse.class);
       if (response == null) {
+        LOGGER.warn(
+            "Valuation MTM returned an empty response for contract {} (request {})",
+            request.getTransactionReference(),
+            request.getCalculationRequestReference());
         throw SetupException.unavailable("Valuation service returned an empty MTM response");
       }
       return response;
     } catch (RestClientResponseException exception) {
+      String responseBody = exception.getResponseBodyAsString().replaceAll("\\s+", " ");
+      if (responseBody.length() > MAX_ERROR_BODY_LENGTH) {
+        responseBody = responseBody.substring(0, MAX_ERROR_BODY_LENGTH);
+      }
+      LOGGER.warn(
+          "Valuation MTM failed for contract {} (request {}) with HTTP {}: {}",
+          request.getTransactionReference(),
+          request.getCalculationRequestReference(),
+          exception.getStatusCode().value(),
+          responseBody);
       if (exception.getStatusCode().value() == HttpStatus.UNPROCESSABLE_ENTITY.value()) {
         throw SetupException.conflict("MTM inputs are not eligible for valuation");
       }
       throw SetupException.unavailable("Valuation service rejected or could not process MTM");
     } catch (RestClientException exception) {
+      LOGGER.warn(
+          "Valuation MTM call failed for contract {} (request {}): {}",
+          request.getTransactionReference(),
+          request.getCalculationRequestReference(),
+          exception.getClass().getSimpleName());
       throw SetupException.unavailable("Valuation service is unavailable");
     }
   }
