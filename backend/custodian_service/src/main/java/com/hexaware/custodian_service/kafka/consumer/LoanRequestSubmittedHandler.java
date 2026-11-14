@@ -76,9 +76,9 @@ public class LoanRequestSubmittedHandler implements MessageHandler {
     validateDates(payload, agreement, mandate);
     SecurityReferenceResponse security = requireSecurity(payload.securityIsin());
     validateSecurity(payload, agreement, security);
-    Long locateId = validateLocate(payload, agreement, security);
-
     LoanRequest existing = requests.findByRequestReference(payload.requestReference()).orElse(null);
+    LocateRequest locate = validateLocate(payload, agreement, security, existing);
+    Long locateId = locate == null ? null : locate.getLocateId();
     if (existing != null) {
       if (!matches(existing, payload, agreement, locateId)) {
         throw invalid("REQUEST_REFERENCE_REUSED_WITH_DIFFERENT_CONTENT");
@@ -235,26 +235,33 @@ public class LoanRequestSubmittedHandler implements MessageHandler {
     }
   }
 
-  private Long validateLocate(
+  private LocateRequest validateLocate(
       LoanRequestSubmittedPayload payload,
       MslaAgreement agreement,
-      SecurityReferenceResponse security) {
+      SecurityReferenceResponse security,
+      LoanRequest existing) {
     if (payload.locateReference() == null) return null;
     LocateRequest locate =
         locates
-            .findByLocateReference(payload.locateReference())
+            .findLockedByLocateReference(payload.locateReference())
             .orElseThrow(() -> invalid("LOCATE_NOT_FOUND"));
+    boolean alreadyUsedByRequest =
+        existing != null
+            && Objects.equals(existing.getLocateId(), locate.getLocateId())
+            && "USED".equals(locate.getStatus());
     if (!locate.getMslaId().equals(agreement.getMslaId())
         || !locate.getSecurityIsin().equals(security.isin())
         || !locate.getSubmittedByIssuer().equals(payload.submittedByIssuer())
         || !locate.getSubmittedBySubject().equals(payload.submittedBySubject())
-        || !"APPROVED".equals(locate.getStatus())
-        || locate.getExpiryTime().isBefore(clock.instant())
+        || (!alreadyUsedByRequest && !"APPROVED".equals(locate.getStatus()))
+        || (!alreadyUsedByRequest
+            && locate.getExpiryTime() != null
+            && locate.getExpiryTime().isBefore(clock.instant()))
         || locate.getApprovedQuantity() == null
         || locate.getApprovedQuantity() < payload.quantity()) {
       throw invalid("LOCATE_DOES_NOT_MATCH_LOAN_REQUEST");
     }
-    return locate.getLocateId();
+    return locate;
   }
 
   private boolean matches(

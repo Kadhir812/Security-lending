@@ -147,7 +147,7 @@ CREATE TABLE locate_request (
   approved_quantity BIGINT,
   created_by BIGINT NOT NULL,
   request_time DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
-  expiry_time DATETIME(6) NOT NULL,
+  expiry_time DATETIME(6),
   responded_at DATETIME(6),
   status ENUM('PENDING','APPROVED','REJECTED','USED','EXPIRED','CANCELLED') NOT NULL DEFAULT 'PENDING',
   response_reason VARCHAR(500),
@@ -206,7 +206,7 @@ CREATE TABLE loan_request (
   request_id BIGINT AUTO_INCREMENT PRIMARY KEY,
   request_reference VARCHAR(80) NOT NULL UNIQUE,
   msla_reference VARCHAR(80) NOT NULL,
-  locate_id BIGINT UNIQUE,
+  locate_id BIGINT,
   security_isin CHAR(12) NOT NULL,
   quantity BIGINT NOT NULL,
   requested_settlement_date DATE NOT NULL,
@@ -217,6 +217,7 @@ CREATE TABLE loan_request (
   response_reason VARCHAR(500),
   responded_at DATETIME(6),
   CHECK (quantity > 0),
+  INDEX idx_loan_request_locate_id (locate_id),
   FOREIGN KEY (locate_id) REFERENCES locate_request(locate_id),
   FOREIGN KEY (created_by) REFERENCES users(user_id)
 ) ENGINE=InnoDB;

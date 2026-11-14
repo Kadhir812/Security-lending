@@ -6,6 +6,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 import java.time.Instant;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -22,6 +23,10 @@ import lombok.NoArgsConstructor;
 public class LocateRequest {
   @Column(name = "submitted_by_issuer", nullable = false, length = 255)
   private String submittedByIssuer;
+
+  @Version
+  @Column(name = "version", nullable = false)
+  private Long version;
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -49,8 +54,14 @@ public class LocateRequest {
   @Column(name = "request_time", nullable = false, columnDefinition = "datetime(6)")
   private Instant requestTime;
 
-  @Column(name = "expiry_time", nullable = false, columnDefinition = "datetime(6)")
+  @Column(name = "expiry_time", columnDefinition = "datetime(6)")
   private Instant expiryTime;
+
+  @Column(name = "responded_at", columnDefinition = "datetime(6)")
+  private Instant respondedAt;
+
+  @Column(name = "response_reason", length = 500)
+  private String responseReason;
 
   @Column(name = "status", nullable = false)
   private String status;

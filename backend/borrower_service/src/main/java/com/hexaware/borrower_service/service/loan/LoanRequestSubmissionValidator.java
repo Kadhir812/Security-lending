@@ -51,6 +51,37 @@ public class LoanRequestSubmissionValidator {
     return new ValidatedSubmission(borrower, msla.custodianOrganizationReference(), locateId);
   }
 
+  public ValidatedLocate validateLocate(
+      Authentication authentication, String mslaReference, String securityIsin) {
+    LocalUserAuthentication borrower = requireBorrower(authentication);
+    BorrowerEligibleMslaResponse msla = custodianMslas.require(authentication, mslaReference);
+    LocalDate today = LocalDate.now(clock);
+    if (!mslaReference.equals(msla.mslaReference())
+        || !borrower.getOrganizationReference().equals(msla.borrowerOrganizationReference())) {
+      throw BorrowerException.conflict("Selected MSLA is not owned by this borrower");
+    }
+    if (!"ACTIVE".equals(msla.agreementStatus())
+        || !"ACTIVE".equals(msla.mandateStatus())
+        || msla.effectiveDate() == null
+        || msla.effectiveDate().isAfter(today)
+        || (msla.expiryDate() != null && msla.expiryDate().isBefore(today))
+        || msla.mandateEffectiveFrom() == null
+        || msla.mandateEffectiveFrom().isAfter(today)
+        || (msla.mandateEffectiveTo() != null && msla.mandateEffectiveTo().isBefore(today))) {
+      throw BorrowerException.conflict("Selected MSLA or mandate is not currently effective");
+    }
+    BorrowerSecurityReference security = securities.require(securityIsin);
+    if (!securityIsin.equals(security.isin())
+        || !"ACTIVE".equals(security.status())
+        || security.securityType() == null
+        || msla.allowedAssetTypes() == null
+        || !msla.allowedAssetTypes().contains(security.securityType())
+        || !java.util.Objects.equals(security.currency(), msla.baseCurrency())) {
+      throw BorrowerException.invalid("Security is not eligible under the selected MSLA");
+    }
+    return new ValidatedLocate(borrower, msla.custodianOrganizationReference());
+  }
+
   public LocalUserAuthentication requireBorrower(Authentication authentication) {
     if (!(authentication instanceof LocalUserAuthentication user)
         || !user.isAuthenticated()
@@ -126,7 +157,7 @@ public class LoanRequestSubmissionValidator {
     if (!locate.getMslaReference().equals(submission.mslaReference())
         || !locate.getSecurityIsin().equals(submission.securityIsin())
         || locate.getStatus() != LocateStatus.APPROVED
-        || locate.getExpiryTime().isBefore(clock.instant())
+        || (locate.getExpiryTime() != null && locate.getExpiryTime().isBefore(clock.instant()))
         || locate.getApprovedQuantity() == null
         || locate.getApprovedQuantity() < submission.quantity()) {
       throw BorrowerException.invalid("Locate does not match the loan request");
@@ -136,4 +167,7 @@ public class LoanRequestSubmissionValidator {
 
   public record ValidatedSubmission(
       LocalUserAuthentication borrower, String custodianOrganizationReference, Long locateId) {}
+
+  public record ValidatedLocate(
+      LocalUserAuthentication borrower, String custodianOrganizationReference) {}
 }

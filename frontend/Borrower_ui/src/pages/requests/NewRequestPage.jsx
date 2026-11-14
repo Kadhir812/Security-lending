@@ -1,5 +1,5 @@
-import { useRef, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useEffect, useRef, useState } from 'react'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { ArrowRight, FilePlus2 } from 'lucide-react'
 import { Button, ConfirmDialog, Field, Panel } from '../../components/UI'
 import { FormMessage, LiveGate, WorkPage } from '../../components/Work'
@@ -7,6 +7,7 @@ import { useApp } from '../../hooks/useApp'
 import { useRemote } from '../../hooks/useRemote'
 import { newReference } from '../../api/client'
 import { loans } from '../../api/loans'
+import { locates } from '../../api/locates'
 import { number } from '../../utils/format'
 
 const ISIN_PATTERN = /^[A-Z0-9]{12}$/
@@ -19,13 +20,16 @@ function getToday() {
 export function NewRequestPage() {
   const { mode, notify, refresh } = useApp()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const mslaQuery = useRemote(() => loans.eligible(), [], { enabled: mode === 'live' })
+  const locateQuery = useRemote(() => locates.list(), [], { enabled: mode === 'live' })
   const [form, setForm] = useState({
     mslaReference: '',
     securityIsin: '',
     quantity: '',
     requestedSettlementDate: '',
     settlementCurrency: '',
+    locateReference: '',
   })
   const [error, setError] = useState('')
   const [dialog, setDialog] = useState(null)
@@ -34,8 +38,57 @@ export function NewRequestPage() {
   if (idempotencyKey.current === null) idempotencyKey.current = newReference('LOAN')
 
   const mslas = mslaQuery.data || []
+  const locateRows = locateQuery.data || []
   const selectedMsla = mslas.find(msla => msla.mslaReference === form.mslaReference)
-  const updateForm = (field, value) => setForm(current => ({ ...current, [field]: value }))
+  const approvedLocates = locateRows.filter(
+    locate => locate.status === 'APPROVED'
+      && (!locate.expiryTime || Date.parse(locate.expiryTime) > Date.now()),
+  )
+  const selectedLocate = approvedLocates.find(locate => locate.locateReference === form.locateReference)
+  const preselectedLocateReference = searchParams.get('locateReference')
+  const updateForm = (field, value) => setForm(current => ({
+    ...current,
+    [field]: value,
+    ...(['mslaReference', 'securityIsin', 'quantity'].includes(field) ? { locateReference: '' } : {}),
+  }))
+
+  function selectLocate(reference) {
+    const locate = approvedLocates.find(row => row.locateReference === reference)
+    if (!locate) {
+      setForm(current => ({ ...current, locateReference: '' }))
+      return
+    }
+    const msla = mslas.find(row => row.mslaReference === locate.mslaReference)
+    setForm(current => ({
+      ...current,
+      locateReference: locate.locateReference,
+      mslaReference: locate.mslaReference,
+      securityIsin: locate.securityIsin,
+      quantity: String(locate.approvedQuantity),
+      settlementCurrency: msla?.baseCurrency || current.settlementCurrency,
+    }))
+  }
+
+  useEffect(() => {
+    const reference = preselectedLocateReference
+    if (!reference || !mslaQuery.data || !locateQuery.data) return
+    const locate = locateQuery.data.find(row => row.locateReference === reference)
+    if (!locate
+      || locate.status !== 'APPROVED'
+      || (locate.expiryTime && Date.parse(locate.expiryTime) <= Date.now())) {
+      setError('The linked locate is unavailable or expired. Choose another locate or submit without one.')
+      return
+    }
+    const msla = mslas.find(row => row.mslaReference === locate.mslaReference)
+    setForm(current => current.locateReference === reference ? current : ({
+      ...current,
+      locateReference: reference,
+      mslaReference: locate.mslaReference,
+      securityIsin: locate.securityIsin,
+      quantity: String(locate.approvedQuantity),
+      settlementCurrency: msla?.baseCurrency || '',
+    }))
+  }, [preselectedLocateReference, mslaQuery.data, locateQuery.data])
 
   function prepareSubmission(event) {
     event.preventDefault()
@@ -70,6 +123,15 @@ export function NewRequestPage() {
       setError('Settlement currency must equal the selected MSLA base currency.')
       return
     }
+    if (form.locateReference
+      && (!selectedLocate
+        || selectedLocate.mslaReference !== form.mslaReference
+        || selectedLocate.securityIsin !== form.securityIsin
+        || !selectedLocate.approvedQuantity
+        || quantity > selectedLocate.approvedQuantity)) {
+      setError('The selected locate must be approved, unexpired, and match the MSLA, security, and requested quantity.')
+      return
+    }
 
     setSending(true)
 
@@ -79,12 +141,15 @@ export function NewRequestPage() {
       quantity,
       requestedSettlementDate: settlementDate,
       settlementCurrency: form.settlementCurrency,
+      ...(form.locateReference ? { locateReference: form.locateReference } : {}),
     }
 
     setDialog({
       title: 'Submit borrow request',
       subject: `${submission.securityIsin} · ${number(quantity)} · ${submission.mslaReference}`,
-      message: 'The request is submitted without locateReference because the Borrower API has no locate routes. Custodian approval, collateral posting and settlement remain separate steps.',
+      message: submission.locateReference
+        ? 'Submit this loan request using the selected approved locate. Custodian loan approval, collateral posting and settlement remain separate steps.'
+        : 'Submit the loan request without a locate. Custodian approval, collateral posting and settlement remain separate steps.',
       confirmText: 'Submit loan request',
       execute: async () => {
         setSending(true)
@@ -108,14 +173,14 @@ export function NewRequestPage() {
       subtitle="Create a new securities borrowing instruction against a live, eligible MSLA."
       stats={[
         { label: 'Eligible MSLAs', value: mslas.length, detail: 'Service-supplied' },
-        { label: 'Locate', value: 'Optional', detail: 'Selector disabled; field omitted' },
+        { label: 'Locate', value: selectedLocate ? selectedLocate.locateReference : 'Optional', detail: selectedLocate ? `${selectedLocate.approvedQuantity} approved shares` : 'Can be submitted without one' },
         { label: 'Settlement', value: form.requestedSettlementDate || '—', detail: 'Effective date window' },
         { label: 'Delivery', value: 'U1 / Kafka', detail: 'Not the loan approval' },
       ]}
       guide={[
         'MSLA must be active, borrower-owned, and allow this security’s type.',
         'Security must be ACTIVE in Market Data and use the same currency as the MSLA.',
-        'The current Borrower API has no locate routes; the optional locateReference is omitted.',
+        'An approved, unexpired locate is optional and must match the requested MSLA, security and quantity.',
         'Repeated submissions use the same idempotency key until success.',
       ]}
       fix="U1: Borrow request; AK after Custodian approval"
@@ -141,6 +206,7 @@ export function NewRequestPage() {
                     ...current,
                     mslaReference: value,
                     settlementCurrency: msla?.baseCurrency || '',
+                    locateReference: '',
                   }))
                 }}
                 options={mslas.map(msla => ({
@@ -192,12 +258,16 @@ export function NewRequestPage() {
               <Field
                 name="locateReference"
                 label="Approved locate (optional)"
-                value="Locate API unavailable"
-                options={['Locate API unavailable']}
-                disabled
-                hint="Loan submission does not require this field."
+                value={form.locateReference}
+                onChange={selectLocate}
+                options={approvedLocates.map(locate => ({
+                  value: locate.locateReference,
+                  label: `${locate.locateReference} · ${locate.securityIsin} · ${number(locate.approvedQuantity)} shares`,
+                }))}
+                hint="Optional. Select a current locate to prefill the matching MSLA, security and quantity."
               />
             </div>
+            {locateQuery.error && <FormMessage error={locateQuery.error} />}
             <FormMessage error={error} />
             <div className="form-actions">
               <Button type="submit" icon={ArrowRight} disabled={sending || mslaQuery.loading || !mslas.length}>

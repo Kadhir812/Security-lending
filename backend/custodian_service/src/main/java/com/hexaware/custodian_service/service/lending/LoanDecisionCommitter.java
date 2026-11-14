@@ -8,6 +8,7 @@ import com.hexaware.custodian_service.entity.LenderInventory;
 import com.hexaware.custodian_service.entity.LendingFee;
 import com.hexaware.custodian_service.entity.LoanContract;
 import com.hexaware.custodian_service.entity.LoanRequest;
+import com.hexaware.custodian_service.entity.LocateRequest;
 import com.hexaware.custodian_service.entity.MslaAgreement;
 import com.hexaware.custodian_service.entity.Organization;
 import com.hexaware.custodian_service.enums.AgreementStatus;
@@ -31,6 +32,7 @@ import com.hexaware.custodian_service.repository.LenderInventoryRepository;
 import com.hexaware.custodian_service.repository.LenderMandateRepository;
 import com.hexaware.custodian_service.repository.LoanContractRepository;
 import com.hexaware.custodian_service.repository.LoanRequestRepository;
+import com.hexaware.custodian_service.repository.LocateRequestRepository;
 import com.hexaware.custodian_service.repository.LendingFeeRepository;
 import com.hexaware.custodian_service.repository.MslaAgreementRepository;
 import com.hexaware.custodian_service.repository.OrganizationRepository;
@@ -60,6 +62,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class LoanDecisionCommitter {
   private final SetupAccess access;
   private final LoanRequestRepository requests;
+  private final LocateRequestRepository locates;
   private final LoanContractRepository contracts;
   private final InventoryReservationRepository reservations;
   private final ContractStatusHistoryRepository histories;
@@ -200,6 +203,7 @@ public class LoanDecisionCommitter {
       throw SetupException.conflict("Insufficient available MSLA credit");
     }
 
+    consumeLocate(request, agreement);
     inventory.setReservedQuantity(inventory.getReservedQuantity() + request.getQuantity());
     credit.setReservedAmount(credit.getReservedAmount().add(valuation.getCreditReservationAmount()));
     inventories.flush();
@@ -271,6 +275,25 @@ public class LoanDecisionCommitter {
         valuation,
         agreement.getMslaReference());
     return response(request, contract);
+  }
+
+  private void consumeLocate(LoanRequest request, MslaAgreement agreement) {
+    if (request.getLocateId() == null) return;
+    LocateRequest locate =
+        locates
+            .findLockedByLocateId(request.getLocateId())
+            .orElseThrow(() -> SetupException.conflict("Approved locate is unavailable"));
+    if (!"APPROVED".equals(locate.getStatus())
+        || (locate.getExpiryTime() != null && locate.getExpiryTime().isBefore(clock.instant()))
+        || !Objects.equals(locate.getMslaId(), agreement.getMslaId())
+        || !Objects.equals(locate.getSecurityIsin(), request.getSecurityIsin())
+        || !Objects.equals(locate.getSubmittedByIssuer(), request.getSubmittedByIssuer())
+        || !Objects.equals(locate.getSubmittedBySubject(), request.getSubmittedBySubject())
+        || locate.getApprovedQuantity() == null
+        || locate.getApprovedQuantity() < request.getQuantity()) {
+      throw SetupException.conflict("Approved locate no longer matches this loan request");
+    }
+    locate.setStatus("USED");
   }
 
   @Transactional

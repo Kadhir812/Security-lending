@@ -64,7 +64,6 @@ public class LoanRequestWriter {
       }
       return existing;
     }
-
     LoanRequest request =
         requests.saveAndFlush(
             LoanRequest.builder()

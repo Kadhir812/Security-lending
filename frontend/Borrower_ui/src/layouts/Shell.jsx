@@ -15,7 +15,7 @@ const navigation = [
   { name: 'Operations', to: '/settlement', icon: Settings2 },
 ]
 const sections = {
-  Locates: [{to:'/locates',text:'Locate API status'}],
+  Locates: [{to:'/locates',text:'My locate requests'},{to:'/locates/new',text:'Request a locate'}],
   Requests: [{to:'/requests',text:'My loan requests'},{to:'/requests/new',text:'Submit borrow'},{to:'/eligible-mslas',text:'Eligible MSLAs'},{to:'/collateral-inquiries',text:'BB / BA inquiry'}],
   Contracts: [{to:'/contracts',text:'Portfolio'},{to:'/settlement',text:'Settlement tracker'},{to:'/collateral',text:'Cash collateral'}],
   Margin: [{to:'/margin',text:'Margin calls'},{to:'/returns',text:'Returns & recalls'},{to:'/releases',text:'Final release'}],

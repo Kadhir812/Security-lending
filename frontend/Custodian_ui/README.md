@@ -49,7 +49,7 @@ After the Borrower generates a one-time code in **Borrower → Operations → Li
 | Section | Routed screens |
 |---|---|
 | Overview | `/` command center |
-| Requests | `/requests` pending queue, `/requests/review/:reference` review & approve/reject |
+| Requests | `/requests` pending queue, `/requests/review/:reference` review & approve/reject, `/locate-requests` Locate review |
 | Master data | `/organizations`, `/mandates`, `/inventory` |
 | Agreements and controls | `/mslas`, `/credit-limits` (plus history), `/haircuts`, `/lending-fees` |
 | Contract portfolio | `/contracts` (manual live lookup; portfolio aggregate is demo-only) |
@@ -70,7 +70,7 @@ The orange-on-black visual design is based on the supplied dashboard PNG. **Demo
 - **Dashboard incoming requests:** sample rows in Demo; actual paginated `GET /api/loan-requests` in Live. No demo row can be approved/rejected on the server.
 - **Live with limited read scope:** contract settlement, margin, recall, fees and payment operations require an actual transaction reference because `GET /api/contracts` does not exist. Per-inventory-row available, reserved, on-loan values are read live, not mock-derived.
 - **Unsupported read integration:** Custodian BB collateral inquiries and BA reports have no REST inbox/report endpoint. The visibility page explains this gap; it never queries Kafka/database directly.
-- **Locate creation/review** is also not exposed through REST. Borrower submission/eligible-MSLA lookup is deliberately outside this Custodian frontend.
+- **Locate review** is available at `/locate-requests`. Approval checks current lender availability without reserving it; the Locate has no expiry. A later loan approval rechecks and reserves inventory.
 - **FIX naming clarification:** the original business PDF uses AF for “Request For Security”; `db/FIX_MAPPING.md` states the current backend sends project-defined `35=U1` instead. The frontend displays the current backend behavior, with AF explained in the glossary.
 
 A production read-API backlog should include full contract portfolio, time-series exposure, per-security exposure, aggregated risk alerts, FIX/audit event feeds, and authorized BB/BA history.

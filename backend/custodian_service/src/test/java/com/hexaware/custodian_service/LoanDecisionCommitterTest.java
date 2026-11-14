@@ -14,6 +14,7 @@ import com.hexaware.custodian_service.entity.LenderInventory;
 import com.hexaware.custodian_service.entity.LenderMandate;
 import com.hexaware.custodian_service.entity.LendingFee;
 import com.hexaware.custodian_service.entity.LoanRequest;
+import com.hexaware.custodian_service.entity.LocateRequest;
 import com.hexaware.custodian_service.entity.MslaAgreement;
 import com.hexaware.custodian_service.entity.Organization;
 import com.hexaware.custodian_service.enums.AgreementStatus;
@@ -33,6 +34,7 @@ import com.hexaware.custodian_service.repository.LenderInventoryRepository;
 import com.hexaware.custodian_service.repository.LenderMandateRepository;
 import com.hexaware.custodian_service.repository.LoanContractRepository;
 import com.hexaware.custodian_service.repository.LoanRequestRepository;
+import com.hexaware.custodian_service.repository.LocateRequestRepository;
 import com.hexaware.custodian_service.repository.LendingFeeRepository;
 import com.hexaware.custodian_service.repository.MslaAgreementRepository;
 import com.hexaware.custodian_service.repository.OrganizationRepository;
@@ -65,6 +67,7 @@ class LoanDecisionCommitterTest {
 
   @Mock SetupAccess access;
   @Mock LoanRequestRepository requests;
+  @Mock LocateRequestRepository locates;
   @Mock LoanContractRepository contracts;
   @Mock InventoryReservationRepository reservations;
   @Mock ContractStatusHistoryRepository histories;
@@ -94,6 +97,7 @@ class LoanDecisionCommitterTest {
         new LoanDecisionCommitter(
             access,
             requests,
+            locates,
             contracts,
             reservations,
             histories,

@@ -39,7 +39,7 @@ The link does not create an MSLA or authorize a loan; no administrator role is n
 
 | Screen | Borrower endpoint(s) |
 |---|---|
-| Locates | Not exposed by the current Borrower controller; optional locate field is disabled and omitted |
+| Locates | `POST /api/locates`, `GET /api/locates`, `GET /api/locates/{locateReference}` |
 | Requests | `GET/POST /api/loan-requests`, `GET /api/loan-requests/{reference}` |
 | Eligible MSLAs | `GET /api/loan-requests/eligible-mslas` |
 | Custodian identity link code | `POST /api/auth/custodian-link-token` |
@@ -55,7 +55,7 @@ The link does not create an MSLA or authorize a loan; no administrator role is n
 | Final collateral release | `GET/POST /api/contracts/{transactionReference}/collateral-releases` |
 | Health | `GET /api/foundation/status` (Bearer required) |
 
-The controller source is authoritative: both BB/BA routes are available, while locate routes, a general contract-list route and a contract-wide margin-call list are not. Inquiry receipts mean only that the request was queued; they are not reports or proof of cash settlement. The frontend does not call unsupported routes.
+The controller source is authoritative: both BB/BA routes and Borrower Locate routes are available, while a general contract-list route and a contract-wide margin-call list are not. Locate approvals confirm availability only; they do not reserve inventory and do not expire. Loan approval performs the authoritative inventory check/reservation and consumes its linked Locate; if a loan attempt is rejected, the Locate can be reused. Inquiry receipts mean only that the request was queued; they are not reports or proof of cash settlement. The frontend does not call unsupported routes.
 
 **Other missing aggregates:** no per-security portfolio exposure trend, consolidated Borrower credit/utilization, realtime market quotes, FIX journal feed, alert stream, contract list or tamper-evident unified activity endpoint. These display Demo badges or unavailable states. The Activity screen is clearly labelled as a recent-timestamp view assembled from actual request projections and is **not** a backend audit log. Custodian-only approval, settlement confirmations, MTM, contract closure and release approval are intentionally excluded.
 

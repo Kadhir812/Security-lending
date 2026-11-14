@@ -13,7 +13,7 @@ export const navigation = [
   { name: 'Operations', to: '/settlement', icon: Settings2, category: 'Operations' },
 ]
 export const sections = {
-  Requests: [{ to: '/requests', text: 'Request queue' }, { to: '/requests/review', text: 'Request review' }],
+  Requests: [{ to: '/requests', text: 'Request queue' }, { to: '/requests/review', text: 'Request review' }, { to: '/locate-requests', text: 'Locate review' }],
   Inventory: [{ to: '/inventory', text: 'Lender inventory' }, { to: '/organizations', text: 'Organizations' }, { to: '/mandates', text: 'Mandates' }],
   Agreements: [{ to: '/mslas', text: 'MSLA agreements' }, { to: '/credit-limits', text: 'Credit limits & history' }, { to: '/haircuts', text: 'Collateral haircuts' }, { to: '/lending-fees', text: 'Lending fees' }],
   Contracts: [{ to: '/contracts', text: 'Active contracts' }, { to: '/settlement', text: 'Settlement operations' }, { to: '/margin', text: 'Margin calls & MTM' }, { to: '/recalls', text: 'Recalls & returns' }, { to: '/payments', text: 'Fees & payments' }],
@@ -25,7 +25,7 @@ const allRoutes = [
 ]
 function resolveSection(path) {
   if (path === '/') return 'Overview'
-  if (path.startsWith('/requests')) return 'Requests'
+  if (path.startsWith('/requests') || path.startsWith('/locate-requests')) return 'Requests'
   if (['/organizations', '/mandates', '/inventory'].some(p => path.startsWith(p))) return 'Inventory'
   if (['/mslas', '/credit-limits', '/haircuts', '/lending-fees'].some(p => path.startsWith(p))) return 'Agreements'
   if (['/contracts', '/margin', '/recalls', '/payments'].some(p => path.startsWith(p))) return 'Contracts'

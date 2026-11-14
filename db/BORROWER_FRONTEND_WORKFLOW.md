@@ -12,10 +12,13 @@ Borrower API base URL: `http://localhost:8082`
 ## End-to-end lifecycle
 
 ```text
-Locate request (API not available yet)
+Borrower submits Locate request
         |
         v
-Select an eligible MSLA and submit loan request
+Custodian confirms current lender availability or rejects
+        |
+        v
+Select the approved Locate and submit loan request
         |
         v
 Custodian reviews and approves or rejects
@@ -47,7 +50,7 @@ submission acceptance does not mean the downstream workflow is complete.
 
 | Stage | Borrower provides | Current API / limitation |
 |---|---|---|
-| Locate | A desired security and quantity are natural inputs for a locate workflow. | No Borrower/Custodian Locate REST endpoint is present. Do not provide a fake submit action or generate a locate reference. |
+| Locate | Eligible MSLA, security ISIN, and positive whole quantity. | `POST /api/locates` with an `Idempotency-Key`; list/detail at `GET /api/locates` and `GET /api/locates/{locateReference}`. Custodian decisions arrive asynchronously. Approval confirms current availability, does not reserve inventory, and does not expire. |
 | Loan request | Eligible MSLA, security ISIN, quantity, settlement date, currency, and optionally an existing locate reference. | `POST /api/loan-requests`; requires an `Idempotency-Key` header. `locateReference` is optional, max 80 characters. |
 | Collateral inquiry | No body fields; choose one of the Borrower's own requests. | `POST /api/loan-requests/{requestReference}/collateral-inquiries`; report uses authoritative agreement data. |
 | Read collateral report | No input; open a request's reports. | `GET /api/loan-requests/{requestReference}/collateral-reports`. |
@@ -129,8 +132,8 @@ reference in the `Idempotency-Key` header.
 2. **Eligible agreements** — load eligible MSLAs; show their actual
    collateral, currency, coverage, and security terms.
 3. **New loan request** — collect request fields and submit with an
-   idempotency key. A Locate step can be shown as unavailable or informational
-   until its API is implemented.
+   idempotency key. Borrowers may request a Locate first, then attach an
+   approved, matching reference to a loan request.
 4. **My requests and request detail** — paginated request list, status,
    rejection reason, and refresh. Never infer approval from HTTP success.
 5. **Collateral inquiry and reports** — submit an inquiry for an owned request,
@@ -201,10 +204,11 @@ another party's references.
 
 ## Current gaps to plan around
 
-- Borrower-initiated Locate is not exposed by a REST controller, although
-  `locateReference` is accepted optionally by loan submission. The UI can
-  accept a reference obtained elsewhere, but must not claim to create or
-  approve locates.
+- Locate approval is an availability confirmation only; it does not reserve
+  lender inventory. Inventory is checked and reserved only when the Custodian
+  approves the linked loan request. An approved Locate remains valid until used.
+  If a loan attempt is rejected, the Locate remains available for a retry; only
+  one approved loan can consume it.
 - Settlement confirmation endpoints are Custodian simulation controls; they
   are not Borrower actions and should not be exposed in the Borrower portal.
 - Closing is Custodian-owned; Borrower requests return/release and monitors

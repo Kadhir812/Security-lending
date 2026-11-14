@@ -1,5 +1,30 @@
 # Implementation progress
 
+## Borrower-Custodian Locate workflow
+
+- Added Borrower Locate submission/list/detail APIs and Custodian pending,
+  approve, and reject APIs. The Borrower and Custodian frontends now expose the
+  request and review workflows; loan submissions can attach an approved Locate.
+- Custodian approval validates MSLA/security eligibility and current lender
+  availability but does not reserve inventory. Locate approvals do not expire.
+  The linked loan approval rechecks availability, reserves inventory, and
+  consumes the Locate. Rejected loan attempts leave the Locate reusable;
+  existing databases must apply both
+  `db/migrations/006_non_expiring_locates.sql` and
+  `db/migrations/007_allow_locate_retries.sql`. Fresh schemas allow a null
+  `expiry_time` and multiple request attempts per Locate.
+- Applied both migrations to the configured local `borrower_db` and
+  `custodian_db` using each service's `application.properties` credentials.
+  Verified `expiry_time` is nullable and `loan_request.locate_id` has a
+  non-unique index in both schemas.
+- Added Kafka route configuration for Locate request and decision events.
+  Locate workflow event payloads use JSON business fields; FIX U1 tag `9005`
+  remains the optional reference on the loan request.
+- Main-source compilation passed for both services. The focused Custodian
+  request-handler test passed. Borrower focused test execution is blocked by
+  existing test compilation errors involving missing client package references;
+  no live Kafka/E2E test has been run.
+
 ## Borrower-Custodian identity linking
 
 - Borrowers generate a 24-hour, single-use token from

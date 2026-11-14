@@ -6,6 +6,7 @@ import Contracts from './pages/Contracts'
 import { RequestQueue, RequestReview } from './pages/Requests'
 import { AuditPage, OperationsPage } from './pages/Operations'
 import { CollateralInquiries, ReleaseQueue } from './pages/MiscPages'
+import LocateQueue from './pages/LocateQueue'
 import AuthPage from './pages/AuthPage'
 import { useApp } from './hooks/useApp'
 /** App: all Custodian-only views are routed; no Borrower operations are exposed. */
@@ -16,6 +17,7 @@ export default function App(){
     <Route element={token?<Shell/>:<Navigate replace to="/auth"/>}>
       <Route index element={<Dashboard/>}/>
       <Route path="requests" element={<RequestQueue/>}/>
+      <Route path="locate-requests" element={<LocateQueue/>}/>
       <Route path="requests/review" element={<RequestReview/>}/>
       <Route path="requests/review/:reference" element={<RequestReview/>}/>
       <Route path="organizations" element={<ResourcePage name="organizations"/>}/>

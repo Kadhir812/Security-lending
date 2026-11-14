@@ -14,6 +14,7 @@ import com.hexaware.custodian_service.client.SecurityReferenceResponse;
 import com.hexaware.custodian_service.dto.request.EligibleSecurities;
 import com.hexaware.custodian_service.entity.LenderMandate;
 import com.hexaware.custodian_service.entity.LoanRequest;
+import com.hexaware.custodian_service.entity.LocateRequest;
 import com.hexaware.custodian_service.entity.MslaAgreement;
 import com.hexaware.custodian_service.entity.Organization;
 import com.hexaware.custodian_service.entity.Role;
@@ -260,6 +261,50 @@ class LoanRequestSubmittedHandlerTest {
   }
 
   @Test
+  void leavesApprovedLocateAvailableUntilLoanIsApproved() {
+    LocateRequest locate = approvedLocate();
+    payload = withLocateReference("LOCATE-001");
+    when(mapper.convertValue(anyMap(), eq(LoanRequestSubmittedPayload.class)))
+        .thenReturn(payload);
+    when(locates.findLockedByLocateReference("LOCATE-001")).thenReturn(Optional.of(locate));
+
+    handler.handle(event);
+
+    ArgumentCaptor<LoanRequest> saved = ArgumentCaptor.forClass(LoanRequest.class);
+    verify(requests).saveAndFlush(saved.capture());
+    assertThat(saved.getValue().getLocateId()).isEqualTo(77L);
+    assertThat(locate.getStatus()).isEqualTo("APPROVED");
+  }
+
+  @Test
+  void acceptsDuplicateSubmissionForItsAlreadyConsumedLocate() {
+    LocateRequest locate = approvedLocate();
+    locate.setStatus("USED");
+    payload = withLocateReference("LOCATE-001");
+    when(mapper.convertValue(anyMap(), eq(LoanRequestSubmittedPayload.class)))
+        .thenReturn(payload);
+    when(locates.findLockedByLocateReference("LOCATE-001")).thenReturn(Optional.of(locate));
+    when(requests.findByRequestReference("LR-2026-000042"))
+        .thenReturn(
+            Optional.of(
+                LoanRequest.builder()
+                    .submittedByIssuer(ISSUER)
+                    .submittedBySubject("borrower-user-42")
+                    .requestReference("LR-2026-000042")
+                    .mslaId(20L)
+                    .locateId(77L)
+                    .securityIsin(ISIN)
+                    .quantity(1000L)
+                    .requestedSettlementDate(TODAY.plusDays(2))
+                    .settlementCurrency("INR")
+                    .build()));
+
+    handler.handle(event);
+
+    verify(requests, never()).saveAndFlush(org.mockito.ArgumentMatchers.any(LoanRequest.class));
+  }
+
+  @Test
   void rejectsMismatchedCorrelationIdentifier() {
     event.setCorrelationId("different-reference");
 
@@ -272,6 +317,35 @@ class LoanRequestSubmittedHandlerTest {
 
   private void verifyNoRequestSaved() {
     verify(requests, never()).saveAndFlush(org.mockito.ArgumentMatchers.any(LoanRequest.class));
+  }
+
+  private LocateRequest approvedLocate() {
+    return LocateRequest.builder()
+        .locateId(77L)
+        .locateReference("LOCATE-001")
+        .mslaId(20L)
+        .securityIsin(ISIN)
+        .approvedQuantity(1200L)
+        .submittedByIssuer(ISSUER)
+        .submittedBySubject("borrower-user-42")
+        .status("APPROVED")
+        .build();
+  }
+
+  private LoanRequestSubmittedPayload withLocateReference(String locateReference) {
+    return new LoanRequestSubmittedPayload(
+        1,
+        "LR-2026-000042",
+        "BORROWER-001",
+        "CUSTODIAN-001",
+        "MSLA-2026-001",
+        locateReference,
+        ISIN,
+        1000L,
+        TODAY.plusDays(2),
+        "INR",
+        ISSUER,
+        "borrower-user-42");
   }
 
   private Organization organization(Long id, String reference, OrganizationType type) {

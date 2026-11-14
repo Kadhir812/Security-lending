@@ -47,7 +47,7 @@ public class LoanRequest {
   @Column(name = "msla_id", nullable = false)
   private Long mslaId;
 
-  @Column(name = "locate_id", unique = true)
+  @Column(name = "locate_id")
   private Long locateId;
 
   @JdbcTypeCode(java.sql.Types.CHAR)

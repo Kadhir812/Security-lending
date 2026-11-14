@@ -11,10 +11,16 @@
 | Calculation | Custodian | Kafka calculation-results | Result reference, input versions, output and failure outcomes |
 | Market | Custodian | Kafka market-price-events | Schedule MTM against relevant active contracts |
 | Borrower/Custodian | counterpart | Kafka sec-lending-requests / sec-lending-responses | FIX and workflow messages |
+| Borrower | Custodian | Kafka sec-lending-requests / sec-lending-responses | Locate submission and decision workflow |
 
 Additional topics are proposed for the four-service architecture. No standalone local master-data views: use REST reads; optional in-memory caches have explicit freshness limits. Custodian revalidates security status/terms at processing. Borrower request decision fields update from authorized Custodian responses. Borrower settled inventory updates from idempotent settlement events; authoritative contract balance remains Custodian-owned.
 
 Envelope: eventId, eventType, schemaVersion, producerService, destinationService, organization scope when applicable, correlationId, causationEventId, aggregateReference, aggregateVersion, occurredAt, payload. Partition by owner aggregate. Consumer groups and ACLs enforce actual routing/security; receiver fields alone do not.
+
+Locate request and decision payloads currently use JSON business fields in the
+shared event envelope; they are not FIX-mapped messages. Locate approval
+confirms current lender availability without reservation or expiry. The linked
+loan approval revalidates and reserves inventory, then consumes the Locate.
 
 A calculation request contains the complete input snapshot and a stable requestReference. Unique(requester_service, request_reference) enforces deduplication; compare request hash to reject key reuse with different inputs. Persist exact prices before compute and reuse them for retries. Corrections create new run and supersedes links. Rule versions are immutable version-controlled artifacts; persist parameters/digest in each run. Long-running work returns pending and completes through Kafka. Completed results publish atomically with outbox records.
 

@@ -3,12 +3,14 @@ package com.hexaware.borrower_service.kafka.inbox;
 import com.hexaware.borrower_service.entity.LoanContractView;
 import com.hexaware.borrower_service.entity.LoanRequest;
 import com.hexaware.borrower_service.enums.LoanRequestStatus;
+import com.hexaware.borrower_service.enums.LocateStatus;
 import com.hexaware.borrower_service.exception.InvalidEnvelopeException;
 import com.hexaware.borrower_service.kafka.consumer.MessageHandler;
 import com.hexaware.borrower_service.kafka.event.EventEnvelope;
 import com.hexaware.borrower_service.quickfix.LoanRequestFixMessageBuilder;
 import com.hexaware.borrower_service.repository.LoanContractViewRepository;
 import com.hexaware.borrower_service.repository.LoanRequestRepository;
+import com.hexaware.borrower_service.repository.LocateRequestRepository;
 import java.time.Clock;
 import java.time.Instant;
 import java.math.BigDecimal;
@@ -21,6 +23,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class LoanRequestDecisionHandler implements MessageHandler {
   private final LoanRequestRepository requests;
+  private final LocateRequestRepository locates;
   private final LoanContractViewRepository contracts;
   private final LoanRequestFixMessageBuilder fixMessages;
   private final Clock clock;
@@ -151,6 +154,7 @@ public class LoanRequestDecisionHandler implements MessageHandler {
     request.setRespondedAt(respondedAt);
     request.setDecisionSourceVersion(decisionVersion);
     if (decision == LoanRequestStatus.APPROVED) {
+      markLocateUsed(request);
       contracts.save(
           LoanContractView.builder()
               .requestReference(requestReference)
@@ -159,6 +163,21 @@ public class LoanRequestDecisionHandler implements MessageHandler {
               .receivedAt(clock.instant())
               .build());
     }
+
+  }
+
+  private void markLocateUsed(LoanRequest request) {
+    if (request.getLocateId() == null) return;
+    var locate =
+        locates
+            .findLockedByLocateId(request.getLocateId())
+            .orElseThrow(() -> invalid("APPROVED_LOAN_LOCATE_NOT_FOUND"));
+    if (locate.getStatus() != LocateStatus.APPROVED
+        || locate.getApprovedQuantity() == null
+        || locate.getApprovedQuantity() < request.getQuantity()) {
+      throw invalid("APPROVED_LOAN_LOCATE_NOT_AVAILABLE");
+    }
+    locate.setStatus(LocateStatus.USED);
   }
 
   private boolean existingContractMatches(String requestReference, String transactionReference) {

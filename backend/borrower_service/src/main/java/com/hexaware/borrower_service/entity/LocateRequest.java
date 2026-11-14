@@ -5,8 +5,11 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 import java.time.Instant;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -33,10 +36,12 @@ public class LocateRequest {
   @Column(name = "decision_source_version", nullable = false)
   private Long decisionSourceVersion;
 
+  @Version
   @Column(name = "version", nullable = false)
   private Long version;
 
   @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
   @Column(name = "locate_id", nullable = false)
   private Long locateId;
 
@@ -61,8 +66,14 @@ public class LocateRequest {
   @Column(name = "request_time", nullable = false, columnDefinition = "datetime(6)")
   private Instant requestTime;
 
-  @Column(name = "expiry_time", nullable = false, columnDefinition = "datetime(6)")
+  @Column(name = "expiry_time", columnDefinition = "datetime(6)")
   private Instant expiryTime;
+
+  @Column(name = "responded_at", columnDefinition = "datetime(6)")
+  private Instant respondedAt;
+
+  @Column(name = "response_reason", length = 500)
+  private String responseReason;
 
   @Enumerated(EnumType.STRING)
   @Column(name = "status", nullable = false)

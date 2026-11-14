@@ -11,10 +11,13 @@ import static org.mockito.ArgumentMatchers.any;
 import com.hexaware.borrower_service.entity.LoanRequest;
 import com.hexaware.borrower_service.entity.LoanContractView;
 import com.hexaware.borrower_service.enums.LoanRequestStatus;
+import com.hexaware.borrower_service.enums.LocateStatus;
+import com.hexaware.borrower_service.entity.LocateRequest;
 import com.hexaware.borrower_service.exception.InvalidEnvelopeException;
 import com.hexaware.borrower_service.kafka.event.EventEnvelope;
 import com.hexaware.borrower_service.repository.LoanContractViewRepository;
 import com.hexaware.borrower_service.repository.LoanRequestRepository;
+import com.hexaware.borrower_service.repository.LocateRequestRepository;
 import com.hexaware.borrower_service.kafka.inbox.LoanRequestDecisionHandler;
 import com.hexaware.borrower_service.quickfix.LoanRequestFixMessageBuilder;
 import java.time.Clock;
@@ -35,6 +38,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class LoanRequestDecisionHandlerTest {
   private static final Instant NOW = Instant.parse("2026-11-08T05:30:00Z");
   @Mock LoanRequestRepository requests;
+  @Mock LocateRequestRepository locates;
   @Mock LoanContractViewRepository contracts;
   private LoanRequestDecisionHandler handler;
   private LoanRequest request;
@@ -44,6 +48,7 @@ class LoanRequestDecisionHandlerTest {
     handler =
         new LoanRequestDecisionHandler(
             requests,
+            locates,
             contracts,
             new LoanRequestFixMessageBuilder(),
             Clock.fixed(NOW, ZoneOffset.UTC));
@@ -75,6 +80,22 @@ class LoanRequestDecisionHandlerTest {
     assertThat(request.getDecisionSourceVersion()).isEqualTo(1L);
     verify(contracts).save(org.mockito.ArgumentMatchers.argThat(
         view -> view.getTransactionReference().equals("CTR-1")));
+  }
+
+  @Test
+  void consumesLocateOnlyWhenLoanApprovalIsReceived() {
+    request.setLocateId(77L);
+    LocateRequest locate =
+        LocateRequest.builder()
+            .locateId(77L)
+            .approvedQuantity(120L)
+            .status(LocateStatus.APPROVED)
+            .build();
+    when(locates.findLockedByLocateId(77L)).thenReturn(Optional.of(locate));
+
+    handler.handle(event("APPROVED", contract()));
+
+    assertThat(locate.getStatus()).isEqualTo(LocateStatus.USED);
   }
 
   @Test
