@@ -113,15 +113,22 @@ public class MarginCallService {
   }
 
   public MtmCalculationResponse calculateReturnValuation(
-      LoanContract contract, long remainingQuantity, String calculationReference) {
+      LoanContract contract,
+      long remainingQuantity,
+      String instructionReference,
+      Instant inputAsOf) {
     if (remainingQuantity < 0 || remainingQuantity > contract.getOutstandingQuantity()
-        || contract.getVersion() == null || contract.getVersion() <= 0) {
+        || contract.getVersion() == null || contract.getVersion() <= 0
+        || instructionReference == null || instructionReference.isBlank()
+        || inputAsOf == null || inputAsOf.isAfter(clock.instant())) {
       throw SetupException.conflict("Return valuation inputs are invalid or stale");
     }
     LoanRequest request = requests.findById(contract.getLoanRequestId())
         .orElseThrow(() -> SetupException.missing("Loan request not found"));
     ContractParty parties = parties(contract);
     BigDecimal currentCash = confirmedCash(contract.getContractId());
+    String calculationReference = returnCalculationReference(
+        instructionReference, contract, request, parties, remainingQuantity, currentCash, inputAsOf);
     MtmCalculationRequest calculation = MtmCalculationRequest.builder()
         .securityIsin(request.getSecurityIsin())
         .calculationRequestReference(calculationReference)
@@ -132,7 +139,7 @@ public class MarginCallService {
         .custodianOrganizationReference(parties.custodianOrganizationReference())
         .borrowerOrganizationReference(parties.borrowerOrganizationReference())
         .transactionReference(contract.getTransactionReference())
-        .inputAsOf(clock.instant())
+        .inputAsOf(inputAsOf)
         .inputVersion(contract.getVersion())
         .build();
     MtmCalculationResponse result =
@@ -755,6 +762,30 @@ public class MarginCallService {
     } catch (NoSuchAlgorithmException exception) {
       throw new IllegalStateException("SHA-256 is required by the runtime", exception);
     }
+  }
+
+  private String returnCalculationReference(
+      String instructionReference,
+      LoanContract contract,
+      LoanRequest request,
+      ContractParty parties,
+      long remainingQuantity,
+      BigDecimal cash,
+      Instant inputAsOf) {
+    String canonical = String.join("|",
+        "RETURN-MTM",
+        instructionReference,
+        contract.getTransactionReference(),
+        request.getSecurityIsin(),
+        String.valueOf(remainingQuantity),
+        contract.getCollateralCoveragePct().stripTrailingZeros().toPlainString(),
+        cash.stripTrailingZeros().toPlainString(),
+        contract.getSettlementCurrency(),
+        parties.custodianOrganizationReference(),
+        parties.borrowerOrganizationReference(),
+        String.valueOf(contract.getVersion()),
+        inputAsOf.toString());
+    return UUID.nameUUIDFromBytes(canonical.getBytes(StandardCharsets.UTF_8)).toString();
   }
 
   private record ContractParty(

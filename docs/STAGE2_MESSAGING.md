@@ -49,7 +49,10 @@ See [envelope-v1.schema.json](../contracts/events/envelope-v1.schema.json) and t
 [test response](../contracts/events/examples/stage2-response.json) examples.
 Required fields are validated, UUID event IDs use canonical lowercase text,
 schemaVersion must be 1, aggregateVersion must be nonnegative, and occurredAt is
-an ISO instant. Optional causation/organization fields may be absent or null.
+an ISO instant. For each aggregate reference and event stream, aggregateVersion
+must increase monotonically; producers allocate it from the persisted outbox
+sequence while holding the aggregate's write lock. Optional causation and
+organization fields may be absent or null.
 Additional envelope fields are tolerated but not interpreted or persisted as
 part of the canonical envelope. Runtime validation also bounds UTF-8 envelope
 size and rejects token/credential keys recursively in payloads.

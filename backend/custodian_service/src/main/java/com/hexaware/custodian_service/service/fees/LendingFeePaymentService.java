@@ -81,7 +81,8 @@ public class LendingFeePaymentService {
         || !Objects.equals(custodianReference, parties.custodianReference())
         || !Objects.equals(event.getSenderOrganizationReference(), parties.borrowerReference())
         || !Objects.equals(event.getReceiverOrganizationReference(), parties.custodianReference())
-        || contract.getContractStatus() != LoanContractStatus.ON_LOAN) {
+        || (contract.getContractStatus() != LoanContractStatus.ON_LOAN
+            && contract.getContractStatus() != LoanContractStatus.RETURNED)) {
       throw new InvalidEnvelopeException("FEE_PAYMENT_PARTIES_OR_STATE_MISMATCH");
     }
     requireActiveParties(parties);

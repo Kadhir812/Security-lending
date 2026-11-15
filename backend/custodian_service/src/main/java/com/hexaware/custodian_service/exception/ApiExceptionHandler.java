@@ -2,6 +2,9 @@ package com.hexaware.custodian_service.exception;
 
 import jakarta.persistence.OptimisticLockException;
 import jakarta.validation.ConstraintViolationException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
@@ -15,9 +18,6 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.slf4j.MDC;
 
 @RestControllerAdvice
 public class ApiExceptionHandler {
@@ -26,6 +26,7 @@ public class ApiExceptionHandler {
 
   @ExceptionHandler(SetupException.class)
   ProblemDetail setup(SetupException exception) {
+    logServiceFailure(exception.getStatus(), exception.getMessage());
     return ProblemDetail.forStatusAndDetail(exception.getStatus(), exception.getMessage());
   }
 
@@ -44,6 +45,16 @@ public class ApiExceptionHandler {
   ProblemDetail malformed() {
     return ProblemDetail.forStatusAndDetail(
         HttpStatus.BAD_REQUEST, "Invalid request fields or parameters");
+  }
+
+  private void logServiceFailure(HttpStatus status, String detail) {
+    if (status.is5xxServerError()) {
+      log.warn(
+          "Service request failed with HTTP {} [correlationId={}]: {}",
+          status.value(),
+          MDC.get("correlationId"),
+          detail);
+    }
   }
 
   @ExceptionHandler(AccessDeniedException.class)
@@ -66,12 +77,19 @@ public class ApiExceptionHandler {
   ProblemDetail unexpected(Exception exception) {
     if (exception instanceof ErrorResponse response) {
       if (response.getStatusCode().is5xxServerError()) {
-        log.error("Unhandled server error [correlationId={}]", MDC.get("correlationId"), exception);
+        log.error(
+            "Unhandled HTTP {} server error [correlationId={}]",
+            response.getStatusCode().value(),
+            MDC.get("correlationId"),
+            exception);
       }
       return ProblemDetail.forStatusAndDetail(
           response.getStatusCode(), "Request could not be completed");
     }
-    log.error("Unhandled server error [correlationId={}]", MDC.get("correlationId"), exception);
+    log.error(
+        "Unhandled HTTP 500 server error [correlationId={}]",
+        MDC.get("correlationId"),
+        exception);
     return ProblemDetail.forStatusAndDetail(
         HttpStatus.INTERNAL_SERVER_ERROR, "Request could not be completed");
   }

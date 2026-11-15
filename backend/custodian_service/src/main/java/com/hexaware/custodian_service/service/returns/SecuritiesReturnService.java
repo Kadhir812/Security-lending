@@ -227,11 +227,12 @@ public class SecuritiesReturnService {
     if (remainingQuantity < 0) {
       throw SetupException.conflict("Return quantity exceeds current outstanding quantity");
     }
-    String calculationReference = UUID.nameUUIDFromBytes(
-        ("RETURN-MTM:" + initialInstruction.getInstructionReference())
-            .getBytes(StandardCharsets.UTF_8)).toString();
     MtmCalculationResponse mtmResult =
-        marginCalls.calculateReturnValuation(initial, remainingQuantity, calculationReference);
+        marginCalls.calculateReturnValuation(
+            initial,
+            remainingQuantity,
+            initialInstruction.getInstructionReference(),
+            initialInstruction.getCreatedAt());
 
     TransactionTemplate transaction = new TransactionTemplate(transactionManager);
     try {
@@ -310,7 +311,8 @@ public class SecuritiesReturnService {
     }
     if (!Objects.equals(contract.getVersion(), expectedVersion)
         || !Objects.equals(contract.getOutstandingQuantity(), expectedOutstanding)
-        || !Objects.equals(instruction.getQuantity(), BigDecimal.valueOf(quantity))
+        || instruction.getQuantity() == null
+        || instruction.getQuantity().compareTo(BigDecimal.valueOf(quantity)) != 0
         || mtmResult.getInputVersion() == null
         || !mtmResult.getInputVersion().equals(contract.getVersion())
         || !Objects.equals(mtmResult.getOutstandingQuantity(), expectedOutstanding - quantity)) {

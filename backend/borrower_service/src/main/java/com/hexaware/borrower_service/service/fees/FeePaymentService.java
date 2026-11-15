@@ -98,8 +98,10 @@ public class FeePaymentService {
     var loanRequest = requests.findByRequestReferenceAndBorrowerOrganizationReference(
         view.getRequestReference(), user.getOrganizationReference())
         .orElseThrow(() -> BorrowerException.missing("Contract not found"));
-    if (!"ON_LOAN".equals(view.getContractSnapshot().get("contractStatus"))) {
-      throw BorrowerException.conflict("Fee payments require an on-loan contract");
+    String contractStatus = text(view.getContractSnapshot().get("contractStatus"));
+    if (!List.of("ON_LOAN", "RETURNED").contains(contractStatus)) {
+      throw BorrowerException.conflict(
+          "Fee payments require an on-loan or returned contract");
     }
     if (!Objects.equals(loanRequest.getSettlementCurrency(), request.getCurrency())) {
       throw BorrowerException.invalid("Payment currency must match the contract");

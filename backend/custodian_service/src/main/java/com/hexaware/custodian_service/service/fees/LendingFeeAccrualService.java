@@ -113,7 +113,7 @@ public class LendingFeeAccrualService {
     requireCustodian(actor, parties(contract));
     Map<String, Map<String, Object>> grouped = new LinkedHashMap<>();
     for (OutboxEvent event : accrualHistory.acceptedChargeEvents(transactionReference)) {
-      Map<String, Object> charge = event.getPayload();
+      Map<String, Object> charge = accrualHistory.businessPayload(event);
       String itemKey = accrualHistory.text(charge.get("itemKey"));
       Map<String, Object> group = grouped.computeIfAbsent(itemKey, ignored -> {
         Map<String, Object> value = new LinkedHashMap<>();
@@ -130,6 +130,8 @@ public class LendingFeeAccrualService {
               .add(accrualHistory.decimal(charge.get("amount"))));
       group.put("latestResultReference", charge.get("resultReference"));
       group.put("latestInputVersion", charge.get("inputVersion"));
+      group.put("calculationResultReference", charge.get("resultReference"));
+      group.put("status", charge.get("status"));
     }
     List<LendingFeePayment> contractPayments =
         feePayments.findByContractIdOrderByPaymentId(contract.getContractId());
@@ -159,7 +161,7 @@ public class LendingFeeAccrualService {
 
   public List<Map<String, Object>> chargeEvents(String transactionReference) {
     return accrualHistory.acceptedChargeEvents(transactionReference).stream()
-        .map(OutboxEvent::getPayload)
+        .map(accrualHistory::businessPayload)
         .toList();
   }
 
@@ -282,17 +284,22 @@ public class LendingFeeAccrualService {
           locked.getTransactionReference(), request.getAccrualDate());
       String currentSupersedes = prior.isEmpty()
           ? null
-          : accrualHistory.text(prior.get(prior.size() - 1).getPayload().get("resultReference"));
+          : accrualHistory.text(
+              accrualHistory
+                  .businessPayload(prior.get(prior.size() - 1))
+                  .get("resultReference"));
       if (!Objects.equals(currentSupersedes, request.getSupersedesResultReference())) {
         return false;
       }
       BigDecimal oldAccrued = prior.stream()
-          .map(event -> accrualHistory.decimal(event.getPayload().get("amount")))
+          .map(event -> accrualHistory.decimal(
+              accrualHistory.businessPayload(event).get("amount")))
           .reduce(BigDecimal.ZERO, BigDecimal::add);
       BigDecimal adjustment = result.getAmount().subtract(oldAccrued);
       if (adjustment.signum() == 0) return false;
+      // The contract row lock serializes version allocation across accrual dates.
       long aggregateVersion =
-          accrualHistory.acceptedChargeEvents(locked.getTransactionReference()).size() + 1L;
+          accrualHistory.nextAggregateVersion(locked.getTransactionReference());
       Map<String, Object> payload = new LinkedHashMap<>();
       payload.put("payloadVersion", 1);
       payload.put("transactionReference", locked.getTransactionReference());

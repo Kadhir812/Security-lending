@@ -18,14 +18,19 @@ import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 class LendingFeeAccrualHistory {
   private static final String CHARGE_EVENT = "LENDING_FEE_CHARGE_UPDATED";
   private static final String CHARGE_AGGREGATE = "LENDING_FEE_CHARGE";
@@ -36,24 +41,76 @@ class LendingFeeAccrualHistory {
 
   List<OutboxEvent> eventsForDay(String transactionReference, LocalDate day) {
     return acceptedChargeEvents(transactionReference).stream()
-        .filter(event -> Objects.equals(event.getPayload().get("accrualDate"), day.toString()))
+        .filter(
+            event ->
+                Objects.equals(businessPayload(event).get("accrualDate"), day.toString()))
         .toList();
   }
 
   List<OutboxEvent> acceptedChargeEvents(String transactionReference) {
-    return outbox
-        .findByEventTypeAndAggregateTypeOrderByCreatedAtAsc(CHARGE_EVENT, CHARGE_AGGREGATE)
-        .stream()
-        .filter(
-            event ->
-                Objects.equals(
-                    event.getPayload().get("transactionReference"), transactionReference))
-        .sorted(
-            (first, second) ->
-                Long.compare(
-                    number(first.getPayload().get("aggregateVersion")),
-                    number(second.getPayload().get("aggregateVersion"))))
-        .toList();
+    List<OutboxEvent> candidates =
+        outbox
+            .findByEventTypeAndAggregateTypeAndAggregateReferenceOrderByAggregateVersionAscCreatedAtAsc(
+                CHARGE_EVENT, CHARGE_AGGREGATE, transactionReference)
+            .stream()
+            .filter(
+                event ->
+                    Objects.equals(
+                        businessPayload(event).get("transactionReference"),
+                        transactionReference))
+            .toList();
+    Map<String, OutboxEvent> latestByItem = new LinkedHashMap<>();
+    List<OutboxEvent> accepted = new ArrayList<>();
+    for (OutboxEvent event : candidates) {
+      Map<String, Object> payload = businessPayload(event);
+      String itemKey = text(payload.get("itemKey"));
+      if (itemKey == null) itemKey = text(payload.get("accrualDate"));
+      if (itemKey == null) itemKey = event.getEventId();
+      OutboxEvent previous = latestByItem.get(itemKey);
+      String supersedes = text(payload.get("supersedesResultReference"));
+      String previousResult =
+          previous == null ? null : text(businessPayload(previous).get("resultReference"));
+      if (!Objects.equals(supersedes, previousResult)) {
+        log.warn(
+            "Ignoring unlinked lending-fee charge event {} for {}",
+            event.getEventId(),
+            transactionReference);
+        continue;
+      }
+      accepted.add(event);
+      latestByItem.put(itemKey, event);
+    }
+    return accepted;
+  }
+
+  Map<String, Object> businessPayload(OutboxEvent event) {
+    if (event.getPayload() == null) {
+      throw SetupException.conflict("Fee charge event payload is missing");
+    }
+    if (!event.getPayload().containsKey("payload")) return event.getPayload();
+    Object nestedPayload = event.getPayload().get("payload");
+    if (!(nestedPayload instanceof Map<?, ?> nested)) {
+      throw SetupException.conflict("Fee charge event payload is invalid");
+    }
+    Map<String, Object> payload = new LinkedHashMap<>();
+    for (Map.Entry<?, ?> entry : nested.entrySet()) {
+      if (!(entry.getKey() instanceof String key)) {
+        throw SetupException.conflict("Fee charge payload contains an invalid key");
+      }
+      payload.put(key, entry.getValue());
+    }
+    return payload;
+  }
+
+  long nextAggregateVersion(String transactionReference) {
+    try {
+      return Math.addExact(
+          outbox.findMaxAggregateVersion(
+              CHARGE_EVENT, CHARGE_AGGREGATE, transactionReference),
+          1L);
+    } catch (ArithmeticException exception) {
+      throw SetupException.conflict("Fee charge aggregate version is exhausted");
+    }
   }
 
   List<SettlementInstruction> settledHistory(LoanContract contract) {
@@ -226,16 +283,6 @@ class LendingFeeAccrualHistory {
 
   BigDecimal decimal(Object value) {
     return value == null ? BigDecimal.ZERO : new BigDecimal(value.toString());
-  }
-
-  long number(Object value) {
-    try {
-      return value instanceof Number number
-          ? number.longValue()
-          : Long.parseLong(String.valueOf(value));
-    } catch (NumberFormatException exception) {
-      throw SetupException.conflict("Fee charge aggregate version is invalid");
-    }
   }
 
   long nvl(Long value) {
