@@ -1,0 +1,14 @@
+/kafka/
+/kafka-runtime/
+app-logs/
+*.log
+**/target/
+.stage1/
+.stage2/
+.stage3a/
+.phase3b/
+.m2/
+/prompts/
+docs/
+!docs/
+docs/*

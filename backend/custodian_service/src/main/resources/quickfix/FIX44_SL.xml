@@ -1,0 +1,248 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fix major="4" minor="4">
+  <header>
+    <field name="BeginString" required="Y"/>
+    <field name="BodyLength" required="Y"/>
+    <field name="MsgType" required="Y"/>
+    <field name="SenderCompID" required="Y"/>
+    <field name="TargetCompID" required="Y"/>
+    <field name="MsgSeqNum" required="Y"/>
+    <field name="SendingTime" required="Y"/>
+  </header>
+  <messages>
+    <message name="BorrowerLoanRequest" msgtype="U1" msgcat="app">
+      <field name="RequestReference" required="Y"/>
+      <field name="MslaReference" required="Y"/>
+      <field name="SecurityID" required="Y"/>
+      <field name="IDSource" required="Y"/>
+      <field name="OrderQty" required="Y"/>
+      <field name="Currency" required="Y"/>
+      <field name="SettlDate" required="Y"/>
+      <field name="SubmitterIssuer" required="Y"/>
+      <field name="SubmitterSubject" required="Y"/>
+      <field name="LocateReference" required="N"/>
+    </message>
+    <message name="CollateralInquiry" msgtype="BB" msgcat="app">
+      <field name="CollInquiryID" required="N"/>
+      <group name="NoCollInquiryQualifier" required="N">
+        <field name="CollInquiryQualifier" required="N"/>
+      </group>
+      <field name="RequestReference" required="Y"/>
+      <field name="MslaReference" required="Y"/>
+    </message>
+    <message name="CollateralReport" msgtype="BA" msgcat="app">
+      <field name="CollRptID" required="Y"/>
+      <field name="CollInquiryID" required="Y"/>
+      <field name="CollStatus" required="Y"/>
+      <field name="AgreementCurrency" required="Y"/>
+      <field name="RequestReference" required="Y"/>
+      <field name="MslaReference" required="Y"/>
+      <field name="LendingCollateralType" required="Y"/>
+      <field name="LendingCashHaircutPercentage" required="Y"/>
+      <field name="LendingCollateralCoveragePercentage" required="Y"/>
+    </message>
+    <message name="LendingLoanApprovalConfirmation" msgtype="AK" msgcat="app">
+      <field name="ConfirmID" required="Y"/>
+      <field name="ConfirmTransType" required="Y"/>
+      <field name="ConfirmType" required="Y"/>
+      <field name="ConfirmStatus" required="Y"/>
+      <field name="TransactTime" required="Y"/>
+      <field name="TradeDate" required="Y"/>
+      <field name="RequestReference" required="Y"/>
+      <field name="MslaReference" required="Y"/>
+      <field name="DecisionVersion" required="Y"/>
+      <field name="DecisionStatus" required="Y"/>
+      <field name="SecurityISIN" required="Y"/>
+      <field name="ContractQuantity" required="Y"/>
+      <field name="ContractCurrency" required="Y"/>
+      <field name="AgreedAnnualFeePercentage" required="Y"/>
+      <field name="DayCountBasis" required="Y"/>
+      <field name="ContractCoveragePercentage" required="Y"/>
+      <field name="CollateralType" required="Y"/>
+      <field name="CollateralCurrency" required="Y"/>
+      <field name="CollateralHaircutID" required="Y"/>
+      <field name="CollateralHaircutPercentage" required="Y"/>
+      <field name="CollateralTermsCoveragePercentage" required="Y"/>
+      <field name="CollateralRequiredAmount" required="Y"/>
+      <field name="CollateralLoanMarketValue" required="Y"/>
+      <field name="CollateralValuationReference" required="Y"/>
+      <field name="ValuationCalculationReference" required="Y"/>
+      <field name="ValuationSecurityISIN" required="Y"/>
+      <field name="ValuationQuantity" required="Y"/>
+      <field name="ValuationMarketPrice" required="Y"/>
+      <field name="ValuationCurrency" required="Y"/>
+      <field name="ValuationPriceReference" required="Y"/>
+      <field name="ValuationPriceSource" required="Y"/>
+      <field name="ValuationPriceTimestamp" required="Y"/>
+      <field name="ValuationCalculatedAt" required="Y"/>
+      <field name="ValuationLoanMarketValue" required="Y"/>
+      <field name="ValuationRequiredCashCollateral" required="Y"/>
+      <field name="ValuationCoveragePercentage" required="Y"/>
+      <field name="ValuationCashHaircutPercentage" required="Y"/>
+      <field name="CreditReservationAmount" required="Y"/>
+      <field name="ContractLoanMarketValue" required="Y"/>
+      <field name="ContractRequiredCashCollateral" required="Y"/>
+      <field name="SettlementCalendarVersion" required="Y"/>
+      <field name="ContractSettlementDate" required="Y"/>
+      <field name="EventID" required="Y"/>
+      <field name="DecisionRespondedAtExact" required="Y"/>
+    </message>
+    <message name="LendingInitialSettlementConfirmation" msgtype="U2" msgcat="app">
+      <field name="Currency" required="Y"/>
+      <field name="IDSource" required="Y"/>
+      <field name="SecurityID" required="Y"/>
+      <field name="TransactTime" required="Y"/>
+      <field name="SettlementTransactionReference" required="Y"/>
+      <field name="SettlementInstructionReference" required="Y"/>
+      <field name="SettlementInstructionType" required="Y"/>
+      <field name="SettlementStatus" required="Y"/>
+      <field name="SettlementContractStatus" required="Y"/>
+      <field name="SettlementContractVersion" required="Y"/>
+      <field name="SettlementDeliveredQuantity" required="Y"/>
+      <field name="SettlementOutstandingQuantity" required="Y"/>
+      <field name="SettlementConfirmedCashCollateral" required="Y"/>
+      <field name="SettlementExternalConfirmationReference" required="Y"/>
+      <field name="SettlementSimulatedConfirmation" required="Y"/>
+      <field name="SettlementEventID" required="Y"/>
+      <field name="SettlementAggregateVersion" required="Y"/>
+      <field name="SettlementSettledAtExact" required="Y"/>
+      <field name="SettlementQuantity" required="Y"/>
+    </message>
+  </messages>
+  <trailer>
+    <field name="CheckSum" required="Y"/>
+  </trailer>
+  <fields>
+    <field number="8" name="BeginString" type="STRING"/>
+    <field number="9" name="BodyLength" type="LENGTH"/>
+    <field number="10" name="CheckSum" type="STRING"/>
+    <field number="15" name="Currency" type="CURRENCY"/>
+    <field number="22" name="IDSource" type="STRING">
+      <value enum="4" description="ISIN"/>
+    </field>
+    <field number="34" name="MsgSeqNum" type="SEQNUM"/>
+    <field number="35" name="MsgType" type="STRING">
+      <value enum="U1" description="BorrowerLoanRequest"/>
+      <value enum="BB" description="CollateralInquiry"/>
+      <value enum="BA" description="CollateralReport"/>
+      <value enum="AK" description="LendingLoanApprovalConfirmation"/>
+      <value enum="U2" description="LendingInitialSettlementConfirmation"/>
+    </field>
+    <field number="38" name="OrderQty" type="QTY"/>
+    <field number="48" name="SecurityID" type="STRING"/>
+    <field number="49" name="SenderCompID" type="STRING"/>
+    <field number="52" name="SendingTime" type="UTCTIMESTAMP"/>
+    <field number="56" name="TargetCompID" type="STRING"/>
+    <field number="64" name="SettlDate" type="LOCALMKTDATE"/>
+    <field number="896" name="CollInquiryQualifier" type="INT">
+      <value enum="0" description="TRADEDATE"/>
+      <value enum="1" description="GC_INSTRUMENT"/>
+      <value enum="2" description="COLLATERALINSTRUMENT"/>
+      <value enum="3" description="SUBSTITUTION_ELIGIBLE"/>
+      <value enum="4" description="NOT_ASSIGNED"/>
+      <value enum="5" description="PARTIALLY_ASSIGNED"/>
+      <value enum="6" description="FULLY_ASSIGNED"/>
+      <value enum="7" description="OUTSTANDING_TRADES"/>
+    </field>
+    <field number="908" name="CollRptID" type="STRING"/>
+    <field number="909" name="CollInquiryID" type="STRING"/>
+    <field number="910" name="CollStatus" type="INT">
+      <value enum="0" description="UNASSIGNED"/>
+      <value enum="1" description="PARTIALLY_ASSIGNED"/>
+      <value enum="2" description="ASSIGNMENT_PROPOSED"/>
+      <value enum="3" description="ASSIGNED"/>
+      <value enum="4" description="CHALLENGED"/>
+    </field>
+    <field number="938" name="NoCollInquiryQualifier" type="NUMINGROUP"/>
+    <field number="918" name="AgreementCurrency" type="CURRENCY"/>
+    <field number="60" name="TransactTime" type="UTCTIMESTAMP"/>
+    <field number="75" name="TradeDate" type="LOCALMKTDATE"/>
+    <field number="664" name="ConfirmID" type="STRING"/>
+    <field number="665" name="ConfirmStatus" type="INT">
+      <value enum="1" description="RECEIVED"/>
+      <value enum="2" description="MISMATCHED_ACCOUNT"/>
+      <value enum="3" description="MISSING_SETTLEMENT_INSTRUCTIONS"/>
+      <value enum="4" description="CONFIRMED"/>
+      <value enum="5" description="REQUEST_REJECTED"/>
+    </field>
+    <field number="666" name="ConfirmTransType" type="INT">
+      <value enum="0" description="NEW"/>
+      <value enum="1" description="REPLACE"/>
+      <value enum="2" description="CANCEL"/>
+    </field>
+    <field number="773" name="ConfirmType" type="INT">
+      <value enum="1" description="STATUS"/>
+      <value enum="2" description="CONFIRMATION"/>
+      <value enum="3" description="CONFIRMATION_REQUEST_REJECTED"/>
+    </field>
+    <field number="9001" name="RequestReference" type="STRING"/>
+    <field number="9002" name="MslaReference" type="STRING"/>
+    <field number="9003" name="SubmitterIssuer" type="STRING"/>
+    <field number="9004" name="SubmitterSubject" type="STRING"/>
+    <field number="9005" name="LocateReference" type="STRING"/>
+    <field number="9010" name="LendingCollateralType" type="STRING"/>
+    <field number="9011" name="LendingCashHaircutPercentage" type="PERCENTAGE"/>
+    <field number="9012" name="LendingCollateralCoveragePercentage" type="PERCENTAGE"/>
+    <field number="9100" name="DecisionVersion" type="INT"/>
+    <field number="9101" name="DecisionStatus" type="STRING"/>
+    <field number="9102" name="SecurityISIN" type="STRING"/>
+    <field number="9103" name="ContractQuantity" type="QTY"/>
+    <field number="9104" name="ContractCurrency" type="CURRENCY"/>
+    <field number="9105" name="AgreedAnnualFeePercentage" type="PERCENTAGE"/>
+    <field number="9106" name="DayCountBasis" type="STRING"/>
+    <field number="9107" name="ContractCoveragePercentage" type="PERCENTAGE"/>
+    <field number="9108" name="CollateralType" type="STRING"/>
+    <field number="9109" name="CollateralCurrency" type="CURRENCY"/>
+    <field number="9110" name="CollateralHaircutID" type="INT"/>
+    <field number="9111" name="CollateralHaircutPercentage" type="PERCENTAGE"/>
+    <field number="9112" name="CollateralTermsCoveragePercentage" type="PERCENTAGE"/>
+    <field number="9113" name="CollateralRequiredAmount" type="AMT"/>
+    <field number="9114" name="CollateralLoanMarketValue" type="AMT"/>
+    <field number="9115" name="CollateralValuationReference" type="STRING"/>
+    <field number="9116" name="ValuationCalculationReference" type="STRING"/>
+    <field number="9117" name="ValuationSecurityISIN" type="STRING"/>
+    <field number="9118" name="ValuationQuantity" type="QTY"/>
+    <field number="9119" name="ValuationMarketPrice" type="PRICE"/>
+    <field number="9120" name="ValuationCurrency" type="CURRENCY"/>
+    <field number="9121" name="ValuationPriceReference" type="STRING"/>
+    <field number="9122" name="ValuationPriceSource" type="STRING"/>
+    <field number="9123" name="ValuationPriceTimestamp" type="STRING"/>
+    <field number="9124" name="ValuationCalculatedAt" type="STRING"/>
+    <field number="9125" name="ValuationLoanMarketValue" type="AMT"/>
+    <field number="9126" name="ValuationRequiredCashCollateral" type="AMT"/>
+    <field number="9127" name="ValuationCoveragePercentage" type="PERCENTAGE"/>
+    <field number="9128" name="ValuationCashHaircutPercentage" type="PERCENTAGE"/>
+    <field number="9129" name="CreditReservationAmount" type="AMT"/>
+    <field number="9130" name="ContractLoanMarketValue" type="AMT"/>
+    <field number="9131" name="ContractRequiredCashCollateral" type="AMT"/>
+    <field number="9132" name="SettlementCalendarVersion" type="STRING"/>
+    <field number="9133" name="ContractSettlementDate" type="LOCALMKTDATE"/>
+    <field number="9134" name="EventID" type="STRING"/>
+    <field number="9135" name="DecisionRespondedAtExact" type="STRING"/>
+    <field number="9140" name="SettlementTransactionReference" type="STRING"/>
+    <field number="9141" name="SettlementInstructionReference" type="STRING"/>
+    <field number="9142" name="SettlementInstructionType" type="STRING">
+      <value enum="SECURITY_DELIVERY" description="Initial securities delivery"/>
+    </field>
+    <field number="9143" name="SettlementStatus" type="STRING">
+      <value enum="SETTLED" description="Initial securities delivery confirmed"/>
+    </field>
+    <field number="9144" name="SettlementContractStatus" type="STRING">
+      <value enum="ON_LOAN" description="Contract securities delivered"/>
+    </field>
+    <field number="9145" name="SettlementContractVersion" type="INT"/>
+    <field number="9146" name="SettlementDeliveredQuantity" type="QTY"/>
+    <field number="9147" name="SettlementOutstandingQuantity" type="QTY"/>
+    <field number="9148" name="SettlementConfirmedCashCollateral" type="AMT"/>
+    <field number="9149" name="SettlementExternalConfirmationReference" type="STRING"/>
+    <field number="9150" name="SettlementSimulatedConfirmation" type="BOOLEAN">
+      <value enum="Y" description="Existing simulated confirmation flow"/>
+    </field>
+    <field number="9151" name="SettlementEventID" type="STRING"/>
+    <field number="9152" name="SettlementAggregateVersion" type="INT">
+      <value enum="1" description="Initial securities-delivery update"/>
+    </field>
+    <field number="9153" name="SettlementSettledAtExact" type="STRING"/>
+    <field number="9154" name="SettlementQuantity" type="QTY"/>
+  </fields>
+</fix>
