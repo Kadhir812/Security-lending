@@ -197,7 +197,8 @@ public class FeeProjectionService {
       if ((!received && !finalized)
           || decimal(existing.get("amount")).compareTo(decimal(payload.get("amount"))) != 0
           || !Objects.equals(existing.get("currency"), payload.get("currency"))
-          || !Objects.equals(existing.get("allocations"), allocations)) {
+          || !canonicalAllocations(mapList(existing.get("allocations")))
+              .equals(canonicalAllocations(allocations))) {
         throw invalid("FEE_PAYMENT_STATUS_TRANSITION_INVALID");
       }
     }
@@ -263,6 +264,15 @@ public class FeeProjectionService {
 
   private String text(Object value) {
     return value instanceof String text && !text.isBlank() ? text : null;
+  }
+
+  private List<String> canonicalAllocations(List<Map<String, Object>> allocations) {
+    return allocations.stream()
+        .map(allocation -> text(allocation.get("itemKey")) + ":"
+            + text(allocation.get("calculationResultReference")) + ":"
+            + decimal(allocation.get("amount")).setScale(2).toPlainString())
+        .sorted()
+        .toList();
   }
 
   private InvalidEnvelopeException invalid(String reason) {
