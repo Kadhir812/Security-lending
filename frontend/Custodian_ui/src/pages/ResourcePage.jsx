@@ -70,8 +70,25 @@ export default function ResourcePage({ name }) {
       else if (config.resource === 'creditLimits') result = await resource.create(values.mslaReference, body)
       else result = await resource.create(body)
       reset(); setResponse(result); notify(`${editing ? 'Updated' : 'Created'} successfully; inspect the returned status and version.`, 'success'); reload()
-    } catch (e) { setErrorForm(e.message); if (e.status === 409) reload() }
-    finally { setSaving(false) }
+    } catch (e) {
+      const detail = e?.data?.detail || e?.data?.message || e?.message || 'Unknown error'
+      const isForeignKeyMismatch = /foreign key|fk_|constraint|integrity/i.test(String(detail))
+      console.error('[Resource form submission failed]', {
+        resource: config.resource,
+        action: editing ? 'update' : 'create',
+        payload: values,
+        status: e?.status,
+        correlationId: e?.correlationId,
+        detail,
+        isForeignKeyMismatch,
+        fullError: e,
+      })
+      const friendlyError = isForeignKeyMismatch
+        ? 'Database integrity issue: the backend rejected the insert because of a foreign-key or constraint mismatch. Check the lender organization and security reference in the live database.'
+        : detail
+      setErrorForm(friendlyError)
+      if (e.status === 409) reload()
+    } finally { setSaving(false) }
   }
   async function showHistory(row) { setHistory(null); setHistoryError(''); try { setHistory({ ref: row.mslaReference, data: await api.creditLimits.history(row.mslaReference) }) } catch(e) { setHistoryError(e.message) } }
   const scopedMissing = !!config.scope && !scope

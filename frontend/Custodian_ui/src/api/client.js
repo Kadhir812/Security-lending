@@ -89,9 +89,33 @@ export async function request(path, { method = 'GET', body, params, headers = {}
     const data = error.response?.data ?? null
     const detail = typeof data === 'object' && data !== null ? (data.message || data.detail || data.error || data.title) : null
     const correlationId = error.response?.headers?.['x-correlation-id'] || error.config?.headers?.['X-Correlation-ID']
+    const isDbConstraintIssue = /foreign key|constraint|integrity|duplicate entry|sqlstate|fk_/i.test(String(detail || ''))
     const message = status
       ? detail || messages[status] || `Request failed (HTTP ${status}).`
       : 'Cannot reach the Custodian service. Check the API address, backend and CORS/proxy configuration.'
+    console.error('[Custodian API request failed]', {
+      path,
+      method,
+      status,
+      detail,
+      correlationId,
+      payload: body,
+      params: cleanParams,
+      responseData: data,
+      isDbConstraintIssue,
+      isForeignKeyMismatch: isDbConstraintIssue && /foreign key|fk_/i.test(String(detail || '')),
+      error,
+    })
+    if (status === 409 && isDbConstraintIssue) {
+      console.warn('[Custodian DB constraint issue]', {
+        path,
+        method,
+        status,
+        detail,
+        correlationId,
+        hint: 'Likely backend database integrity issue: check the live lender_inventory schema, FK references, and organization/security rows.',
+      })
+    }
     throw new ApiError(status, message, data, correlationId)
   }
 }

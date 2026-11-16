@@ -68,9 +68,100 @@ public class ApiExceptionHandler {
   }
 
   @ExceptionHandler(DataIntegrityViolationException.class)
-  ProblemDetail conflict() {
-    return ProblemDetail.forStatusAndDetail(
-        HttpStatus.CONFLICT, "Persistence constraint violated");
+  ProblemDetail conflict(DataIntegrityViolationException exception) {
+    String sqlState = findSqlState(exception);
+    Integer mysqlErrorCode = findMysqlErrorCode(exception);
+    String constraintName = findConstraintName(exception);
+    String dbMessage = extractDatabaseMessage(exception);
+    boolean foreignKeyViolation = isForeignKeyViolation(constraintName, sqlState, dbMessage);
+    log.error(
+        "Data integrity violation on persistence request: sqlState={}, mysqlErrorCode={}, constraintName={}, foreignKeyViolation={}, databaseMessage={}, liveDbCheck='organization_id and security_isin / referenced tables', rootCause={}",
+        sqlState,
+        mysqlErrorCode,
+        constraintName,
+        foreignKeyViolation,
+        dbMessage,
+        exception.getMostSpecificCause() != null ? exception.getMostSpecificCause() : exception,
+        exception);
+    String detail = foreignKeyViolation
+        ? "Database foreign key mismatch: the lender organization reference, security ISIN, or referenced live DB row is invalid or missing. Check the custodian database schema and foreign-key references."
+        : "Persistence constraint violated";
+    return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, detail);
+  }
+
+  private String extractDatabaseMessage(Throwable throwable) {
+    Throwable current = throwable;
+    while (current != null) {
+      if (current.getMessage() != null && !current.getMessage().isBlank()) {
+        return current.getMessage();
+      }
+      current = current.getCause();
+    }
+    return null;
+  }
+
+  private boolean isForeignKeyViolation(String constraintName, String sqlState, String message) {
+    String normalizedConstraint = constraintName == null ? "" : constraintName.toLowerCase();
+    String normalizedMessage = message == null ? "" : message.toLowerCase();
+    return normalizedConstraint.contains("fk_")
+        || normalizedConstraint.contains("foreign_key")
+        || normalizedMessage.contains("foreign key")
+        || normalizedMessage.contains("cannot add or update a child row")
+        || ("23000".equalsIgnoreCase(sqlState) && normalizedMessage.contains("foreign key constraint"));
+  }
+
+  private String findSqlState(Throwable throwable) {
+    Throwable current = throwable;
+    while (current != null) {
+      if (current instanceof java.sql.SQLException sqlException && sqlException.getSQLState() != null) {
+        return sqlException.getSQLState();
+      }
+      if (current instanceof org.hibernate.exception.ConstraintViolationException constraintViolationException
+          && constraintViolationException.getSQLState() != null) {
+        return constraintViolationException.getSQLState();
+      }
+      current = current.getCause();
+    }
+    return null;
+  }
+
+  private Integer findMysqlErrorCode(Throwable throwable) {
+    Throwable current = throwable;
+    while (current != null) {
+      if (current instanceof java.sql.SQLException sqlException && sqlException.getErrorCode() != 0) {
+        return sqlException.getErrorCode();
+      }
+      if (current instanceof org.hibernate.exception.ConstraintViolationException constraintViolationException
+          && constraintViolationException.getErrorCode() != 0) {
+        return constraintViolationException.getErrorCode();
+      }
+      current = current.getCause();
+    }
+    return null;
+  }
+
+  private String findConstraintName(Throwable throwable) {
+    Throwable current = throwable;
+    while (current != null) {
+      if (current instanceof org.hibernate.exception.ConstraintViolationException constraintViolationException
+          && constraintViolationException.getConstraintName() != null) {
+        return constraintViolationException.getConstraintName();
+      }
+      if (current instanceof java.sql.SQLException sqlException) {
+        String message = sqlException.getMessage();
+        if (message != null) {
+          int start = message.indexOf("for key '");
+          if (start >= 0) {
+            int end = message.indexOf("'", start + 10);
+            if (end > start + 10) {
+              return message.substring(start + 10, end);
+            }
+          }
+        }
+      }
+      current = current.getCause();
+    }
+    return null;
   }
 
   @ExceptionHandler(Exception.class)

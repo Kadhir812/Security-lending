@@ -17,6 +17,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -55,22 +56,40 @@ public class LocateRequestService {
     }
 
     var now = clock.instant();
-    LocateRequest locate =
-        locates.saveAndFlush(
-            LocateRequest.builder()
-                .borrowerOrganizationReference(borrower.getOrganizationReference())
-                .custodianOrganizationReference(validated.custodianOrganizationReference())
-                .submissionStatus(SubmissionStatus.QUEUED.name())
-                .decisionSourceVersion(0L)
-                .version(0L)
-                .locateReference(locateReference)
-                .mslaReference(submission.mslaReference())
-                .securityIsin(submission.securityIsin())
-                .quantity(submission.quantity())
-                .createdBy(borrower.getUserId())
-                .requestTime(now)
-                .status(LocateStatus.PENDING)
-                .build());
+    LocateRequest locate;
+    try {
+      locate =
+          locates.saveAndFlush(
+              LocateRequest.builder()
+                  .borrowerOrganizationReference(borrower.getOrganizationReference())
+                  .custodianOrganizationReference(validated.custodianOrganizationReference())
+                  .submissionStatus(SubmissionStatus.QUEUED.name())
+                  .decisionSourceVersion(0L)
+                  .version(0L)
+                  .locateReference(locateReference)
+                  .mslaReference(submission.mslaReference())
+                  .securityIsin(submission.securityIsin())
+                  .quantity(submission.quantity())
+                  .createdBy(borrower.getUserId())
+                  .requestTime(now)
+                  .status(LocateStatus.PENDING)
+                  .build());
+    } catch (DataIntegrityViolationException duplicateException) {
+      LocateRequest duplicateRecord =
+          locates
+              .findByLocateReferenceAndBorrowerOrganizationReference(
+                  locateReference, borrower.getOrganizationReference())
+              .orElse(null);
+      if (duplicateRecord == null) {
+        throw duplicateException;
+      }
+      if (!duplicateRecord.getMslaReference().equals(submission.mslaReference())
+          || !duplicateRecord.getSecurityIsin().equals(submission.securityIsin())
+          || !Objects.equals(duplicateRecord.getQuantity(), submission.quantity())) {
+        throw BorrowerException.conflict("Locate idempotency key was reused with different inputs");
+      }
+      return response(duplicateRecord);
+    }
 
     EventEnvelope event =
         EventEnvelope.builder()
