@@ -2,7 +2,12 @@
 
 -- Fresh schema; MySQL 8.0.16+; UTC. Not a migration.
 -- No cross-service DB queries/FKs. External references are validated by backend.
-CREATE DATABASE IF NOT EXISTS security_market_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+DROP DATABASE IF EXISTS security_market_db;
+DROP DATABASE IF EXISTS custodian_db;
+DROP DATABASE IF EXISTS borrower_db;
+DROP DATABASE IF EXISTS valuation_accrual_db;
+
+CREATE DATABASE security_market_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE security_market_db;
 SET time_zone = '+00:00';
 
@@ -1046,3 +1051,39 @@ CREATE INDEX idx_inbox_message_processing ON inbox_message (correlation_id);
 CREATE INDEX idx_message_log_processing ON message_log (correlation_id, created_at);
 CREATE INDEX idx_calculation_run_processing ON calculation_run (status, created_at);
 CREATE INDEX idx_calculation_result_processing ON calculation_result (transaction_reference, calculation_date, result_type);
+
+-- Seed a known market universe across the core services so a clean local stack is immediately usable.
+USE security_market_db;
+INSERT INTO security_master (symbol, security_name, isin, security_type, currency, exchange_name, status)
+VALUES
+  ('RELIANCE', 'Reliance Industries Limited', 'INE002A01018', 'EQUITY', 'INR', 'NSE', 'ACTIVE'),
+  ('TCS', 'Tata Consultancy Services Limited', 'INE467B01029', 'EQUITY', 'INR', 'NSE', 'ACTIVE'),
+  ('HDFCBANK', 'HDFC Bank Limited', 'INE040A01034', 'EQUITY', 'INR', 'NSE', 'ACTIVE'),
+  ('INFY', 'Infosys Limited', 'INE009A01021', 'EQUITY', 'INR', 'NSE', 'ACTIVE'),
+  ('ICICIBANK', 'ICICI Bank Limited', 'INE090A01021', 'EQUITY', 'INR', 'NSE', 'ACTIVE'),
+  ('SBIN', 'State Bank of India', 'INE062A01020', 'EQUITY', 'INR', 'NSE', 'ACTIVE');
+
+INSERT INTO security_price (price_reference, security_id, market_price, price_timestamp, source_name)
+SELECT UUID(), sm.security_id, 2584.500000, '2026-01-02 10:00:00.000000', 'DEMO_SIMULATED'
+FROM security_master sm
+WHERE sm.isin = 'INE002A01018'
+UNION ALL
+SELECT UUID(), sm.security_id, 3687.250000, '2026-01-02 10:00:00.000000', 'DEMO_SIMULATED'
+FROM security_master sm
+WHERE sm.isin = 'INE467B01029'
+UNION ALL
+SELECT UUID(), sm.security_id, 1722.750000, '2026-01-02 10:00:00.000000', 'DEMO_SIMULATED'
+FROM security_master sm
+WHERE sm.isin = 'INE040A01034'
+UNION ALL
+SELECT UUID(), sm.security_id, 1523.500000, '2026-01-02 10:00:00.000000', 'DEMO_SIMULATED'
+FROM security_master sm
+WHERE sm.isin = 'INE009A01021'
+UNION ALL
+SELECT UUID(), sm.security_id, 1178.000000, '2026-01-02 10:00:00.000000', 'DEMO_SIMULATED'
+FROM security_master sm
+WHERE sm.isin = 'INE090A01021'
+UNION ALL
+SELECT UUID(), sm.security_id, 890.250000, '2026-01-02 10:00:00.000000', 'DEMO_SIMULATED'
+FROM security_master sm
+WHERE sm.isin = 'INE062A01020';

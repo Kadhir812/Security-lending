@@ -1,6 +1,7 @@
 -- Fresh schema; MySQL 8.0.16+; UTC. Not a migration.
 -- No cross-service DB queries/FKs. External references are validated by backend.
-CREATE DATABASE IF NOT EXISTS borrower_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+DROP DATABASE IF EXISTS borrower_db;
+CREATE DATABASE borrower_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE borrower_db;
 SET time_zone = '+00:00';
 
