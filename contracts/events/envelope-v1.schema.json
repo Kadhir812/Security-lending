@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:securities-lending:event-envelope:v1",
+  "title": "Common event envelope, version 1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["eventId", "eventType", "schemaVersion", "producerService", "destinationService", "correlationId", "aggregateReference", "aggregateVersion", "occurredAt", "payload"],
+  "properties": {
+    "eventId": {"type": "string", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"},
+    "eventType": {"type": "string", "minLength": 1, "maxLength": 100},
+    "schemaVersion": {"const": 1},
+    "producerService": {"type": "string", "pattern": "^[A-Z][A-Z0-9_]{0,79}$"},
+    "destinationService": {"type": "string", "pattern": "^[A-Z][A-Z0-9_]{0,79}$"},
+    "correlationId": {"type": "string", "minLength": 1, "maxLength": 80},
+    "causationEventId": {"type": ["string", "null"], "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"},
+    "aggregateReference": {"type": "string", "minLength": 1, "maxLength": 80},
+    "aggregateVersion": {"type": "integer", "minimum": 0, "maximum": 9223372036854775807},
+    "occurredAt": {"type": "string", "format": "date-time"},
+    "senderOrganizationReference": {"type": ["string", "null"], "maxLength": 80},
+    "receiverOrganizationReference": {"type": ["string", "null"], "maxLength": 80},
+    "payload": {"type": "object", "description": "JSON business data only. Runtime validation rejects credential/token keys recursively. No business payload schema is introduced in Stage 2."}
+  },
+  "$comment": "Runtime also rejects blank required strings, oversized UTF-8 envelopes, invalid routing, unsupported handlers, and keys that do not match aggregateReference. Additive envelope fields are tolerated but not interpreted or retained in canonical persistence. eventType permission is a per-service allowlist, not this generic schema."
+}

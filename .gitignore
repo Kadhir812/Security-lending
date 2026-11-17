@@ -1,0 +1,20 @@
+
+# Keep local runtime assets and bootstrap scripts in the repository
+!kafka/
+!kafka/**
+!kafka-runtime/
+!kafka-runtime/**
+!start-local-stack.cmd
+
+app-logs/
+*.log
+**/target/
+.stage1/
+.stage2/
+.stage3a/
+.phase3b/
+.m2/
+/prompts/
+docs/
+!docs/
+docs/*

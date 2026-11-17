@@ -1,0 +1,15 @@
+{
+  "eventId": "7cdceaa4-ff26-4fa6-831a-cb0fd1fae746",
+  "eventType": "STAGE2_PING",
+  "schemaVersion": 1,
+  "producerService": "BORROWER",
+  "destinationService": "CUSTODIAN",
+  "correlationId": "stage2-example",
+  "causationEventId": null,
+  "aggregateReference": "stage2-example-aggregate",
+  "aggregateVersion": 1,
+  "occurredAt": "2026-11-07T07:00:00Z",
+  "senderOrganizationReference": "BORROWER-TEST",
+  "receiverOrganizationReference": "CUSTODIAN-TEST",
+  "payload": {"probe": true}
+}

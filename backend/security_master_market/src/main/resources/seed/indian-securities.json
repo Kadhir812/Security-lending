@@ -1,0 +1,1702 @@
+[
+  {
+    "security": {
+      "isin": "INE144J01027",
+      "symbol": "20MICRONS",
+      "securityName": "20 Microns Limited",
+      "securityType": "EQUITY",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "100.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "22827ad2-920d-573c-bb1b-c7e3283ee1df"
+  },
+  {
+    "security": {
+      "isin": "INE466L01038",
+      "symbol": "360ONE",
+      "securityName": "360 ONE WAM LIMITED",
+      "securityType": "EQUITY",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "107.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "5caf4fea-b2d5-5b2c-bb71-ab57030ac74b"
+  },
+  {
+    "security": {
+      "isin": "INE994E01018",
+      "symbol": "3BBLACKBIO",
+      "securityName": "3B Blackbio Dx Limited",
+      "securityType": "EQUITY",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "114.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "7a301ac2-84ba-5fe1-aef2-7bb6c96d6779"
+  },
+  {
+    "security": {
+      "isin": "INE470A01017",
+      "symbol": "3MINDIA",
+      "securityName": "3M India Limited",
+      "securityType": "EQUITY",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "121.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "794bcde9-472c-5aa2-b827-ec499d0cdf6a"
+  },
+  {
+    "security": {
+      "isin": "INE105C01023",
+      "symbol": "3PLAND",
+      "securityName": "3P Land Holdings Limited",
+      "securityType": "EQUITY",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "128.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "08774e20-bbc9-59d7-ae19-e6fabb4315da"
+  },
+  {
+    "security": {
+      "isin": "INE618L01018",
+      "symbol": "5PAISA",
+      "securityName": "5Paisa Capital Limited",
+      "securityType": "EQUITY",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "135.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "1ce889a9-60fb-5651-8fe3-35a0e1a89968"
+  },
+  {
+    "security": {
+      "isin": "INE111B01023",
+      "symbol": "63MOONS",
+      "securityName": "63 moons technologies limited",
+      "securityType": "EQUITY",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "142.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "45515c08-08f5-512b-be32-bb7cc5fd4518"
+  },
+  {
+    "security": {
+      "isin": "INE619I01012",
+      "symbol": "A2ZINFRA",
+      "securityName": "A2Z Infra Engineering Limited",
+      "securityType": "EQUITY",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "149.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "930c52b4-b226-574e-8c07-6236cce1a446"
+  },
+  {
+    "security": {
+      "isin": "INE0D0U01013",
+      "symbol": "AAATECH",
+      "securityName": "AAA Technologies Limited",
+      "securityType": "EQUITY",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "156.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "d3cc1b01-8701-55a0-96ef-a627e42b81b2"
+  },
+  {
+    "security": {
+      "isin": "INE883F01010",
+      "symbol": "AADHARHFC",
+      "securityName": "Aadhar Housing Finance Limited",
+      "securityType": "EQUITY",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "163.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "92682f7f-4343-5f36-adc8-84a635f96f95"
+  },
+  {
+    "security": {
+      "isin": "INE087Z01024",
+      "symbol": "AAKASH",
+      "securityName": "Aakash Exploration Services Limited",
+      "securityType": "EQUITY",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "170.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "dd697b4f-4792-518a-b82f-efaeff17ec49"
+  },
+  {
+    "security": {
+      "isin": "INE198H01019",
+      "symbol": "AAREYDRUGS",
+      "securityName": "Aarey Drugs & Pharmaceuticals Limited",
+      "securityType": "EQUITY",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "177.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "2b544730-460f-5773-8422-443335861d07"
+  },
+  {
+    "security": {
+      "isin": "INE721Z01010",
+      "symbol": "AARON",
+      "securityName": "Aaron Industries Limited",
+      "securityType": "EQUITY",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "184.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "68551063-ed75-5815-8f07-bd44d0afa091"
+  },
+  {
+    "security": {
+      "isin": "INE01C001026",
+      "symbol": "AARTECH",
+      "securityName": "Aartech Solonics Limited",
+      "securityType": "EQUITY",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "191.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "edb6e318-ef74-5ba7-be5a-0e9feff41941"
+  },
+  {
+    "security": {
+      "isin": "INE767A01016",
+      "symbol": "AARTIDRUGS",
+      "securityName": "Aarti Drugs Limited",
+      "securityType": "EQUITY",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "198.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "1dac2d98-01f1-5285-8f16-fd766a368f69"
+  },
+  {
+    "security": {
+      "isin": "INE769A01020",
+      "symbol": "AARTIIND",
+      "securityName": "Aarti Industries Limited",
+      "securityType": "EQUITY",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "205.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "7d8e5ea1-da6c-5be0-906a-534dd7fa7224"
+  },
+  {
+    "security": {
+      "isin": "INE0LRU01027",
+      "symbol": "AARTIPHARM",
+      "securityName": "Aarti Pharmalabs Limited",
+      "securityType": "EQUITY",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "212.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "1c63bfa5-8949-5774-9dd1-d4a897e0b963"
+  },
+  {
+    "security": {
+      "isin": "INE754X01016",
+      "symbol": "AARVI",
+      "securityName": "Aarvi Encon Limited",
+      "securityType": "EQUITY",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "219.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "7b964102-2afe-567f-8d88-8adc15f1c05c"
+  },
+  {
+    "security": {
+      "isin": "INE2FMX01012",
+      "symbol": "AASTHA",
+      "securityName": "Aastha Spintex Limited",
+      "securityType": "EQUITY",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "226.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "ae1c76a4-0216-5ae4-a0a3-1a2719780558"
+  },
+  {
+    "security": {
+      "isin": "INE216P01012",
+      "symbol": "AAVAS",
+      "securityName": "Aavas Financiers Limited",
+      "securityType": "EQUITY",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "233.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "4f1c387a-af58-5183-9083-488d4311e043"
+  },
+  {
+    "security": {
+      "isin": "INE365O01028",
+      "symbol": "ABANSENT",
+      "securityName": "Abans Enterprises Limited",
+      "securityType": "EQUITY",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "240.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "ab2fecac-6188-5909-b913-598b769d9528"
+  },
+  {
+    "security": {
+      "isin": "INE117A01022",
+      "symbol": "ABB",
+      "securityName": "ABB India Limited",
+      "securityType": "EQUITY",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "247.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "c2da9fc8-c8b2-5081-a047-2660d39e72c3"
+  },
+  {
+    "security": {
+      "isin": "INE358A01014",
+      "symbol": "ABBOTINDIA",
+      "securityName": "Abbott India Limited",
+      "securityType": "EQUITY",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "254.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "64b21bdd-d9bc-55a1-aad4-c65dcb52a706"
+  },
+  {
+    "security": {
+      "isin": "INE674K01013",
+      "symbol": "ABCAPITAL",
+      "securityName": "Aditya Birla Capital Limited",
+      "securityType": "EQUITY",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "261.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "060e1819-7dec-5958-abf6-e84b5de60836"
+  },
+  {
+    "security": {
+      "isin": "INE08PH01015",
+      "symbol": "ABCIND",
+      "securityName": "ABC Industries India Limited",
+      "securityType": "EQUITY",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "268.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "2fac0243-c6d9-5674-aed6-6724c5b4f3f3"
+  },
+  {
+    "security": {
+      "isin": "INE552Z01027",
+      "symbol": "ABDL",
+      "securityName": "Allied Blenders and Distillers Limited",
+      "securityType": "EQUITY",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "275.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "11669ebc-4a08-5fb7-86a9-4ef3cf72b0c8"
+  },
+  {
+    "security": {
+      "isin": "INE647O01011",
+      "symbol": "ABFRL",
+      "securityName": "Aditya Birla Fashion and Retail Limited",
+      "securityType": "EQUITY",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "282.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "ca06ac66-fec8-5919-812b-1524f5ff5472"
+  },
+  {
+    "security": {
+      "isin": "INE14LE01019",
+      "symbol": "ABLBL",
+      "securityName": "Aditya Birla Lifestyle Brands Limited",
+      "securityType": "EQUITY",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "289.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "d4a41a47-8c93-5280-976c-41962ae17e05"
+  },
+  {
+    "security": {
+      "isin": "INE850B01026",
+      "symbol": "ABMKNO",
+      "securityName": "ABM Knowledgeware Limited",
+      "securityType": "EQUITY",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "296.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "cfcd04dc-b2f1-58b8-b066-0ff4be1e7f33"
+  },
+  {
+    "security": {
+      "isin": "INE055A01016",
+      "symbol": "ABREL",
+      "securityName": "Aditya Birla Real Estate Limited",
+      "securityType": "EQUITY",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "303.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "4e0109c4-1237-59c3-902f-70b4ee2aaab4"
+  },
+  {
+    "security": {
+      "isin": "INE404A01024",
+      "symbol": "ABSLAMC",
+      "securityName": "Aditya Birla Sun Life AMC Limited",
+      "securityType": "EQUITY",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "310.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "075ef304-35f6-58c2-90ea-4451e10e53a9"
+  },
+  {
+    "security": {
+      "isin": "INE012A01025",
+      "symbol": "ACC",
+      "securityName": "ACC Limited",
+      "securityType": "EQUITY",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "317.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "daa05ac3-84dd-5cdf-ba1c-10feaa9df801"
+  },
+  {
+    "security": {
+      "isin": "INE793A01012",
+      "symbol": "ACCELYA",
+      "securityName": "Accelya Solutions India Limited",
+      "securityType": "EQUITY",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "324.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "58501e8a-cc86-530e-87d1-17807f658770"
+  },
+  {
+    "security": {
+      "isin": "INE648Z01023",
+      "symbol": "ACCURACY",
+      "securityName": "Accuracy Shipping Limited",
+      "securityType": "EQUITY",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "331.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "8cb1360a-7031-5cce-b15d-7d56d87eacd1"
+  },
+  {
+    "security": {
+      "isin": "INE731H01025",
+      "symbol": "ACE",
+      "securityName": "Action Construction Equipment Limited",
+      "securityType": "EQUITY",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "338.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "bc2e6724-90cb-57bc-a6c9-312f12aa01ab"
+  },
+  {
+    "security": {
+      "isin": "INE543V01017",
+      "symbol": "ACEINTEG",
+      "securityName": "Ace Integrated Solutions Limited",
+      "securityType": "EQUITY",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "345.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "92e6a82e-e4cd-5733-90b9-189056dee371"
+  },
+  {
+    "security": {
+      "isin": "INE580P01029",
+      "symbol": "ACEVECTOR",
+      "securityName": "AceVector Limited",
+      "securityType": "EQUITY",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "352.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "7062120b-32f8-5b38-aa68-00f4d9e9bd99"
+  },
+  {
+    "security": {
+      "isin": "INE451C01013",
+      "symbol": "ACGL",
+      "securityName": "Automobile Corporation of Goa Limited",
+      "securityType": "EQUITY",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "359.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "e7328c9d-9ab8-5e1a-b413-b944e363ad72"
+  },
+  {
+    "security": {
+      "isin": "INE128X01021",
+      "symbol": "ACI",
+      "securityName": "Archean Chemical Industries Limited",
+      "securityType": "EQUITY",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "366.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "b13bb844-4369-58c9-ae25-708f3a5d4d0a"
+  },
+  {
+    "security": {
+      "isin": "INE666E01020",
+      "symbol": "ACL",
+      "securityName": "Andhra Cements Limited",
+      "securityType": "EQUITY",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "373.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "6d655487-dba4-5927-b360-1c39b62cd1b6"
+  },
+  {
+    "security": {
+      "isin": "INE622W01025",
+      "symbol": "ACMESOLAR",
+      "securityName": "Acme Solar Holdings Limited",
+      "securityType": "EQUITY",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "380.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "1fa4a196-7687-50dd-ab38-9d2605b161a2"
+  },
+  {
+    "security": {
+      "isin": "INE00FF01025",
+      "symbol": "ACUTAAS",
+      "securityName": "Acutaas Chemicals Limited",
+      "securityType": "EQUITY",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "387.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "32f94234-abbb-5037-b779-211155fe7faa"
+  },
+  {
+    "security": {
+      "isin": "INE931S01010",
+      "symbol": "ADANIENSOL",
+      "securityName": "Adani Energy Solutions Limited",
+      "securityType": "EQUITY",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "394.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "41a5895f-a8bd-5553-8056-374f825937e5"
+  },
+  {
+    "security": {
+      "isin": "INE423A01024",
+      "symbol": "ADANIENT",
+      "securityName": "Adani Enterprises Limited",
+      "securityType": "EQUITY",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "401.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "e844e1fc-9581-50df-b503-f70989959f42"
+  },
+  {
+    "security": {
+      "isin": "INE364U01010",
+      "symbol": "ADANIGREEN",
+      "securityName": "Adani Green Energy Limited",
+      "securityType": "EQUITY",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "408.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "d297e1a2-a1a9-5f71-a402-7c08d2ed47d1"
+  },
+  {
+    "security": {
+      "isin": "INE742F01042",
+      "symbol": "ADANIPORTS",
+      "securityName": "Adani Ports and Special Economic Zone Limited",
+      "securityType": "EQUITY",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "415.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "4af8ecbc-2070-5128-bf2e-8cbd7d2461bc"
+  },
+  {
+    "security": {
+      "isin": "INE814H01029",
+      "symbol": "ADANIPOWER",
+      "securityName": "Adani Power Limited",
+      "securityType": "EQUITY",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "422.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "9a04174a-bbcb-5bff-9a23-05ea6211814f"
+  },
+  {
+    "security": {
+      "isin": "INE757C01021",
+      "symbol": "ADDIND",
+      "securityName": "Addi Industries Limited",
+      "securityType": "EQUITY",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "429.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "45eb29af-759a-5f03-a802-f5909af935b2"
+  },
+  {
+    "security": {
+      "isin": "INE982B01027",
+      "symbol": "ADFFOODS",
+      "securityName": "ADF Foods Limited",
+      "securityType": "EQUITY",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "436.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "6625813d-1769-57e2-9c7c-685893e033d5"
+  },
+  {
+    "security": {
+      "isin": "INE0CHO01012",
+      "symbol": "ADL",
+      "securityName": "Archidply Decor Limited",
+      "securityType": "EQUITY",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "443.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "b561a2a9-26f8-5220-a867-7f7bb0654cbb"
+  },
+  {
+    "security": {
+      "isin": "INE045A01017",
+      "symbol": "ADOR",
+      "securityName": "Ador Welding Limited",
+      "securityType": "EQUITY",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "450.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "0a01a76e-baa4-5c7f-a3ac-6829a6e5dfab"
+  },
+  {
+    "security": {
+      "isin": "INE505M01015",
+      "symbol": "ADROITIND",
+      "securityName": "Adroit Industries (India) Limited",
+      "securityType": "EQUITY",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "457.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "816fdcf5-a9a1-555c-8d7f-c393e1c5d5af"
+  },
+  {
+    "security": {
+      "isin": "INE102I01027",
+      "symbol": "ADSL",
+      "securityName": "Allied Digital Services Limited",
+      "securityType": "EQUITY",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "464.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "fe03b85f-9916-57d8-88a9-b8f3259dca51"
+  },
+  {
+    "security": {
+      "isin": "INE0ALI01010",
+      "symbol": "ADVAIT",
+      "securityName": "Advait Energy Transitions Limited",
+      "securityType": "EQUITY",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "471.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "d7b566e5-4501-52af-ac79-e76c38c9a507"
+  },
+  {
+    "security": {
+      "isin": "INE1B0W01010",
+      "symbol": "ADVANCE",
+      "securityName": "Advance Agrolife Limited",
+      "securityType": "EQUITY",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "478.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "448451db-afa0-50ce-910c-412274b96b76"
+  },
+  {
+    "security": {
+      "isin": "INE199C01026",
+      "symbol": "ADVANIHOTR",
+      "securityName": "Advani Hotels & Resorts (India) Limited",
+      "securityType": "EQUITY",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "485.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "1fb05949-1b40-56ee-be13-03f904498eb8"
+  },
+  {
+    "security": {
+      "isin": "INE28GN01010",
+      "symbol": "ADVENTHTL",
+      "securityName": "Advent Hotels International Limited",
+      "securityType": "EQUITY",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "492.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "686962da-eaf9-5903-a6fd-95aaecc7318c"
+  },
+  {
+    "security": {
+      "isin": "INE837H01020",
+      "symbol": "ADVENZYMES",
+      "securityName": "Advanced Enzyme Technologies Limited",
+      "securityType": "EQUITY",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "499.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "91910fb7-d831-552a-98d1-c75b2adfbe77"
+  },
+  {
+    "security": {
+      "isin": "INE178T01024",
+      "symbol": "ADVIKCA",
+      "securityName": "Advik Capital Limited",
+      "securityType": "EQUITY",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "506.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "3e1b50f9-ba29-54f8-886b-911497ae8db8"
+  },
+  {
+    "security": {
+      "isin": "INE208C01025",
+      "symbol": "AEGISLOG",
+      "securityName": "Aegis Logistics Limited",
+      "securityType": "EQUITY",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "513.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "38e96e9c-dd3b-53a2-8e57-f9e0bb506337"
+  },
+  {
+    "security": {
+      "isin": "INE0INX01018",
+      "symbol": "AEGISVOPAK",
+      "securityName": "Aegis Vopak Terminals Limited",
+      "securityType": "EQUITY",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "520.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "95407f88-1818-5719-ac69-b3edf5fbffd0"
+  },
+  {
+    "security": {
+      "isin": "INE757T01025",
+      "symbol": "AEPL",
+      "securityName": "Artemis Electricals and Projects Limited",
+      "securityType": "EQUITY",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "527.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "5b52685a-8eb5-54bb-b991-72207c0a7231"
+  },
+  {
+    "security": {
+      "isin": "INE947N01017",
+      "symbol": "AEQUS",
+      "securityName": "Aequs Limited",
+      "securityType": "EQUITY",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "534.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "caa7e18a-ee27-5a06-823e-f67600ea89ec"
+  },
+  {
+    "security": {
+      "isin": "INE065D01027",
+      "symbol": "AEROENTER",
+      "securityName": "Aeroflex Enterprises Limited",
+      "securityType": "EQUITY",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "541.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "3e915cb3-0956-511b-adba-c10a3689097d"
+  },
+  {
+    "security": {
+      "isin": "INE024001021",
+      "symbol": "AEROFLEX",
+      "securityName": "Aeroflex Industries Limited",
+      "securityType": "EQUITY",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "548.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "50ad8954-d28e-56f8-8638-5fee48094fb7"
+  },
+  {
+    "security": {
+      "isin": "INE035801013",
+      "symbol": "AERONEU",
+      "securityName": "Aeroflex Neu Limited",
+      "securityType": "EQUITY",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "555.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "66cc8597-cf52-5117-bd08-6b9d3405ca87"
+  },
+  {
+    "security": {
+      "isin": "INE05TO01019",
+      "symbol": "AEROPLANE",
+      "securityName": "Amir Chand Jagdish Kumar (Exports) Limited",
+      "securityType": "EQUITY",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "562.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "bbc6e68a-6971-50d9-b1a4-a8bb9c67a47b"
+  },
+  {
+    "security": {
+      "isin": "INE0BWX01014",
+      "symbol": "AETHER",
+      "securityName": "Aether Industries Limited",
+      "securityType": "EQUITY",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "569.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "85f10994-be40-5439-8086-f9655f6045eb"
+  },
+  {
+    "security": {
+      "isin": "INE101I01011",
+      "symbol": "AFCONS",
+      "securityName": "Afcons Infrastructure Limited",
+      "securityType": "EQUITY",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "576.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "efaecc97-e841-5978-b055-2d00e0a1b5d9"
+  },
+  {
+    "security": {
+      "isin": "INE00WC01027",
+      "symbol": "AFFLE",
+      "securityName": "Affle 3i Limited",
+      "securityType": "EQUITY",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "583.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "f3a8819e-a9a1-55d8-b440-b6b9221674bb"
+  },
+  {
+    "security": {
+      "isin": "INE692Z01013",
+      "symbol": "AFFORDABLE",
+      "securityName": "Affordable Robotic & Automation Limited",
+      "securityType": "EQUITY",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "590.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "a099ec10-195d-5330-8a6c-01f368998d6a"
+  },
+  {
+    "security": {
+      "isin": "INE916Y01027",
+      "symbol": "AFIL",
+      "securityName": "Akme Fintrade (India) Limited",
+      "securityType": "EQUITY",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "597.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "f8a8c92c-2332-58e7-bac9-605674ce667b"
+  },
+  {
+    "security": {
+      "isin": "INE00ZE01026",
+      "symbol": "AFSL",
+      "securityName": "Abans Financial Services Limited",
+      "securityType": "EQUITY",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "604.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "80516b06-2f32-5841-9ba0-aca41044be65"
+  },
+  {
+    "security": {
+      "isin": "INE204E01012",
+      "symbol": "AGARIND",
+      "securityName": "Agarwal Industrial Corporation Limited",
+      "securityType": "EQUITY",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "611.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "c9574c6f-49a6-5e92-a2a9-3907d762fc13"
+  },
+  {
+    "security": {
+      "isin": "INE943P01029",
+      "symbol": "AGARWALEYE",
+      "securityName": "Dr. Agarwal's Health Care Limited",
+      "securityType": "EQUITY",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "618.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "04fb79fb-bddf-5161-a719-b6d4ece31d2c"
+  },
+  {
+    "security": {
+      "isin": "INE415A01038",
+      "symbol": "AGI",
+      "securityName": "AGI Greenpac Limited",
+      "securityType": "EQUITY",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "625.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "c4439e03-f844-5ddc-8515-a1191d345ba5"
+  },
+  {
+    "security": {
+      "isin": "INE976R01033",
+      "symbol": "AGIIL",
+      "securityName": "Agi Infra Limited",
+      "securityType": "EQUITY",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "632.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "d963e855-c9fc-5fb0-8134-6da893c72506"
+  },
+  {
+    "security": {
+      "isin": "INE1YPB01014",
+      "symbol": "AGL",
+      "securityName": "Allcargo Global Limited",
+      "securityType": "EQUITY",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "639.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "f459c2cc-08d7-52f8-bf6f-f21b65cd8ca9"
+  },
+  {
+    "security": {
+      "isin": "INE449G01018",
+      "symbol": "AGRITECH",
+      "securityName": "Agri-Tech (India) Limited",
+      "securityType": "EQUITY",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "646.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "bc1cb023-1af1-54d2-9e7c-11d6db22ccbf"
+  },
+  {
+    "security": {
+      "isin": "INE740V01019",
+      "symbol": "AGROPHOS",
+      "securityName": "Agro Phos India Limited",
+      "securityType": "EQUITY",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "653.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "758fd52c-f7e0-54c0-8cd9-a71f6771dd3f"
+  },
+  {
+    "security": {
+      "isin": "INE0Y8W01025",
+      "symbol": "AHCL",
+      "securityName": "Anlon Healthcare Limited",
+      "securityType": "EQUITY",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "660.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "3a183a49-f4db-5ca5-a231-cdbeba3d3906"
+  },
+  {
+    "security": {
+      "isin": "INE00PV01013",
+      "symbol": "AHLADA",
+      "securityName": "Ahlada Engineers Limited",
+      "securityType": "EQUITY",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "667.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "d60c228d-c773-5ced-9225-7241a2eadd25"
+  },
+  {
+    "security": {
+      "isin": "INE926K01017",
+      "symbol": "AHLEAST",
+      "securityName": "Asian Hotels (East) Limited",
+      "securityType": "EQUITY",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "674.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "742c4c2c-cf9f-57bb-b6f6-ffcb4a428250"
+  },
+  {
+    "security": {
+      "isin": "INE758C01029",
+      "symbol": "AHLUCONT",
+      "securityName": "Ahluwalia Contracts (India) Limited",
+      "securityType": "EQUITY",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "681.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "a1b0f733-dd4e-5dc3-8e54-a70fe35d5ad1"
+  },
+  {
+    "security": {
+      "isin": "INE212H01026",
+      "symbol": "AIAENG",
+      "securityName": "AIA Engineering Limited",
+      "securityType": "EQUITY",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "688.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "4bcab574-d468-58e2-ab66-57db658287f9"
+  },
+  {
+    "security": {
+      "isin": "INE206F01022",
+      "symbol": "AIIL",
+      "securityName": "Authum Investment & Infrastructure Limited",
+      "securityType": "EQUITY",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "695.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "34c241f8-bb7c-5e64-b3c6-664c9f2aec25"
+  },
+  {
+    "security": {
+      "isin": "INE645W01026",
+      "symbol": "AIRAN",
+      "securityName": "Airan Limited",
+      "securityType": "EQUITY",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "702.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "d5ba712f-155d-5c7a-b0f4-a94a3284eb11"
+  },
+  {
+    "security": {
+      "isin": "INE801L01010",
+      "symbol": "AIROLAM",
+      "securityName": "Airo Lam limited",
+      "securityType": "EQUITY",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "709.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "5a09f6d4-cdbd-5bb3-95fe-a84ee2c5581f"
+  },
+  {
+    "security": {
+      "isin": "INE031B01049",
+      "symbol": "AJANTPHARM",
+      "securityName": "Ajanta Pharma Limited",
+      "securityType": "EQUITY",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "716.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "c9bbaf2f-1471-5893-b15d-901c234adb87"
+  },
+  {
+    "security": {
+      "isin": "INE274Y01021",
+      "symbol": "AJAXENGG",
+      "securityName": "Ajax Engineering Limited",
+      "securityType": "EQUITY",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "723.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "09faedf8-ddb2-546b-a9af-c26a8a136807"
+  },
+  {
+    "security": {
+      "isin": "INF204KB14I2",
+      "symbol": "NIFTYBEES",
+      "securityName": "NIPINDETFNIFTYBEES",
+      "securityType": "ETF",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "730.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "005dada2-0241-5773-b752-baf88e1387f2"
+  },
+  {
+    "security": {
+      "isin": "INF732E01045",
+      "symbol": "JUNIORBEES",
+      "securityName": "NIP IND ETF JUNIOR BEES",
+      "securityType": "ETF",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "737.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "d0d9fc23-4c31-57f5-9534-9800718698e8"
+  },
+  {
+    "security": {
+      "isin": "INF732E01037",
+      "symbol": "LIQUIDBEES",
+      "securityName": "NIPINDETFLIQUIDBEES",
+      "securityType": "ETF",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "744.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "eb14b885-502b-5cf0-a257-698096bf963a"
+  },
+  {
+    "security": {
+      "isin": "INF204KB15I9",
+      "symbol": "BANKBEES",
+      "securityName": "NIPINDETFBANKBEES",
+      "securityType": "ETF",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "751.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "af595fab-c9bd-5923-bff5-e28d4b81666c"
+  },
+  {
+    "security": {
+      "isin": "INF204KB17I5",
+      "symbol": "GOLDBEES",
+      "securityName": "NIPINDETFGOLDBEES",
+      "securityType": "ETF",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "758.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "0eaa7df5-a8b2-570a-98c6-64117ceb1cff"
+  },
+  {
+    "security": {
+      "isin": "INF789F1AUX7",
+      "symbol": "GOLDBETA",
+      "securityName": "UTIAMC -UTIGOLDBETA",
+      "securityType": "ETF",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "765.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "c33e2077-e8e6-5757-8bd7-9aca33836348"
+  },
+  {
+    "security": {
+      "isin": "INF174KA1HJ8",
+      "symbol": "GOLD1",
+      "securityName": "KotakMutualFund-Gold",
+      "securityType": "ETF",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "772.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "cf36f276-d078-5bb6-8cb4-34cd47b4e98b"
+  },
+  {
+    "security": {
+      "isin": "INF204KB16I7",
+      "symbol": "PSUBNKBEES",
+      "securityName": "NIPINDETFPSUBANKBEES",
+      "securityType": "ETF",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "779.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "68f87f2c-e06c-52d1-a222-629ab5059b4f"
+  },
+  {
+    "security": {
+      "isin": "INF174KA1A86",
+      "symbol": "PSUBANK",
+      "securityName": "KotakMahindraMutualFun",
+      "securityType": "ETF",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "786.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "862ad42c-a0c0-568e-b158-0b76a475755c"
+  },
+  {
+    "security": {
+      "isin": "INF082J01408",
+      "symbol": "QGOLDHALF",
+      "securityName": "Quantum Gold ETF",
+      "securityType": "ETF",
+      "currency": "INR",
+      "exchangeName": "NSE",
+      "status": "ACTIVE"
+    },
+    "price": {
+      "marketPrice": "793.000000",
+      "priceTimestamp": "2026-01-02T10:00:00Z",
+      "sourceName": "DEMO_SIMULATED"
+    },
+    "priceReference": "e68af842-d2d3-560f-8263-02f4236b9497"
+  }
+]
