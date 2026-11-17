@@ -80,6 +80,10 @@ public class MslaAgreement {
   @Column(name = "collateral_coverage_pct", nullable = false, precision = 9, scale = 4)
   private BigDecimal collateralCoveragePct;
 
+  @Builder.Default
+  @Column(name = "agreed_annual_rebate_pct", nullable = false, precision = 10, scale = 6)
+  private BigDecimal agreedAnnualRebatePct = BigDecimal.ZERO;
+
   @Column(name = "mtm_interval_minutes", nullable = false)
   private Integer mtmIntervalMinutes;
 

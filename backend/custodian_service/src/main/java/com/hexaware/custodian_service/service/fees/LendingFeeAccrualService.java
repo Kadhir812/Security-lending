@@ -30,7 +30,6 @@ import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -87,7 +86,7 @@ public class LendingFeeAccrualService {
   }
 
   public int runScheduledAccruals() {
-    LocalDate through = LocalDate.now(clock.withZone(ZoneOffset.UTC)).minusDays(1);
+    LocalDate through = LocalDate.now(clock).minusDays(1);
     int posted = 0;
     for (LoanContract contract : contracts.findByContractStatusIn(
         List.of(LoanContractStatus.ON_LOAN, LoanContractStatus.RETURNED))) {
@@ -172,13 +171,13 @@ public class LendingFeeAccrualService {
       LocalDate to,
       String correctionReference,
       Authentication authentication) {
-    LocalDate today = LocalDate.now(clock.withZone(ZoneOffset.UTC));
+    LocalDate today = LocalDate.now(clock);
     LocalDate firstDelivery = accrualHistory.firstDeliveryDate(contract);
     if (from == null || to == null || from.isAfter(to)
         || to.isAfter(today.minusDays(1))
         || from.isBefore(firstDelivery == null ? from : firstDelivery)
         || java.time.temporal.ChronoUnit.DAYS.between(from, to) > MAX_BACKFILL_DAYS) {
-      throw SetupException.invalid("Accrual date range must contain completed UTC days");
+      throw SetupException.invalid("Accrual date range must contain completed IST days");
     }
     if (!ACT_365.equals(contract.getDayCountBasis())) {
       throw SetupException.conflict("Only the approved ACT_365 fee basis is supported");
@@ -215,7 +214,7 @@ public class LendingFeeAccrualService {
           latest == null ? null : accrualHistory.text(latest.get("resultReference"));
       String requestReference = accrualHistory.requestReference(
           contract.getTransactionReference(), day, inputVersion, correctionReference);
-      Instant cutoff = day.plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant();
+      Instant cutoff = day.plusDays(1).atStartOfDay(clock.getZone()).toInstant();
       LendingFeeCalculationRequest request = LendingFeeCalculationRequest.builder()
           .calculationRequestReference(requestReference)
           .transactionReference(contract.getTransactionReference())

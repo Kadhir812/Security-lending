@@ -16,7 +16,6 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.ZoneOffset;
 import java.util.Currency;
 import java.util.HexFormat;
 import java.util.LinkedHashMap;
@@ -39,7 +38,7 @@ import tools.jackson.databind.ObjectMapper;
 @Service
 @RequiredArgsConstructor
 public class LendingFeeCalculationService {
-  private static final String RULE_VERSION = "LENDING-FEE-MARKET-ACT365-UTC-V1";
+  private static final String RULE_VERSION = "LENDING-FEE-MARKET-ACT365-IST-V2";
   private static final String RESULT_TYPE = "LENDING_FEE";
   private static final String REQUESTER = "CUSTODIAN";
 
@@ -110,7 +109,7 @@ public class LendingFeeCalculationService {
         || Duration.between(price.getPriceTimestamp(), request.getCutoff())
             .compareTo(allowedAge) > 0
         || price.isStale()) {
-      String reason = "No valid market price exists at the UTC accrual cutoff";
+      String reason = "No valid market price exists at the IST accrual cutoff";
       persistPending(request, requestHash, reason);
       return pending(request, reason);
     }
@@ -328,9 +327,9 @@ public class LendingFeeCalculationService {
     return mapper.convertValue(result.getDetails(), LendingFeeCalculationResponse.class);
   }
 
-  private void validate(LendingFeeCalculationRequest request) {
+  void validate(LendingFeeCalculationRequest request) {
     Instant expectedCutoff = request.getAccrualDate().plusDays(1)
-        .atStartOfDay(ZoneOffset.UTC).toInstant();
+        .atStartOfDay(clock.getZone()).toInstant();
     int scale;
     try {
       scale = Currency.getInstance(request.getCurrency()).getDefaultFractionDigits();
@@ -343,7 +342,7 @@ public class LendingFeeCalculationService {
         || !expectedCutoff.equals(request.getCutoff())
         || request.getCutoff().isAfter(clock.instant())
         || request.getInputVersion().length() > 128) {
-      throw invalid("Unsupported fee currency, day-count basis, cutoff or input version");
+      throw invalid("Unsupported fee currency, day-count basis, IST cutoff or input version");
     }
   }
 
@@ -379,7 +378,7 @@ public class LendingFeeCalculationService {
     return Map.of(
         "ruleVersion", RULE_VERSION,
         "feeBasis", "DAILY_MARKET_VALUE",
-        "timezone", "UTC",
+        "timezone", clock.getZone().getId(),
         "dailyCutoff", "NEXT_DAY_START_EXCLUSIVE",
         "dayCountBasis", "ACT_365",
         "annualRateAsPercentage", true,

@@ -7,26 +7,31 @@ import com.hexaware.security_master_market.dto.response.PageResponse;
 import com.hexaware.security_master_market.dto.response.SecurityResponse;
 import com.hexaware.security_master_market.enums.SecurityStatus;
 import com.hexaware.security_master_market.enums.SecurityType;
+import com.hexaware.security_master_market.repository.SecurityMasterRepository;
 import com.hexaware.security_master_market.service.SecurityMasterService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.net.URI;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/securities")
+@RequestMapping({"/api/securities", "/api/v1/securities"})
 @RequiredArgsConstructor
 public class SecurityMasterController {
   private final SecurityMasterService securities;
+  private final SecurityMasterRepository securityMasters;
 
   @PostMapping
   public ResponseEntity<SecurityResponse> register(
@@ -49,19 +54,57 @@ public class SecurityMasterController {
   }
 
   @GetMapping("/{isin}")
-  public SecurityResponse details(@PathVariable String isin) {
-    return securities.details(isin);
+  public Object details(@PathVariable String isin, HttpServletRequest request) {
+    SecurityResponse security = securities.details(resolveIsin(isin));
+    if (request.getRequestURI().contains("/api/v1/securities/")) {
+      return security;
+    }
+    return new CustodianSecurityResponse(
+        security.getSecurityId(),
+        security.getVersion(),
+        security.getIsin(),
+        security.getSymbol(),
+        security.getSecurityName(),
+        security.getSecurityType(),
+        security.getCurrency(),
+        security.getExchangeName(),
+        security.getStatus() == null ? null : security.getStatus().name());
   }
 
   @PutMapping("/{isin}")
   public SecurityResponse update(
       @PathVariable String isin, @Valid @RequestBody UpdateSecurityRequest request) {
-    return securities.update(isin, request);
+    return securities.update(resolveIsin(isin), request);
   }
 
-  @PatchMapping("/{isin}/status")
+  @RequestMapping(path = "/{isin}/status", method = {RequestMethod.PATCH, RequestMethod.PUT})
   public SecurityResponse status(
       @PathVariable String isin, @Valid @RequestBody UpdateSecurityStatusRequest request) {
-    return securities.status(isin, request);
+    return securities.status(resolveIsin(isin), request);
   }
+
+  private String resolveIsin(String identifier) {
+    if (identifier.matches("[0-9]+")) {
+      try {
+        return securityMasters
+            .findById(Long.valueOf(identifier))
+            .map(security -> security.getIsin())
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Unknown security"));
+      } catch (NumberFormatException e) {
+        throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Unknown security", e);
+      }
+    }
+    return identifier;
+  }
+
+  public record CustodianSecurityResponse(
+      Long securityId,
+      Long version,
+      String isin,
+      String symbol,
+      String securityName,
+      SecurityType securityType,
+      String currency,
+      String exchangeName,
+      String status) {}
 }

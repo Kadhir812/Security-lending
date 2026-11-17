@@ -12,6 +12,7 @@
 | Market | Custodian | Kafka market-price-events | Schedule MTM against relevant active contracts |
 | Borrower/Custodian | counterpart | Kafka sec-lending-requests / sec-lending-responses | FIX and workflow messages |
 | Borrower | Custodian | Kafka sec-lending-requests / sec-lending-responses | Locate submission and decision workflow |
+| Custodian | Borrower | Kafka sec-lending-responses | Posted rebate payouts and paid/failed status updates |
 
 Additional topics are proposed for the four-service architecture. No standalone local master-data views: use REST reads; optional in-memory caches have explicit freshness limits. Custodian revalidates security status/terms at processing. Borrower request decision fields update from authorized Custodian responses. Borrower settled inventory updates from idempotent settlement events; authoritative contract balance remains Custodian-owned.
 
@@ -25,5 +26,7 @@ loan approval revalidates and reserves inventory, then consumes the Locate.
 A calculation request contains the complete input snapshot and a stable requestReference. Unique(requester_service, request_reference) enforces deduplication; compare request hash to reject key reuse with different inputs. Persist exact prices before compute and reuse them for retries. Corrections create new run and supersedes links. Rule versions are immutable version-controlled artifacts; persist parameters/digest in each run. Long-running work returns pending and completes through Kafka. Completed results publish atomically with outbox records.
 
 Custodian compares all relevant versions, including collateral, contract and terms, before accepting a result. A price-driven result includes valuation time and price-source policy. Credit/inventory are revalidated under local locks. Custodian writes accepted snapshot, margin/payment obligation and outgoing event in its transaction. Borrower receives resulting business events, not permission to apply a calculation independently.
+
+Cash-rebate payouts are manually created by Custodian against the latest posted daily result. The lender pays the Borrower outside this service; Custodian records the external confirmation or failure. A pending or paid payout prevents a correction to its accrual, and contract closure requires every positive current rebate obligation to be paid.
 
 For reliable reconstruction, keep authoritative records and immutable calculations; REST endpoints expose scoped current state. Replay of messages is deduplicated. Pending messages are retained in outbox during broker outage. Jobs/messages have bounded retries, lease recovery, dead-letter handling and operational replay. Missing master data stops the affected action rather than bypassing validation.

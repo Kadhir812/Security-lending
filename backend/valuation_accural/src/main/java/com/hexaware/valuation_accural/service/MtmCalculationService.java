@@ -171,7 +171,7 @@ public class MtmCalculationService {
           .itemKey(request.getTransactionReference())
           .resultType("MTM")
           .transactionReference(request.getTransactionReference())
-          .calculationDate(response.getCalculatedAt().atZone(java.time.ZoneOffset.UTC).toLocalDate())
+          .calculationDate(response.getCalculatedAt().atZone(clock.getZone()).toLocalDate())
           .currency(request.getCurrency())
           .amount(response.getMarketPrice())
           .loanValue(response.getLoanMarketValue())

@@ -2,6 +2,7 @@ package com.hexaware.security_master_market.security.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -15,6 +16,7 @@ public class SecurityConfiguration {
   @Bean
   public SecurityFilterChain security(HttpSecurity http) throws Exception {
     return http.csrf(csrf -> csrf.disable())
+        .cors(Customizer.withDefaults())
         .formLogin(form -> form.disable())
         .httpBasic(basic -> basic.disable())
         .logout(logout -> logout.disable())
@@ -25,6 +27,13 @@ public class SecurityConfiguration {
             requests ->
                 requests
                     .requestMatchers("/actuator/health")
+                    .permitAll()
+                    .requestMatchers(
+                        "/api/v1/market-stream/prices",
+                        "/api/v1/market-stream/snapshot",
+                        "/api/v1/market-stream/quota",
+                        "/api/v1/market-stream/sync-now",
+                        "/api/v1/market-stream/**")
                     .permitAll()
                     .requestMatchers("/actuator/**")
                     .denyAll()

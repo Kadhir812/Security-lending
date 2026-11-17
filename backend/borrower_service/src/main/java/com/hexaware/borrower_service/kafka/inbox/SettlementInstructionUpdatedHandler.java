@@ -1,11 +1,13 @@
 package com.hexaware.borrower_service.kafka.inbox;
 
+import com.hexaware.borrower_service.entity.BorrowerInventory;
 import com.hexaware.borrower_service.entity.LoanContractView;
 import com.hexaware.borrower_service.entity.LoanRequest;
 import com.hexaware.borrower_service.exception.InvalidEnvelopeException;
 import com.hexaware.borrower_service.kafka.consumer.MessageHandler;
 import com.hexaware.borrower_service.kafka.event.EventEnvelope;
 import com.hexaware.borrower_service.quickfix.LoanRequestFixMessageBuilder;
+import com.hexaware.borrower_service.repository.BorrowerInventoryRepository;
 import com.hexaware.borrower_service.repository.LoanContractViewRepository;
 import com.hexaware.borrower_service.repository.LoanRequestRepository;
 import java.math.BigDecimal;
@@ -24,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class SettlementInstructionUpdatedHandler implements MessageHandler {
   private final LoanContractViewRepository contracts;
   private final LoanRequestRepository requests;
+  private final BorrowerInventoryRepository inventories;
   private final LoanRequestFixMessageBuilder fixMessages;
   private final Clock clock;
 
@@ -133,8 +136,58 @@ public class SettlementInstructionUpdatedHandler implements MessageHandler {
     } else {
       applySecurityDelivery(snapshot, payload, instructionReference, incomingVersion, status, request);
     }
+    if ("SETTLED".equals(status)
+        && ("SECURITY_DELIVERY".equals(instructionType)
+            || "SECURITY_RETURN".equals(instructionType))) {
+      syncBorrowerInventory(snapshot, request, transactionReference);
+    }
     view.setContractSnapshot(snapshot);
     contracts.save(view);
+  }
+
+  private void syncBorrowerInventory(
+      Map<String, Object> snapshot, LoanRequest request, String transactionReference) {
+    long sourceVersion = number(snapshot.get("settlementContractVersion"));
+    long deliveredQuantity = number(snapshot.get("deliveredQuantity"));
+    long outstandingQuantity = number(snapshot.get("outstandingQuantity"));
+    if (sourceVersion <= 0
+        || deliveredQuantity <= 0
+        || outstandingQuantity < 0
+        || outstandingQuantity > deliveredQuantity
+        || deliveredQuantity > request.getQuantity()) {
+      throw invalid("BORROWER_INVENTORY_BALANCE_INVALID");
+    }
+
+    BorrowerInventory inventory = inventories
+        .findLockedByTransactionReference(transactionReference)
+        .orElse(null);
+    if (inventory == null) {
+      inventory = BorrowerInventory.builder()
+          .transactionReference(transactionReference)
+          .borrowerOrganizationReference(request.getBorrowerOrganizationReference())
+          .securityIsin(request.getSecurityIsin())
+          .borrowedQuantity(outstandingQuantity)
+          .sourceContractVersion(sourceVersion)
+          .version(0L)
+          .build();
+      inventories.save(inventory);
+      return;
+    }
+    if (!Objects.equals(inventory.getBorrowerOrganizationReference(),
+            request.getBorrowerOrganizationReference())
+        || !Objects.equals(inventory.getSecurityIsin(), request.getSecurityIsin())) {
+      throw invalid("BORROWER_INVENTORY_CONTRACT_TERMS_MISMATCH");
+    }
+    if (inventory.getSourceContractVersion() > sourceVersion) return;
+    if (inventory.getSourceContractVersion() == sourceVersion) {
+      if (inventory.getBorrowedQuantity() != outstandingQuantity) {
+        throw invalid("BORROWER_INVENTORY_VERSION_CONFLICT");
+      }
+      return;
+    }
+    inventory.setBorrowedQuantity(outstandingQuantity);
+    inventory.setSourceContractVersion(sourceVersion);
+    inventories.save(inventory);
   }
 
   private void applyReturnOutcome(

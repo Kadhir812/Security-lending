@@ -14,8 +14,12 @@ CREATE TABLE security_master (
   security_type ENUM('EQUITY','CORPORATE_BOND','GOVT_BOND','ETF') NOT NULL,
   currency CHAR(3) NOT NULL,
   exchange_name VARCHAR(100),
+  sedol VARCHAR(7),
+  sector VARCHAR(100),
+  lot_size BIGINT NOT NULL DEFAULT 1,
   status ENUM('ACTIVE','INACTIVE') NOT NULL DEFAULT 'ACTIVE',
-  INDEX idx_security_symbol (symbol)
+  INDEX idx_security_symbol (symbol),
+  CHECK (lot_size > 0)
 ) ENGINE=InnoDB;
 
 -- AUTHORITATIVE LOCAL RECORD
@@ -33,3 +37,12 @@ CREATE TABLE security_price (
 ) ENGINE=InnoDB;
 
 CREATE INDEX idx_security_price_processing ON security_price (security_id, price_timestamp);
+
+INSERT INTO security_master (
+  version, symbol, security_name, isin, security_type, currency, exchange_name,
+  status, sedol, sector, lot_size
+) VALUES
+  (0, 'INFY', 'Infosys Limited', 'INE009A01021', 'EQUITY', 'INR', 'NSE',
+   'ACTIVE', '6205122', 'IT Services', 1),
+  (0, 'TCS', 'Tata Consultancy Services Ltd.', 'INE467B01029', 'EQUITY', 'INR', 'NSE',
+   'ACTIVE', 'B01NPJ1', 'IT Services', 1);

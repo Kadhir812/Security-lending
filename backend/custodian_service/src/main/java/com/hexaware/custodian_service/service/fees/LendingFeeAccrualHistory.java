@@ -15,9 +15,9 @@ import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -38,6 +38,7 @@ class LendingFeeAccrualHistory {
   private final LoanRequestRepository requests;
   private final SettlementInstructionRepository settlements;
   private final OutboxEventRepository outbox;
+  private final Clock clock;
 
   List<OutboxEvent> eventsForDay(String transactionReference, LocalDate day) {
     return acceptedChargeEvents(transactionReference).stream()
@@ -157,7 +158,7 @@ class LendingFeeAccrualHistory {
     for (SettlementInstruction instruction : history) {
       if (instruction.getSettledAt() == null) continue;
       LocalDate settlementDate =
-          instruction.getSettledAt().atZone(ZoneOffset.UTC).toLocalDate();
+          instruction.getSettledAt().atZone(clock.getZone()).toLocalDate();
       boolean delivery = "SECURITY_DELIVERY".equals(instruction.getInstructionType());
       boolean returned = "SECURITY_RETURN".equals(instruction.getInstructionType());
       if (!delivery && !returned) continue;
@@ -190,7 +191,7 @@ class LendingFeeAccrualHistory {
             .append(contract.getSettlementCurrency())
             .append('|')
             .append(contract.getDayCountBasis());
-    Instant cutoff = day.plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant();
+    Instant cutoff = day.plusDays(1).atStartOfDay(clock.getZone()).toInstant();
     history.stream()
         .filter(instruction -> instruction.getSettledAt() != null
             && instruction.getSettledAt().isBefore(cutoff))
@@ -262,7 +263,7 @@ class LendingFeeAccrualHistory {
         .filter(instruction -> "SECURITY_DELIVERY".equals(instruction.getInstructionType()))
         .map(SettlementInstruction::getSettledAt)
         .filter(Objects::nonNull)
-        .map(value -> value.atZone(ZoneOffset.UTC).toLocalDate())
+        .map(value -> value.atZone(clock.getZone()).toLocalDate())
         .min(LocalDate::compareTo)
         .orElse(null);
   }

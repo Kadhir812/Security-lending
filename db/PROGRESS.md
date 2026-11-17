@@ -1,5 +1,35 @@
 # Implementation progress
 
+## Cash rebate accrual (2026-11-17)
+
+- Added the negotiated annual rebate percentage to the Custodian MSLA flow,
+  copied it onto approved contracts, and included it in FIX tag `9136`.
+  Existing Custodian databases must apply
+  `db/migrations/013_msla_annual_rebate.sql`; fresh schemas already include it.
+- Valuation calculates and persists daily cash rebate results in the existing
+  `calculation_run` / `calculation_result` records using settled cash actually
+  held, ACT/365, IST cutoffs, and daily HALF_UP rounding to cents. Custodian
+  reconstructs the settled balance, validates settlement history, and publishes
+  versioned accrual/correction events. Borrower stores those events in its
+  contract projection and shows the rate and accruals in frontend1.
+- Custodian accrual APIs:
+  `POST /api/contracts/{ref}/rebates/accruals?from=YYYY-MM-DD&to=YYYY-MM-DD`
+  and `GET /api/contracts/{ref}/rebates`. The daily schedule defaults to
+  00:10 Asia/Kolkata. Transfers and releases count as full accrual days;
+  agreement dates and contract close bound accrual.
+- Added manual Custodian payout creation, external confirmation/failure APIs,
+  payment history projection, and `REBATE_PAYMENT_UPDATED` routing. Each payout
+  covers one latest daily accrual; correction is blocked while its payout is
+  pending or paid. Contract closure now requires all positive current rebate
+  accruals to be paid. Payout creation does not initiate a bank transfer.
+- Existing Custodian databases should apply
+  `db/migrations/014_rebate_payment_history.sql` if the table is absent; the
+  table is included in fresh schemas. No new physical table was added.
+- Verification: Borrower, Custodian, and Valuation compile with JDK 21; 14
+  focused accrual, payout, closure, and projection tests pass; both frontend
+  production builds pass; structural schema validation remains at 48 tables.
+  No live database/Kafka payment workflow has been run.
+
 ## Borrower-Custodian Locate workflow
 
 - Added Borrower Locate submission/list/detail APIs and Custodian pending,
@@ -164,7 +194,7 @@
 - Messaging publisher/consumer flags remain disabled by default in service
   properties, so broker protocol connectivity is verified but service Kafka
   clients are not enabled. No business lifecycle was run.
-- Reviewed approved 3H rules against 3J: fee days use next UTC midnight,
+- Reviewed approved 3H rules against 3J: fee days use next IST midnight,
   include both delivery and return settlement dates, select a price at/before
   cutoff no older than 24 hours, use ACT_365, and round only the final daily
   amount HALF_UP to cents. No 3J mismatch found.
@@ -208,7 +238,7 @@
   `CONTRACT_CLOSED` updates the Borrower contract view. Reused outbox/inbox and
   settlement versioning provide retry and duplicate protection.
 - Final accrual now uses the settled quantity through the return settlement
-  date, per 3H’s date-inclusion rule. Release waits until that UTC date completes
+  date, per 3H’s date-inclusion rule. Release waits until that IST date completes
   and required authoritative prices/accrual results are available.
 - 3J verification: clean Borrower/Custodian build and all 8 focused tests passed
   (payout success/rejection/duplicate, closure success/duplicate, Borrower
@@ -287,7 +317,7 @@
   state is undefined; no liquidation, penalties, or contract termination were added.
   3F runtime Kafka/MySQL and event replay checks remain pending.
 - 3H lending-fee accrual and payment implementation is complete within the approved
-  non-rebate scope. Confirmed rules: daily market value at next UTC midnight;
+  non-rebate scope. Confirmed rules: daily market value at next IST midnight;
   include delivery/return settlement dates; use the latest price at/before cutoff,
   at most 24 hours old; ACT_365; no intermediate monetary rounding and final
   daily charge HALF_UP to cents. Only supported two-decimal currencies; no FX.
@@ -317,7 +347,8 @@
 - Verification: `mvn -DskipTests compile` succeeded for all four services on
   2026-11-09. No tests were run per request; runtime Kafka/MySQL, DB schema
   validation, and concurrent/authorization behavior remain unverified.
-- Rebates remain unimplemented: `prompts/pr.md` explicitly says not to invent them,
+- At the 2026-11-09 checkpoint, rebates remained unimplemented:
+  `prompts/pr.md` explicitly said not to invent them,
   and only fee accrual rules were approved. Corrections can expose a credit balance;
   refunds/netting are not automated. The earlier 3F Borrower delivery-projection
   gap noted in this historical entry was addressed in the current status above;

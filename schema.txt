@@ -1,0 +1,970 @@
+-- MySQL schema-only export; file extension is .db as requested.
+-- Contains CREATE DATABASE and CREATE TABLE statements only; no application rows or credentials.
+-- Source schemas were read using each microservice application.properties configuration.
+-- Generated UTC: 2026-11-16T09:00:22+00:00
+SET NAMES utf8mb4;
+
+-- Microservice: borrower_service
+CREATE DATABASE IF NOT EXISTS `borrower_db`;
+USE `borrower_db`;
+
+CREATE TABLE `inbox_message` (
+  `kafka_partition` int NOT NULL,
+  `aggregate_version` bigint NOT NULL,
+  `inbox_id` bigint NOT NULL AUTO_INCREMENT,
+  `kafka_offset` bigint NOT NULL,
+  `processed_at` datetime(6) DEFAULT NULL,
+  `received_at` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  `event_id` char(36) NOT NULL,
+  `aggregate_reference` varchar(80) NOT NULL,
+  `correlation_id` varchar(80) NOT NULL,
+  `event_type` varchar(100) NOT NULL,
+  `consumer_name` varchar(150) NOT NULL,
+  `error_message` text,
+  `kafka_topic` varchar(255) NOT NULL,
+  `payload` json NOT NULL,
+  `status` enum('RECEIVED','PROCESSED','REJECTED') NOT NULL,
+  PRIMARY KEY (`inbox_id`),
+  UNIQUE KEY `UKsr0am6vlqfvtf0mijmjuvetbb` (`consumer_name`,`event_id`),
+  KEY `idx_inbox_message_processing` (`correlation_id`),
+  CONSTRAINT `inbox_message_chk_1` CHECK (((`kafka_partition` >= 0) and (`kafka_offset` >= 0)))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE `loan_contract_view` (
+  `contract_view_id` bigint NOT NULL AUTO_INCREMENT,
+  `received_at` datetime(6) NOT NULL,
+  `version` bigint NOT NULL,
+  `request_reference` varchar(80) NOT NULL,
+  `transaction_reference` varchar(80) NOT NULL,
+  `contract_snapshot` json NOT NULL,
+  PRIMARY KEY (`contract_view_id`),
+  UNIQUE KEY `UK9toutkujo9w6v81etk0nxta2` (`request_reference`),
+  UNIQUE KEY `UK6bwdkhobqab2jil6tch2cnprq` (`transaction_reference`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE `loan_request` (
+  `requested_settlement_date` date NOT NULL,
+  `settlement_currency` char(3) DEFAULT NULL,
+  `created_by` bigint NOT NULL,
+  `decision_source_version` bigint NOT NULL,
+  `locate_id` bigint DEFAULT NULL,
+  `quantity` bigint NOT NULL,
+  `request_id` bigint NOT NULL AUTO_INCREMENT,
+  `requested_at` datetime(6) NOT NULL,
+  `responded_at` datetime(6) DEFAULT NULL,
+  `version` bigint NOT NULL,
+  `security_isin` char(12) NOT NULL,
+  `borrower_organization_reference` varchar(80) NOT NULL,
+  `custodian_organization_reference` varchar(80) NOT NULL,
+  `msla_reference` varchar(80) NOT NULL,
+  `request_reference` varchar(80) NOT NULL,
+  `response_reason` varchar(500) DEFAULT NULL,
+  `status` enum('APPROVED','CANCELLED','EXPIRED','PENDING','REJECTED') NOT NULL,
+  `submission_status` enum('FAILED','QUEUED','SENT') NOT NULL,
+  PRIMARY KEY (`request_id`),
+  UNIQUE KEY `UK1sjnvi0y75ytbx3k6qnxqmsrv` (`request_reference`),
+  KEY `idx_loan_request_locate_id` (`locate_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE `locate_request` (
+  `approved_quantity` bigint DEFAULT NULL,
+  `created_by` bigint NOT NULL,
+  `decision_source_version` bigint NOT NULL,
+  `expiry_time` datetime(6) DEFAULT NULL,
+  `locate_id` bigint NOT NULL,
+  `quantity` bigint NOT NULL,
+  `request_time` datetime(6) NOT NULL,
+  `version` bigint NOT NULL,
+  `security_isin` char(12) NOT NULL,
+  `borrower_organization_reference` varchar(80) NOT NULL,
+  `custodian_organization_reference` varchar(80) NOT NULL,
+  `locate_reference` varchar(80) NOT NULL,
+  `msla_reference` varchar(80) NOT NULL,
+  `submission_status` varchar(255) NOT NULL,
+  `status` enum('APPROVED','CANCELLED','EXPIRED','PENDING','REJECTED','USED') NOT NULL,
+  `responded_at` datetime(6) DEFAULT NULL,
+  `response_reason` varchar(500) DEFAULT NULL,
+  PRIMARY KEY (`locate_id`),
+  UNIQUE KEY `UKj4q6rvbwp20vgtqff89as4mef` (`locate_reference`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE `message_log` (
+  `kafka_partition` int DEFAULT NULL,
+  `schema_version` int NOT NULL DEFAULT '1',
+  `created_at` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  `fix_message_type` varchar(8) DEFAULT NULL,
+  `fix_sequence_number` bigint DEFAULT NULL,
+  `kafka_offset` bigint DEFAULT NULL,
+  `message_log_id` bigint NOT NULL AUTO_INCREMENT,
+  `processed_at` datetime(6) DEFAULT NULL,
+  `fix_version` varchar(20) DEFAULT NULL,
+  `causation_event_id` char(36) DEFAULT NULL,
+  `event_id` char(36) NOT NULL,
+  `correlation_id` varchar(80) NOT NULL,
+  `destination_service` varchar(80) DEFAULT NULL,
+  `producer_service` varchar(80) NOT NULL,
+  `receiver_organization_reference` varchar(80) DEFAULT NULL,
+  `sender_organization_reference` varchar(80) DEFAULT NULL,
+  `service_name` varchar(80) NOT NULL,
+  `application_message_type` varchar(100) NOT NULL,
+  `fix_session_id` varchar(150) DEFAULT NULL,
+  `error_message` text,
+  `kafka_topic` varchar(255) DEFAULT NULL,
+  `raw_fix` longtext,
+  `direction` enum('INBOUND','OUTBOUND') NOT NULL,
+  `payload` json NOT NULL,
+  `processing_status` enum('PENDING','PUBLISHED','PROCESSED','REJECTED','FAILED') NOT NULL,
+  PRIMARY KEY (`message_log_id`),
+  UNIQUE KEY `UK2gki1t3b76jr4tgrrurufhwpp` (`service_name`,`direction`,`event_id`),
+  KEY `idx_message_log_processing` (`correlation_id`,`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE `outbox_event` (
+  `attempt_count` int NOT NULL,
+  `schema_version` int NOT NULL,
+  `aggregate_version` bigint NOT NULL,
+  `created_at` datetime(6) NOT NULL,
+  `locked_until` datetime(6) DEFAULT NULL,
+  `next_attempt_at` datetime(6) NOT NULL,
+  `outbox_id` bigint NOT NULL AUTO_INCREMENT,
+  `published_at` datetime(6) DEFAULT NULL,
+  `event_id` char(36) NOT NULL,
+  `aggregate_reference` varchar(80) NOT NULL,
+  `aggregate_type` varchar(80) NOT NULL,
+  `correlation_id` varchar(80) NOT NULL,
+  `destination_service` varchar(80) DEFAULT NULL,
+  `producer_service` varchar(80) NOT NULL,
+  `receiver_organization_reference` varchar(80) DEFAULT NULL,
+  `sender_organization_reference` varchar(80) DEFAULT NULL,
+  `service_name` varchar(80) NOT NULL,
+  `event_type` varchar(100) NOT NULL,
+  `locked_by` varchar(150) DEFAULT NULL,
+  `partition_key` varchar(150) NOT NULL,
+  `kafka_topic` varchar(255) NOT NULL,
+  `last_error` text,
+  `payload` json NOT NULL,
+  `status` enum('PENDING','PUBLISHING','PUBLISHED','FAILED') NOT NULL,
+  PRIMARY KEY (`outbox_id`),
+  UNIQUE KEY `UKc7pmgf9c7t5nt657in8sec87v` (`event_id`),
+  KEY `idx_outbox_event_processing` (`status`,`next_attempt_at`),
+  CONSTRAINT `outbox_event_chk_1` CHECK (((`attempt_count` >= 0) and (`aggregate_version` >= 0)))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE `roles` (
+  `role_id` bigint NOT NULL AUTO_INCREMENT,
+  `version` bigint NOT NULL,
+  `role_name` varchar(100) NOT NULL,
+  `description` varchar(255) DEFAULT NULL,
+  PRIMARY KEY (`role_id`),
+  UNIQUE KEY `UK716hgxp60ym1lifrdgp67xt5k` (`role_name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE `users` (
+  `created_at` datetime(6) NOT NULL,
+  `user_id` bigint NOT NULL AUTO_INCREMENT,
+  `version` bigint NOT NULL,
+  `phone` varchar(50) DEFAULT NULL,
+  `organization_reference` varchar(80) NOT NULL,
+  `password_hash` varchar(100) DEFAULT NULL,
+  `username` varchar(100) NOT NULL,
+  `email` varchar(255) NOT NULL,
+  `identity_issuer` varchar(255) NOT NULL,
+  `identity_subject` varchar(255) NOT NULL,
+  `organization_name` varchar(255) DEFAULT NULL,
+  `status` enum('ACTIVE','INACTIVE') NOT NULL,
+  PRIMARY KEY (`user_id`),
+  UNIQUE KEY `UKly18k30w4c68nifop18iej378` (`identity_issuer`,`identity_subject`),
+  UNIQUE KEY `UKfpmu97mnbuhawndwwhlxhkfl5` (`organization_reference`,`username`),
+  UNIQUE KEY `UK6dotkott2kjsp8vw4d0m25fb7` (`email`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE `user_roles` (
+  `assigned_at` datetime(6) NOT NULL,
+  `role_id` bigint NOT NULL,
+  `user_id` bigint NOT NULL,
+  `user_role_id` bigint NOT NULL AUTO_INCREMENT,
+  `version` bigint NOT NULL,
+  PRIMARY KEY (`user_role_id`),
+  UNIQUE KEY `UKa9dydk3dj4qb8cvmjijqnrg5t` (`user_id`,`role_id`),
+  KEY `FKh8ciramu9cc9q3qcqiv4ue8a6` (`role_id`),
+  CONSTRAINT `FKh8ciramu9cc9q3qcqiv4ue8a6` FOREIGN KEY (`role_id`) REFERENCES `roles` (`role_id`),
+  CONSTRAINT `FKhfh9dx7w3ubf1co1vdev94g3f` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- Microservice: custodian_service
+CREATE DATABASE IF NOT EXISTS `custodian_db`;
+USE `custodian_db`;
+
+CREATE TABLE `borrower_identity_link` (
+  `jti` varchar(36) NOT NULL,
+  `consumed_at` datetime(6) NOT NULL,
+  `consumed_by_custodian_id` bigint NOT NULL,
+  `consumed_by_user_id` bigint NOT NULL,
+  `organization_reference` varchar(80) NOT NULL,
+  PRIMARY KEY (`jti`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE `collateral` (
+  `collateral_id` bigint NOT NULL AUTO_INCREMENT,
+  `applied_haircut_pct` decimal(9,4) NOT NULL,
+  `collateral_reference` varchar(80) NOT NULL,
+  `collateral_type` enum('CASH','CORPORATE_BOND','EQUITY','ETF','GOVT_BOND') NOT NULL,
+  `contract_id` bigint NOT NULL,
+  `currency` varchar(3) NOT NULL,
+  `pledged_quantity` decimal(24,6) DEFAULT NULL,
+  `posted_at` datetime(6) DEFAULT NULL,
+  `posted_cash_amount` decimal(20,2) DEFAULT NULL,
+  `released_cash_amount` decimal(20,2) NOT NULL,
+  `released_quantity` decimal(24,6) NOT NULL,
+  `security_isin` varchar(12) DEFAULT NULL,
+  `status` varchar(255) NOT NULL,
+  `version` bigint NOT NULL,
+  PRIMARY KEY (`collateral_id`),
+  UNIQUE KEY `UK9dcrsjo2l0h3t6crkaodvjna1` (`collateral_reference`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE `collateral_haircut` (
+  `haircut_id` bigint NOT NULL AUTO_INCREMENT,
+  `collateral_type` enum('CASH','GOVT_BOND','CORPORATE_BOND','EQUITY','ETF') NOT NULL,
+  `currency` char(3) NOT NULL,
+  `effective_from` datetime(6) NOT NULL,
+  `effective_to` datetime(6) DEFAULT NULL,
+  `haircut_percentage` decimal(9,4) NOT NULL,
+  `msla_id` bigint NOT NULL,
+  `version` bigint NOT NULL,
+  PRIMARY KEY (`haircut_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE `contract_status_history` (
+  `history_id` bigint NOT NULL AUTO_INCREMENT,
+  `actor_type` enum('SYSTEM','USER') NOT NULL,
+  `changed_at` datetime(6) NOT NULL,
+  `changed_by` bigint DEFAULT NULL,
+  `contract_id` bigint NOT NULL,
+  `new_status` varchar(40) NOT NULL,
+  `old_status` varchar(40) DEFAULT NULL,
+  `reason` varchar(500) NOT NULL,
+  `source_event_id` varchar(36) DEFAULT NULL,
+  `version` bigint NOT NULL,
+  PRIMARY KEY (`history_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE `counterparty_credit_limit_backup_20261110` (
+  `credit_limit_id` bigint NOT NULL AUTO_INCREMENT,
+  `available_amount` decimal(38,2) NOT NULL,
+  `limit_amount` decimal(20,2) NOT NULL,
+  `msla_id` bigint NOT NULL,
+  `reserved_amount` decimal(20,2) NOT NULL,
+  `status` enum('ACTIVE','INACTIVE') NOT NULL,
+  `used_amount` decimal(20,2) NOT NULL,
+  `version` bigint NOT NULL,
+  PRIMARY KEY (`credit_limit_id`),
+  UNIQUE KEY `UKhht186284tcu80tsh4f10no3w` (`msla_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE `credit_exposure_history` (
+  `exposure_history_id` bigint NOT NULL AUTO_INCREMENT,
+  `breach_created` bit(1) NOT NULL,
+  `changed_at` datetime(6) NOT NULL,
+  `contract_id` bigint NOT NULL,
+  `credit_limit_id` bigint NOT NULL,
+  `idempotency_key` varchar(80) NOT NULL,
+  `input_hash` varchar(64) NOT NULL,
+  `new_available_amount` decimal(20,2) NOT NULL,
+  `new_used_amount` decimal(20,2) NOT NULL,
+  `old_available_amount` decimal(20,2) NOT NULL,
+  `old_used_amount` decimal(20,2) NOT NULL,
+  `reason` varchar(500) NOT NULL,
+  `valuation_result_reference` varchar(36) NOT NULL,
+  `version` bigint NOT NULL,
+  PRIMARY KEY (`exposure_history_id`),
+  UNIQUE KEY `UKawhfpfbg9ssjh5w72k940ox3r` (`valuation_result_reference`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE `credit_limit_history` (
+  `history_id` bigint NOT NULL AUTO_INCREMENT,
+  `changed_at` datetime(6) NOT NULL,
+  `changed_by` bigint NOT NULL,
+  `credit_limit_id` bigint NOT NULL,
+  `new_limit` decimal(20,2) NOT NULL,
+  `old_limit` decimal(20,2) NOT NULL,
+  `reason` varchar(500) NOT NULL,
+  PRIMARY KEY (`history_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE `inbox_message` (
+  `inbox_id` bigint NOT NULL AUTO_INCREMENT,
+  `aggregate_reference` varchar(80) NOT NULL,
+  `aggregate_version` bigint NOT NULL,
+  `consumer_name` varchar(150) NOT NULL,
+  `correlation_id` varchar(80) NOT NULL,
+  `error_message` text,
+  `event_id` char(36) NOT NULL,
+  `event_type` varchar(100) NOT NULL,
+  `kafka_offset` bigint NOT NULL,
+  `kafka_partition` int NOT NULL,
+  `kafka_topic` varchar(255) NOT NULL,
+  `payload` json NOT NULL,
+  `processed_at` datetime(6) DEFAULT NULL,
+  `received_at` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  `status` enum('RECEIVED','PROCESSED','REJECTED') NOT NULL,
+  PRIMARY KEY (`inbox_id`),
+  UNIQUE KEY `UKsr0am6vlqfvtf0mijmjuvetbb` (`consumer_name`,`event_id`),
+  KEY `idx_inbox_message_processing` (`correlation_id`),
+  CONSTRAINT `inbox_message_chk_1` CHECK (((`kafka_partition` >= 0) and (`kafka_offset` >= 0)))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE `inbox_message_backup_20261110` (
+  `inbox_id` bigint NOT NULL AUTO_INCREMENT,
+  `aggregate_reference` varchar(80) NOT NULL,
+  `aggregate_version` bigint NOT NULL,
+  `consumer_name` varchar(150) NOT NULL,
+  `correlation_id` varchar(80) NOT NULL,
+  `error_message` text,
+  `event_id` char(36) NOT NULL,
+  `event_type` varchar(100) NOT NULL,
+  `kafka_offset` bigint NOT NULL,
+  `kafka_partition` int NOT NULL,
+  `kafka_topic` varchar(255) NOT NULL,
+  `payload` json NOT NULL,
+  `processed_at` datetime(6) DEFAULT NULL,
+  `received_at` datetime(6) NOT NULL,
+  `status` enum('RECEIVED','PROCESSED','REJECTED') NOT NULL,
+  PRIMARY KEY (`inbox_id`),
+  UNIQUE KEY `UKsr0am6vlqfvtf0mijmjuvetbb` (`consumer_name`,`event_id`),
+  KEY `idx_inbox_message_processing` (`correlation_id`),
+  CONSTRAINT `inbox_message_backup_20261110_chk_1` CHECK (((`kafka_partition` >= 0) and (`kafka_offset` >= 0)))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE `inventory_movement` (
+  `movement_id` bigint NOT NULL AUTO_INCREMENT,
+  `contract_id` bigint NOT NULL,
+  `from_organization_id` bigint NOT NULL,
+  `movement_timestamp` datetime(6) NOT NULL,
+  `movement_type` varchar(40) NOT NULL,
+  `quantity` bigint NOT NULL,
+  `security_isin` char(12) NOT NULL,
+  `settlement_instruction_id` bigint NOT NULL,
+  `to_organization_id` bigint NOT NULL,
+  `version` bigint NOT NULL,
+  PRIMARY KEY (`movement_id`),
+  UNIQUE KEY `UK5w0d8gvksp487l0tqynl3i2am` (`settlement_instruction_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE `inventory_reservation` (
+  `reservation_id` bigint NOT NULL AUTO_INCREMENT,
+  `consumed_quantity` bigint NOT NULL,
+  `contract_id` bigint NOT NULL,
+  `created_at` datetime(6) NOT NULL,
+  `expires_at` datetime(6) NOT NULL,
+  `inventory_id` bigint NOT NULL,
+  `released_quantity` bigint NOT NULL,
+  `remaining_quantity` bigint GENERATED ALWAYS AS (((`reserved_quantity` - `consumed_quantity`) - `released_quantity`)) STORED,
+  `reserved_quantity` bigint NOT NULL,
+  `status` enum('ACTIVE','CONSUMED','EXPIRED','RELEASED') NOT NULL,
+  `version` bigint NOT NULL,
+  PRIMARY KEY (`reservation_id`),
+  UNIQUE KEY `UKd9wuq4npdot4enwecq5xaf6ya` (`contract_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE `lender_custodian_mandate` (
+  `mandate_id` bigint NOT NULL AUTO_INCREMENT,
+  `created_at` datetime(6) DEFAULT NULL,
+  `created_by_user_id` bigint DEFAULT NULL,
+  `custodian_org_id` bigint NOT NULL,
+  `effective_from` date NOT NULL,
+  `effective_to` date DEFAULT NULL,
+  `lender_org_id` bigint NOT NULL,
+  `mandate_reference` varchar(80) NOT NULL,
+  `status` enum('ACTIVE','INACTIVE','EXPIRED') NOT NULL,
+  `updated_at` datetime(6) DEFAULT NULL,
+  `updated_by_user_id` bigint DEFAULT NULL,
+  `version` bigint NOT NULL,
+  PRIMARY KEY (`mandate_id`),
+  UNIQUE KEY `UKe0mdn31f1ce9ho35d6o0e2eq3` (`mandate_reference`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE `lender_inventory_backup_20261110` (
+  `inventory_id` bigint NOT NULL AUTO_INCREMENT,
+  `available_quantity` bigint NOT NULL,
+  `on_loan_quantity` bigint NOT NULL,
+  `organization_id` bigint NOT NULL,
+  `reserved_quantity` bigint NOT NULL,
+  `security_isin` char(12) NOT NULL,
+  `total_quantity` bigint NOT NULL,
+  `version` bigint NOT NULL,
+  PRIMARY KEY (`inventory_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE `lending_fee` (
+  `fee_id` bigint NOT NULL AUTO_INCREMENT,
+  `annual_fee_pct` decimal(10,6) NOT NULL,
+  `effective_from` date NOT NULL,
+  `effective_to` date DEFAULT NULL,
+  `msla_id` bigint NOT NULL,
+  `security_isin` char(12) DEFAULT NULL,
+  `status` enum('ACTIVE','INACTIVE') NOT NULL,
+  `version` bigint NOT NULL,
+  PRIMARY KEY (`fee_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE `lending_fee_payment` (
+  `payment_id` bigint NOT NULL AUTO_INCREMENT,
+  `calculation_result_reference` varchar(36) NOT NULL,
+  `calculation_snapshot` json NOT NULL,
+  `contract_id` bigint NOT NULL,
+  `currency` varchar(3) NOT NULL,
+  `external_reference` varchar(150) DEFAULT NULL,
+  `failure_reason` varchar(500) DEFAULT NULL,
+  `from_organization_id` bigint NOT NULL,
+  `obligation_reference` varchar(80) NOT NULL,
+  `paid_at` datetime(6) DEFAULT NULL,
+  `payment_amount` decimal(20,2) NOT NULL,
+  `payment_reference` varchar(80) NOT NULL,
+  `status` varchar(20) NOT NULL,
+  `to_organization_id` bigint NOT NULL,
+  `version` bigint NOT NULL,
+  PRIMARY KEY (`payment_id`),
+  UNIQUE KEY `UKfq2par7jd3euv6e3tmnsta5ou` (`payment_reference`),
+  UNIQUE KEY `UKs4xwogt2de097m0tw6dl7of6w` (`external_reference`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE `loan_contract` (
+  `contract_id` bigint NOT NULL AUTO_INCREMENT,
+  `accepted_valuation_snapshot` json DEFAULT NULL,
+  `agreed_annual_fee_pct` decimal(10,6) NOT NULL,
+  `agreed_annual_rebate_pct` decimal(10,6) NOT NULL,
+  `collateral_coverage_pct` decimal(9,4) NOT NULL,
+  `collateral_terms` json NOT NULL,
+  `contract_created_at` datetime(6) NOT NULL,
+  `contract_status` enum('APPROVED','CANCELLED','CLOSED','DEFAULTED','ON_LOAN','PARTIALLY_SETTLED','PENDING_COLLATERAL','PENDING_SETTLEMENT','RECALLED','RETURNED','SETTLEMENT_FAILED') NOT NULL,
+  `day_count_basis` varchar(255) NOT NULL,
+  `delivered_quantity` bigint NOT NULL,
+  `latest_adjusted_collateral` decimal(20,2) DEFAULT NULL,
+  `latest_coverage_pct` decimal(12,6) DEFAULT NULL,
+  `latest_loan_value` decimal(20,2) DEFAULT NULL,
+  `latest_market_price` decimal(20,6) DEFAULT NULL,
+  `latest_required_collateral` decimal(20,2) DEFAULT NULL,
+  `latest_valuation_at` datetime(6) DEFAULT NULL,
+  `latest_valuation_result_reference` varchar(36) DEFAULT NULL,
+  `loan_request_id` bigint NOT NULL,
+  `maturity_date` date DEFAULT NULL,
+  `outstanding_quantity` bigint GENERATED ALWAYS AS ((`delivered_quantity` - `returned_quantity`)) STORED,
+  `quantity` bigint NOT NULL,
+  `recall_conditions` varchar(500) DEFAULT NULL,
+  `reserved_credit_amount` decimal(20,2) NOT NULL,
+  `returned_quantity` bigint NOT NULL,
+  `settlement_calendar_version` varchar(80) NOT NULL,
+  `settlement_currency` varchar(3) NOT NULL,
+  `settlement_date` date NOT NULL,
+  `trade_date` date NOT NULL,
+  `transaction_reference` varchar(80) NOT NULL,
+  `used_credit_amount` decimal(20,2) NOT NULL,
+  `version` bigint NOT NULL,
+  PRIMARY KEY (`contract_id`),
+  UNIQUE KEY `UK1k53fxxveoyn6kyd8keupkfey` (`loan_request_id`),
+  UNIQUE KEY `UKjcenrsx1fklew5sytm6pv1el2` (`transaction_reference`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE `loan_request` (
+  `request_id` bigint NOT NULL AUTO_INCREMENT,
+  `locate_id` bigint DEFAULT NULL,
+  `msla_id` bigint NOT NULL,
+  `quantity` bigint NOT NULL,
+  `request_reference` varchar(80) NOT NULL,
+  `requested_at` datetime(6) NOT NULL,
+  `requested_settlement_date` date NOT NULL,
+  `responded_at` datetime(6) DEFAULT NULL,
+  `response_reason` varchar(500) DEFAULT NULL,
+  `security_isin` char(12) NOT NULL,
+  `settlement_currency` char(3) DEFAULT NULL,
+  `status` enum('APPROVED','CANCELLED','EXPIRED','PENDING','REJECTED') NOT NULL,
+  `submitted_by_issuer` varchar(255) NOT NULL,
+  `submitted_by_subject` varchar(255) NOT NULL,
+  `version` bigint NOT NULL,
+  PRIMARY KEY (`request_id`),
+  UNIQUE KEY `UK1sjnvi0y75ytbx3k6qnxqmsrv` (`request_reference`),
+  KEY `idx_loan_request_locate_id` (`locate_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE `locate_request` (
+  `locate_id` bigint NOT NULL AUTO_INCREMENT,
+  `approved_quantity` bigint DEFAULT NULL,
+  `expiry_time` datetime(6) DEFAULT NULL,
+  `locate_reference` varchar(80) NOT NULL,
+  `msla_id` bigint NOT NULL,
+  `quantity` bigint NOT NULL,
+  `request_time` datetime(6) NOT NULL,
+  `security_isin` char(12) NOT NULL,
+  `status` varchar(255) NOT NULL,
+  `submitted_by_issuer` varchar(255) NOT NULL,
+  `submitted_by_subject` varchar(255) NOT NULL,
+  `responded_at` datetime(6) DEFAULT NULL,
+  `response_reason` varchar(500) DEFAULT NULL,
+  `version` bigint NOT NULL,
+  PRIMARY KEY (`locate_id`),
+  UNIQUE KEY `UKj4q6rvbwp20vgtqff89as4mef` (`locate_reference`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE `margin_call` (
+  `margin_call_id` bigint NOT NULL AUTO_INCREMENT,
+  `calculation_snapshot` json NOT NULL,
+  `contract_id` bigint NOT NULL,
+  `created_at` datetime(6) NOT NULL,
+  `current_collateral` decimal(20,2) NOT NULL,
+  `due_at` datetime(6) NOT NULL,
+  `margin_call_reference` varchar(80) NOT NULL,
+  `required_collateral` decimal(20,2) NOT NULL,
+  `resolved_at` datetime(6) DEFAULT NULL,
+  `shortfall_amount` decimal(20,2) DEFAULT NULL,
+  `status` enum('BREACHED','CANCELLED','FAILED','OPEN','PARTIALLY_SATISFIED','SATISFIED') NOT NULL,
+  `valuation_result_reference` varchar(36) NOT NULL,
+  `version` bigint NOT NULL,
+  PRIMARY KEY (`margin_call_id`),
+  UNIQUE KEY `UKl1bc6fqoxsceucd8nx9jpdqug` (`margin_call_reference`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE `margin_call_transaction_log` (
+  `log_id` bigint NOT NULL AUTO_INCREMENT,
+  `activity_timestamp` datetime(6) NOT NULL,
+  `activity_type` varchar(30) NOT NULL,
+  `amount` decimal(20,2) DEFAULT NULL,
+  `margin_call_id` bigint NOT NULL,
+  `notes` varchar(500) DEFAULT NULL,
+  `settlement_instruction_id` bigint DEFAULT NULL,
+  `source_event_id` varchar(36) DEFAULT NULL,
+  `version` bigint NOT NULL,
+  PRIMARY KEY (`log_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE `message_log` (
+  `message_log_id` bigint NOT NULL AUTO_INCREMENT,
+  `application_message_type` varchar(100) NOT NULL,
+  `causation_event_id` char(36) DEFAULT NULL,
+  `correlation_id` varchar(80) NOT NULL,
+  `created_at` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  `destination_service` varchar(80) DEFAULT NULL,
+  `direction` enum('INBOUND','OUTBOUND') NOT NULL,
+  `error_message` text,
+  `event_id` char(36) NOT NULL,
+  `fix_message_type` varchar(8) DEFAULT NULL,
+  `fix_sequence_number` bigint DEFAULT NULL,
+  `fix_session_id` varchar(150) DEFAULT NULL,
+  `fix_version` varchar(20) DEFAULT NULL,
+  `kafka_offset` bigint DEFAULT NULL,
+  `kafka_partition` int DEFAULT NULL,
+  `kafka_topic` varchar(255) DEFAULT NULL,
+  `payload` json NOT NULL,
+  `processed_at` datetime(6) DEFAULT NULL,
+  `processing_status` enum('PENDING','PUBLISHED','PROCESSED','REJECTED','FAILED') NOT NULL,
+  `producer_service` varchar(80) NOT NULL,
+  `raw_fix` longtext,
+  `receiver_organization_reference` varchar(80) DEFAULT NULL,
+  `schema_version` int NOT NULL DEFAULT '1',
+  `sender_organization_reference` varchar(80) DEFAULT NULL,
+  `service_name` varchar(80) NOT NULL,
+  PRIMARY KEY (`message_log_id`),
+  UNIQUE KEY `UK2gki1t3b76jr4tgrrurufhwpp` (`service_name`,`direction`,`event_id`),
+  KEY `idx_message_log_processing` (`correlation_id`,`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE `message_log_backup_20261110` (
+  `message_log_id` bigint NOT NULL AUTO_INCREMENT,
+  `application_message_type` varchar(100) NOT NULL,
+  `causation_event_id` char(36) DEFAULT NULL,
+  `correlation_id` varchar(80) NOT NULL,
+  `created_at` datetime(6) NOT NULL,
+  `destination_service` varchar(80) DEFAULT NULL,
+  `direction` enum('INBOUND','OUTBOUND') NOT NULL,
+  `error_message` text,
+  `event_id` char(36) NOT NULL,
+  `fix_message_type` varchar(8) DEFAULT NULL,
+  `fix_sequence_number` bigint DEFAULT NULL,
+  `fix_session_id` varchar(150) DEFAULT NULL,
+  `fix_version` varchar(20) DEFAULT NULL,
+  `kafka_offset` bigint DEFAULT NULL,
+  `kafka_partition` int DEFAULT NULL,
+  `kafka_topic` varchar(255) DEFAULT NULL,
+  `payload` json NOT NULL,
+  `processed_at` datetime(6) DEFAULT NULL,
+  `processing_status` enum('PENDING','PUBLISHED','PROCESSED','REJECTED','FAILED') NOT NULL,
+  `producer_service` varchar(80) NOT NULL,
+  `raw_fix` longtext,
+  `receiver_organization_reference` varchar(80) DEFAULT NULL,
+  `schema_version` int NOT NULL,
+  `sender_organization_reference` varchar(80) DEFAULT NULL,
+  `service_name` varchar(80) NOT NULL,
+  PRIMARY KEY (`message_log_id`),
+  UNIQUE KEY `UK2gki1t3b76jr4tgrrurufhwpp` (`service_name`,`direction`,`event_id`),
+  KEY `idx_message_log_processing` (`correlation_id`,`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE `msla_agreement` (
+  `msla_id` bigint NOT NULL AUTO_INCREMENT,
+  `agreement_status` enum('DRAFT','ACTIVE','INACTIVE','EXPIRED') NOT NULL,
+  `base_currency` char(3) NOT NULL,
+  `borrower_org_id` bigint NOT NULL,
+  `collateral_coverage_pct` decimal(9,4) NOT NULL,
+  `collateral_type` enum('CASH','ETF','GOVT_BOND','CORPORATE_BOND','EQUITY') NOT NULL,
+  `created_at` datetime(6) DEFAULT NULL,
+  `created_by_user_id` bigint DEFAULT NULL,
+  `default_rules` json DEFAULT NULL,
+  `effective_date` date NOT NULL,
+  `eligible_securities` json NOT NULL,
+  `expiry_date` date DEFAULT NULL,
+  `mandate_id` bigint NOT NULL,
+  `margin_call_window_hours` int NOT NULL,
+  `msla_reference` varchar(80) NOT NULL,
+  `mtm_interval_minutes` int NOT NULL,
+  `recall_rule` varchar(500) DEFAULT NULL,
+  `settlement_calendar_code` varchar(80) NOT NULL,
+  `updated_at` datetime(6) DEFAULT NULL,
+  `updated_by_user_id` bigint DEFAULT NULL,
+  `version` bigint NOT NULL,
+  PRIMARY KEY (`msla_id`),
+  UNIQUE KEY `UKb6qehcosj2bppx0xka5uy2o2h` (`msla_reference`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE `organization` (
+  `organization_id` bigint NOT NULL AUTO_INCREMENT,
+  `created_at` datetime(6) NOT NULL,
+  `created_by_user_id` bigint DEFAULT NULL,
+  `organization_name` varchar(255) NOT NULL,
+  `organization_reference` varchar(80) NOT NULL,
+  `organization_type` enum('LENDER','BORROWER','CUSTODIAN') NOT NULL,
+  `registered_by_custodian_id` bigint DEFAULT NULL,
+  `status` enum('ACTIVE','INACTIVE') NOT NULL,
+  `updated_at` datetime(6) DEFAULT NULL,
+  `updated_by_user_id` bigint DEFAULT NULL,
+  `version` bigint NOT NULL,
+  PRIMARY KEY (`organization_id`),
+  UNIQUE KEY `UK85uo7myjrr2p19koxea7074tt` (`organization_reference`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE `outbox_event` (
+  `outbox_id` bigint NOT NULL AUTO_INCREMENT,
+  `aggregate_reference` varchar(80) NOT NULL,
+  `aggregate_type` varchar(80) NOT NULL,
+  `aggregate_version` bigint NOT NULL,
+  `attempt_count` int NOT NULL,
+  `correlation_id` varchar(80) NOT NULL,
+  `created_at` datetime(6) NOT NULL,
+  `destination_service` varchar(80) DEFAULT NULL,
+  `event_id` char(36) NOT NULL,
+  `event_type` varchar(100) NOT NULL,
+  `kafka_topic` varchar(255) NOT NULL,
+  `last_error` text,
+  `locked_by` varchar(150) DEFAULT NULL,
+  `locked_until` datetime(6) DEFAULT NULL,
+  `next_attempt_at` datetime(6) NOT NULL,
+  `partition_key` varchar(150) NOT NULL,
+  `payload` json NOT NULL,
+  `producer_service` varchar(80) NOT NULL,
+  `published_at` datetime(6) DEFAULT NULL,
+  `receiver_organization_reference` varchar(80) DEFAULT NULL,
+  `schema_version` int NOT NULL,
+  `sender_organization_reference` varchar(80) DEFAULT NULL,
+  `service_name` varchar(80) NOT NULL,
+  `status` enum('PENDING','PUBLISHING','PUBLISHED','FAILED') NOT NULL,
+  PRIMARY KEY (`outbox_id`),
+  UNIQUE KEY `UKc7pmgf9c7t5nt657in8sec87v` (`event_id`),
+  KEY `idx_outbox_event_processing` (`status`,`next_attempt_at`),
+  CONSTRAINT `outbox_event_chk_1` CHECK (((`attempt_count` >= 0) and (`aggregate_version` >= 0)))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE `recall_request` (
+  `recall_id` bigint NOT NULL AUTO_INCREMENT,
+  `contract_id` bigint NOT NULL,
+  `due_at` datetime(6) NOT NULL,
+  `recall_reason` varchar(500) NOT NULL,
+  `recall_reference` varchar(80) NOT NULL,
+  `recall_status` enum('CANCELLED','COMPLETED','DEFAULTED','OPEN','OVERDUE','PARTIALLY_RETURNED','PROCESSING') NOT NULL,
+  `requested_at` datetime(6) NOT NULL,
+  `requested_by` bigint NOT NULL,
+  `requested_quantity` bigint NOT NULL,
+  `returned_quantity` bigint NOT NULL,
+  `version` bigint NOT NULL,
+  PRIMARY KEY (`recall_id`),
+  UNIQUE KEY `UKhcwj8bkcr5i9otc8qv4mss5xv` (`recall_reference`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE `roles` (
+  `role_id` bigint NOT NULL AUTO_INCREMENT,
+  `description` varchar(255) DEFAULT NULL,
+  `role_name` varchar(100) NOT NULL,
+  `version` bigint NOT NULL,
+  PRIMARY KEY (`role_id`),
+  UNIQUE KEY `UK716hgxp60ym1lifrdgp67xt5k` (`role_name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE `settlement_instruction` (
+  `instruction_id` bigint NOT NULL AUTO_INCREMENT,
+  `amount` decimal(20,2) DEFAULT NULL,
+  `collateral_id` bigint DEFAULT NULL,
+  `contract_id` bigint NOT NULL,
+  `created_at` datetime(6) NOT NULL,
+  `currency` varchar(3) NOT NULL,
+  `external_confirmation_reference` varchar(150) DEFAULT NULL,
+  `failure_reason` varchar(500) DEFAULT NULL,
+  `from_account` varchar(255) NOT NULL,
+  `from_organization_id` bigint NOT NULL,
+  `instruction_reference` varchar(80) NOT NULL,
+  `instruction_type` varchar(255) NOT NULL,
+  `margin_call_id` bigint DEFAULT NULL,
+  `quantity` decimal(24,6) DEFAULT NULL,
+  `recall_id` bigint DEFAULT NULL,
+  `security_isin` varchar(12) DEFAULT NULL,
+  `settled_at` datetime(6) DEFAULT NULL,
+  `settlement_date` date NOT NULL,
+  `status` enum('CANCELLED','FAILED','PENDING','PROCESSING','SETTLED') NOT NULL,
+  `to_account` varchar(255) NOT NULL,
+  `to_organization_id` bigint NOT NULL,
+  `version` bigint NOT NULL,
+  PRIMARY KEY (`instruction_id`),
+  UNIQUE KEY `UKjsdfin0rmi7tyttyj2vj5qj8d` (`instruction_reference`),
+  UNIQUE KEY `UK10s9o8mh2gucsbgy0wh9l2aqr` (`external_confirmation_reference`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE `counterparty_credit_limit` (
+  `credit_limit_id` bigint NOT NULL AUTO_INCREMENT,
+  `available_amount` decimal(20,2) GENERATED ALWAYS AS (((`limit_amount` - `used_amount`) - `reserved_amount`)) STORED NOT NULL,
+  `limit_amount` decimal(20,2) NOT NULL,
+  `msla_id` bigint NOT NULL,
+  `reserved_amount` decimal(20,2) NOT NULL DEFAULT '0.00',
+  `status` enum('ACTIVE','INACTIVE') NOT NULL,
+  `used_amount` decimal(20,2) NOT NULL DEFAULT '0.00',
+  `version` bigint NOT NULL DEFAULT '0',
+  PRIMARY KEY (`credit_limit_id`),
+  UNIQUE KEY `UKhht186284tcu80tsh4f10no3w` (`msla_id`),
+  CONSTRAINT `fk_credit_limit_msla` FOREIGN KEY (`msla_id`) REFERENCES `msla_agreement` (`msla_id`),
+  CONSTRAINT `chk_credit_limit_amounts` CHECK (((`limit_amount` >= 0) and (`used_amount` >= 0) and (`reserved_amount` >= 0)))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE `lender_inventory` (
+  `inventory_id` bigint NOT NULL AUTO_INCREMENT,
+  `available_quantity` bigint GENERATED ALWAYS AS (((`total_quantity` - `on_loan_quantity`) - `reserved_quantity`)) STORED,
+  `on_loan_quantity` bigint NOT NULL DEFAULT '0',
+  `organization_id` bigint NOT NULL,
+  `reserved_quantity` bigint NOT NULL DEFAULT '0',
+  `security_isin` char(12) NOT NULL,
+  `total_quantity` bigint NOT NULL,
+  `version` bigint NOT NULL DEFAULT '0',
+  PRIMARY KEY (`inventory_id`),
+  UNIQUE KEY `uk_lender_inventory_org_isin` (`organization_id`,`security_isin`),
+  CONSTRAINT `fk_lender_inventory_organization` FOREIGN KEY (`organization_id`) REFERENCES `organization` (`organization_id`),
+  CONSTRAINT `chk_lender_inventory_encumbrance` CHECK (((`on_loan_quantity` + `reserved_quantity`) <= `total_quantity`)),
+  CONSTRAINT `chk_lender_inventory_quantities` CHECK (((`total_quantity` >= 0) and (`on_loan_quantity` >= 0) and (`reserved_quantity` >= 0)))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE `users` (
+  `user_id` bigint NOT NULL AUTO_INCREMENT,
+  `created_at` datetime(6) NOT NULL,
+  `email` varchar(255) NOT NULL,
+  `identity_issuer` varchar(255) NOT NULL,
+  `identity_subject` varchar(255) NOT NULL,
+  `phone` varchar(50) DEFAULT NULL,
+  `status` enum('ACTIVE','INACTIVE') NOT NULL,
+  `username` varchar(100) NOT NULL,
+  `version` bigint NOT NULL,
+  `organization_id` bigint NOT NULL,
+  `password_hash` varchar(100) DEFAULT NULL,
+  PRIMARY KEY (`user_id`),
+  UNIQUE KEY `UKly18k30w4c68nifop18iej378` (`identity_issuer`,`identity_subject`),
+  UNIQUE KEY `UKr2dxoogqsx3i9q7k2clmpeqf3` (`organization_id`,`username`),
+  UNIQUE KEY `UK6dotkott2kjsp8vw4d0m25fb7` (`email`),
+  CONSTRAINT `FK9q8fdenwsqjwrjfivd5ovv5k3` FOREIGN KEY (`organization_id`) REFERENCES `organization` (`organization_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE `user_roles` (
+  `user_role_id` bigint NOT NULL AUTO_INCREMENT,
+  `assigned_at` datetime(6) NOT NULL,
+  `version` bigint NOT NULL,
+  `role_id` bigint NOT NULL,
+  `user_id` bigint NOT NULL,
+  PRIMARY KEY (`user_role_id`),
+  UNIQUE KEY `UKa9dydk3dj4qb8cvmjijqnrg5t` (`user_id`,`role_id`),
+  KEY `FKh8ciramu9cc9q3qcqiv4ue8a6` (`role_id`),
+  CONSTRAINT `FKh8ciramu9cc9q3qcqiv4ue8a6` FOREIGN KEY (`role_id`) REFERENCES `roles` (`role_id`),
+  CONSTRAINT `FKhfh9dx7w3ubf1co1vdev94g3f` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- Microservice: security_master_market
+CREATE DATABASE IF NOT EXISTS `security_market_db`;
+USE `security_market_db`;
+
+CREATE TABLE `security_master` (
+  `currency` char(3) NOT NULL,
+  `security_id` bigint NOT NULL AUTO_INCREMENT,
+  `version` bigint NOT NULL,
+  `isin` char(12) NOT NULL,
+  `symbol` varchar(50) NOT NULL,
+  `exchange_name` varchar(100) DEFAULT NULL,
+  `security_name` varchar(255) NOT NULL,
+  `security_type` enum('EQUITY','CORPORATE_BOND','GOVT_BOND','ETF') NOT NULL,
+  `status` enum('ACTIVE','INACTIVE') NOT NULL,
+  `sedol` varchar(7) DEFAULT NULL,
+  `sector` varchar(100) DEFAULT NULL,
+  `lot_size` bigint NOT NULL DEFAULT '1',
+  PRIMARY KEY (`security_id`),
+  UNIQUE KEY `UK7xc9k59kmon02jqa2tf8fbxsb` (`isin`),
+  CONSTRAINT `chk_security_master_lot_size` CHECK ((`lot_size` > 0))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE `security_price` (
+  `market_price` decimal(20,6) NOT NULL,
+  `price_id` bigint NOT NULL AUTO_INCREMENT,
+  `price_timestamp` datetime(6) NOT NULL,
+  `security_id` bigint NOT NULL,
+  `version` bigint NOT NULL,
+  `price_reference` char(36) NOT NULL,
+  `source_name` varchar(100) NOT NULL,
+  PRIMARY KEY (`price_id`),
+  UNIQUE KEY `UK7qv7hs792rorpxkg7x37elpsx` (`security_id`,`price_timestamp`,`source_name`),
+  UNIQUE KEY `UKlr269dgd8wtdukfe204otfndk` (`price_reference`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- Microservice: valuation_accural
+CREATE DATABASE IF NOT EXISTS `valuation_accrual_db`;
+USE `valuation_accrual_db`;
+
+CREATE TABLE `calculation_result` (
+  `result_id` bigint NOT NULL AUTO_INCREMENT,
+  `adjusted_collateral` decimal(20,2) DEFAULT NULL,
+  `amount` decimal(20,6) DEFAULT NULL,
+  `calculation_date` date DEFAULT NULL,
+  `collateral_reference` varchar(80) DEFAULT NULL,
+  `coverage_pct` decimal(12,6) DEFAULT NULL,
+  `created_at` datetime(6) NOT NULL,
+  `currency` varchar(3) NOT NULL,
+  `details` json NOT NULL,
+  `item_key` varchar(150) NOT NULL,
+  `loan_value` decimal(20,2) DEFAULT NULL,
+  `required_collateral` decimal(20,2) DEFAULT NULL,
+  `result_reference` varchar(36) NOT NULL,
+  `result_schema_version` int NOT NULL,
+  `result_type` varchar(30) NOT NULL,
+  `run_id` bigint NOT NULL,
+  `supersedes_result_reference` varchar(36) DEFAULT NULL,
+  `transaction_reference` varchar(80) DEFAULT NULL,
+  `version` bigint NOT NULL,
+  PRIMARY KEY (`result_id`),
+  UNIQUE KEY `UKr69euv5km3wejcx6t42fdi5eb` (`result_reference`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE `calculation_run` (
+  `run_id` bigint NOT NULL AUTO_INCREMENT,
+  `attempt_count` int NOT NULL,
+  `borrower_organization_reference` varchar(80) NOT NULL,
+  `calculation_type` varchar(30) NOT NULL,
+  `completed_at` datetime(6) DEFAULT NULL,
+  `correlation_reference` varchar(80) NOT NULL,
+  `created_at` datetime(6) NOT NULL,
+  `currency` varchar(3) NOT NULL,
+  `error_message` text,
+  `implementation_digest` varchar(128) NOT NULL,
+  `input_contract_version` bigint DEFAULT NULL,
+  `input_schema_version` int NOT NULL,
+  `inputs` json NOT NULL,
+  `locked_until` datetime(6) DEFAULT NULL,
+  `period_end` date DEFAULT NULL,
+  `period_start` date DEFAULT NULL,
+  `price_snapshots` json NOT NULL,
+  `purpose` varchar(20) NOT NULL,
+  `request_payload_hash` varchar(64) NOT NULL,
+  `request_reference` varchar(80) NOT NULL,
+  `requester_service` varchar(80) NOT NULL,
+  `rule_parameters` json NOT NULL,
+  `rule_version` varchar(80) NOT NULL,
+  `run_reference` varchar(36) NOT NULL,
+  `status` varchar(20) NOT NULL,
+  `supersedes_run_reference` varchar(36) DEFAULT NULL,
+  `transaction_reference` varchar(80) DEFAULT NULL,
+  `valuation_at` datetime(6) NOT NULL,
+  `version` bigint NOT NULL,
+  PRIMARY KEY (`run_id`),
+  UNIQUE KEY `UK5jqxugklgr2owrnym27jkjlcp` (`run_reference`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE `inbox_message` (
+  `inbox_id` bigint NOT NULL AUTO_INCREMENT,
+  `aggregate_reference` varchar(80) NOT NULL,
+  `aggregate_version` bigint NOT NULL,
+  `consumer_name` varchar(150) NOT NULL,
+  `correlation_id` varchar(80) NOT NULL,
+  `error_message` text,
+  `event_id` char(36) NOT NULL,
+  `event_type` varchar(100) NOT NULL,
+  `kafka_offset` bigint NOT NULL,
+  `kafka_partition` int NOT NULL,
+  `kafka_topic` varchar(255) NOT NULL,
+  `payload` json NOT NULL,
+  `processed_at` datetime(6) DEFAULT NULL,
+  `received_at` datetime(6) NOT NULL,
+  `status` enum('RECEIVED','PROCESSED','REJECTED') NOT NULL,
+  PRIMARY KEY (`inbox_id`),
+  UNIQUE KEY `UKsr0am6vlqfvtf0mijmjuvetbb` (`consumer_name`,`event_id`),
+  KEY `idx_inbox_message_processing` (`correlation_id`),
+  CONSTRAINT `inbox_message_chk_1` CHECK (((`kafka_partition` >= 0) and (`kafka_offset` >= 0)))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE `message_log` (
+  `message_log_id` bigint NOT NULL AUTO_INCREMENT,
+  `application_message_type` varchar(100) NOT NULL,
+  `causation_event_id` char(36) DEFAULT NULL,
+  `correlation_id` varchar(80) NOT NULL,
+  `created_at` datetime(6) NOT NULL,
+  `destination_service` varchar(80) DEFAULT NULL,
+  `direction` enum('INBOUND','OUTBOUND') NOT NULL,
+  `error_message` text,
+  `event_id` char(36) NOT NULL,
+  `fix_message_type` varchar(8) DEFAULT NULL,
+  `fix_sequence_number` bigint DEFAULT NULL,
+  `fix_session_id` varchar(150) DEFAULT NULL,
+  `fix_version` varchar(20) DEFAULT NULL,
+  `kafka_offset` bigint DEFAULT NULL,
+  `kafka_partition` int DEFAULT NULL,
+  `kafka_topic` varchar(255) DEFAULT NULL,
+  `payload` json NOT NULL,
+  `processed_at` datetime(6) DEFAULT NULL,
+  `processing_status` enum('PENDING','PUBLISHED','PROCESSED','REJECTED','FAILED') NOT NULL,
+  `producer_service` varchar(80) NOT NULL,
+  `raw_fix` longtext,
+  `receiver_organization_reference` varchar(80) DEFAULT NULL,
+  `schema_version` int NOT NULL,
+  `sender_organization_reference` varchar(80) DEFAULT NULL,
+  `service_name` varchar(80) NOT NULL,
+  PRIMARY KEY (`message_log_id`),
+  UNIQUE KEY `UK2gki1t3b76jr4tgrrurufhwpp` (`service_name`,`direction`,`event_id`),
+  KEY `idx_message_log_processing` (`correlation_id`,`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE `outbox_event` (
+  `outbox_id` bigint NOT NULL AUTO_INCREMENT,
+  `aggregate_reference` varchar(80) NOT NULL,
+  `aggregate_type` varchar(80) NOT NULL,
+  `aggregate_version` bigint NOT NULL,
+  `attempt_count` int NOT NULL,
+  `correlation_id` varchar(80) NOT NULL,
+  `created_at` datetime(6) NOT NULL,
+  `destination_service` varchar(80) DEFAULT NULL,
+  `event_id` char(36) NOT NULL,
+  `event_type` varchar(100) NOT NULL,
+  `kafka_topic` varchar(255) NOT NULL,
+  `last_error` text,
+  `locked_by` varchar(150) DEFAULT NULL,
+  `locked_until` datetime(6) DEFAULT NULL,
+  `next_attempt_at` datetime(6) NOT NULL,
+  `partition_key` varchar(150) NOT NULL,
+  `payload` json NOT NULL,
+  `producer_service` varchar(80) NOT NULL,
+  `published_at` datetime(6) DEFAULT NULL,
+  `receiver_organization_reference` varchar(80) DEFAULT NULL,
+  `schema_version` int NOT NULL,
+  `sender_organization_reference` varchar(80) DEFAULT NULL,
+  `service_name` varchar(80) NOT NULL,
+  `status` enum('PENDING','PUBLISHING','PUBLISHED','FAILED') NOT NULL,
+  PRIMARY KEY (`outbox_id`),
+  UNIQUE KEY `UKc7pmgf9c7t5nt657in8sec87v` (`event_id`),
+  KEY `idx_outbox_event_processing` (`status`,`next_attempt_at`),
+  CONSTRAINT `outbox_event_chk_1` CHECK (((`attempt_count` >= 0) and (`aggregate_version` >= 0)))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;

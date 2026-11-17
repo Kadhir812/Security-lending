@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
 public class LendingFeeAccrualScheduler {
   private final LendingFeeAccrualService accruals;
 
-  @Scheduled(cron = "${app.accrual.cron:0 10 0 * * *}", zone = "UTC")
+  @Scheduled(cron = "${app.accrual.cron:0 10 0 * * *}", zone = "Asia/Kolkata")
   public void run() {
     accruals.runScheduledAccruals();
   }

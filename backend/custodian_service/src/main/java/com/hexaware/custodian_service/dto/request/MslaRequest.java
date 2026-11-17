@@ -58,6 +58,10 @@ public class MslaRequest {
   @Digits(integer = 5, fraction = 4)
   private BigDecimal collateralCoveragePct;
 
+  @PositiveOrZero
+  @Digits(integer = 4, fraction = 6)
+  private BigDecimal agreedAnnualRebatePct;
+
   @NotNull
   @Positive
   private Integer mtmIntervalMinutes;

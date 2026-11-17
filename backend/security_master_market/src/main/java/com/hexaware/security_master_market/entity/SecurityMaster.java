@@ -64,6 +64,16 @@ public class SecurityMaster {
   @Column(name = "exchange_name", length = 100)
   private String exchangeName;
 
+  @Column(name = "sedol", length = 7)
+  private String sedol;
+
+  @Column(name = "sector", length = 100)
+  private String sector;
+
+  @Builder.Default
+  @Column(name = "lot_size", nullable = false)
+  private Long lotSize = 1L;
+
   @Builder.Default
   @Enumerated(EnumType.STRING)
   @Column(name = "status", nullable = false, columnDefinition = "enum('ACTIVE','INACTIVE')")

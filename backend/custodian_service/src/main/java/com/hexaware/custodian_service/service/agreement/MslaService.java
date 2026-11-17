@@ -205,6 +205,11 @@ public class MslaService {
                 .getCollateralCoveragePct()
                 .compareTo(request.getCollateralCoveragePct())
             != 0
+        || !Objects.equals(
+            agreement.getAgreedAnnualRebatePct(),
+            request.getAgreedAnnualRebatePct() == null
+                ? java.math.BigDecimal.ZERO
+                : request.getAgreedAnnualRebatePct())
         || !Objects.equals(agreement.getMtmIntervalMinutes(), request.getMtmIntervalMinutes())
         || !Objects.equals(
             agreement.getMarginCallWindowHours(), request.getMarginCallWindowHours())
@@ -223,6 +228,10 @@ public class MslaService {
     agreement.setEligibleSecurities(request.getEligibleSecurities());
     agreement.setCollateralType(request.getCollateralType());
     agreement.setCollateralCoveragePct(request.getCollateralCoveragePct());
+    agreement.setAgreedAnnualRebatePct(
+        request.getAgreedAnnualRebatePct() == null
+            ? java.math.BigDecimal.ZERO
+            : request.getAgreedAnnualRebatePct());
     agreement.setMtmIntervalMinutes(request.getMtmIntervalMinutes());
     agreement.setMarginCallWindowHours(request.getMarginCallWindowHours());
     agreement.setRecallRule(request.getRecallRule());

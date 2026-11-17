@@ -16,6 +16,6 @@ import com.hexaware.custodian_service.enums.CollateralType;
 public class MslaResponse {
  private String mslaReference; private String mandateReference; private String lenderOrganizationReference; private String borrowerOrganizationReference; private String custodianOrganizationReference;
  private LocalDate effectiveDate; private LocalDate expiryDate; private AgreementStatus agreementStatus; private boolean currentlyEffective;
- private String baseCurrency; private EligibleSecurities eligibleSecurities; private CollateralType collateralType; private BigDecimal collateralCoveragePct; private Integer mtmIntervalMinutes; private Integer marginCallWindowHours; private String recallRule; private Map<String,Object> defaultRules; private String settlementCalendarCode;
+ private String baseCurrency; private EligibleSecurities eligibleSecurities; private CollateralType collateralType; private BigDecimal collateralCoveragePct; private BigDecimal agreedAnnualRebatePct; private Integer mtmIntervalMinutes; private Integer marginCallWindowHours; private String recallRule; private Map<String,Object> defaultRules; private String settlementCalendarCode;
  private Long version; private Instant createdAt; private Long createdByUserId; private Instant updatedAt; private Long updatedByUserId;
 }

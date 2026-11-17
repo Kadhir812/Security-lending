@@ -70,7 +70,7 @@ public class CollateralInstructionService {
     var loanRequest = requests.findByRequestReferenceAndBorrowerOrganizationReference(
         requestReference, user.getOrganizationReference())
         .orElseThrow(() -> BorrowerException.missing("Loan request not found"));
-    var view = contractViews.findByRequestReference(requestReference)
+    var view = contractViews.findLockedByRequestReference(requestReference)
         .orElseThrow(() -> BorrowerException.missing("Approved contract not found"));
     validateContract(view, request);
 
@@ -86,6 +86,8 @@ public class CollateralInstructionService {
         return existing;
       }
     }
+
+    requireAvailableInitialCash(snapshot, instructions, request.amount());
 
     Map<String, Object> instruction = new LinkedHashMap<>();
     instruction.put("instructionReference", request.instructionReference());
@@ -450,6 +452,48 @@ public class CollateralInstructionService {
     Object status = view.getContractSnapshot().get("contractStatus");
     if (!"APPROVED".equals(status) && !"PENDING_SETTLEMENT".equals(status)) {
       throw BorrowerException.conflict("Contract is not eligible for initial collateral");
+    }
+  }
+
+  private void requireAvailableInitialCash(
+      Map<String, Object> snapshot,
+      List<Map<String, Object>> instructions,
+      BigDecimal requestedAmount) {
+    BigDecimal required = cashAmount(snapshot.get("requiredCashCollateral"));
+    BigDecimal confirmed = snapshot.get("confirmedCashCollateral") == null
+        ? BigDecimal.ZERO
+        : cashAmount(snapshot.get("confirmedCashCollateral"));
+    BigDecimal postedInstructions = BigDecimal.ZERO;
+    BigDecimal pendingInstructions = BigDecimal.ZERO;
+    for (Map<String, Object> instruction : instructions) {
+      if (!"CASH".equals(instruction.get("collateralType"))
+          || instruction.get("marginCallReference") != null) {
+        continue;
+      }
+      String status = String.valueOf(instruction.get("status"));
+      if (List.of("FAILED", "CANCELLED", "REJECTED").contains(status)) {
+        continue;
+      }
+      BigDecimal amount = cashAmount(instruction.get("amount"));
+      if ("POSTED".equals(status) || "SETTLED".equals(status)) {
+        postedInstructions = postedInstructions.add(amount);
+      } else {
+        pendingInstructions = pendingInstructions.add(amount);
+      }
+    }
+
+    BigDecimal committed = confirmed.max(postedInstructions).add(pendingInstructions);
+    if (committed.add(requestedAmount).compareTo(required) > 0) {
+      throw BorrowerException.conflict(
+          "CASH instruction exceeds the remaining initial collateral requirement");
+    }
+  }
+
+  private BigDecimal cashAmount(Object value) {
+    try {
+      return new BigDecimal(String.valueOf(value));
+    } catch (NumberFormatException exception) {
+      throw BorrowerException.conflict("Contract cash collateral amount is invalid");
     }
   }
 

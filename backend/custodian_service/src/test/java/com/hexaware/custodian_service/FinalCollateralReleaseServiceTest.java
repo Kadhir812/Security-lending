@@ -40,18 +40,21 @@ import com.hexaware.custodian_service.repository.MarginCallRepository;
 import com.hexaware.custodian_service.repository.MslaAgreementRepository;
 import com.hexaware.custodian_service.repository.OrganizationRepository;
 import com.hexaware.custodian_service.repository.RecallRequestRepository;
+import com.hexaware.custodian_service.repository.RebatePaymentHistoryRepository;
 import com.hexaware.custodian_service.repository.SettlementInstructionRepository;
 import com.hexaware.custodian_service.security.authorization.SetupAccess;
 import com.hexaware.custodian_service.service.collateral.FinalCollateralReleaseService;
 import com.hexaware.custodian_service.service.collateral.FinalCollateralReleaseEvents;
 import com.hexaware.custodian_service.service.collateral.ContractClosureService;
 import com.hexaware.custodian_service.service.fees.LendingFeeAccrualService;
+import com.hexaware.custodian_service.service.fees.CashRebateAccrualService;
 import com.hexaware.custodian_service.service.messaging.OutgoingEventService;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -84,10 +87,12 @@ class FinalCollateralReleaseServiceTest {
   @Mock private RecallRequestRepository recalls;
   @Mock private MarginCallRepository marginCalls;
   @Mock private LendingFeePaymentRepository feePayments;
+  @Mock private RebatePaymentHistoryRepository rebatePayments;
   @Mock private ContractStatusHistoryRepository histories;
   @Mock private InboxMessageRepository inbox;
   @Mock private MessagingProperties messaging;
   @Mock private LendingFeeAccrualService accruals;
+  @Mock private CashRebateAccrualService rebateAccruals;
   @Mock private OutgoingEventService outgoing;
   @Mock private Authentication authentication;
   @Mock private LocalUserAuthentication user;
@@ -111,7 +116,9 @@ class FinalCollateralReleaseServiceTest {
             recalls,
             marginCalls,
             feePayments,
+            rebatePayments,
             accruals,
+            rebateAccruals,
             events,
             clock);
     service =
@@ -260,6 +267,56 @@ class FinalCollateralReleaseServiceTest {
   }
 
   @Test
+  void blocksContractClosureWhileARebateAccrualIsUnpaid() {
+    contract.setUsedCreditAmount(BigDecimal.ZERO);
+    contract.setReservedCreditAmount(BigDecimal.ZERO);
+    SettlementInstruction delivery =
+        SettlementInstruction.builder()
+            .instructionType("SECURITY_DELIVERY")
+            .quantity(new BigDecimal("100"))
+            .settledAt(Instant.parse("2026-11-08T09:00:00Z"))
+            .build();
+    SettlementInstruction returned =
+        SettlementInstruction.builder()
+            .instructionType("SECURITY_RETURN")
+            .quantity(new BigDecimal("100"))
+            .settledAt(Instant.parse("2026-11-08T11:00:00Z"))
+            .build();
+    when(settlements.findByContractIdAndStatusOrderBySettledAtAsc(
+            20L, SettlementInstructionStatus.SETTLED))
+        .thenReturn(List.of(delivery, returned));
+    when(accruals.accrue(
+            authentication,
+            TRANSACTION_REFERENCE,
+            java.time.LocalDate.parse("2026-11-08"),
+            java.time.LocalDate.parse("2026-11-08"),
+            null))
+        .thenReturn(Map.of("postedCount", 0, "pending", List.of()));
+    when(accruals.charges(authentication, TRANSACTION_REFERENCE)).thenReturn(List.of());
+    when(rebateAccruals.rebates(authentication, TRANSACTION_REFERENCE))
+        .thenReturn(
+            List.of(
+                Map.of(
+                    "itemKey", "REBATE:2026-11-08",
+                    "latestResultReference", "22c2650e-1bc2-4728-883c-985bfec94889",
+                    "amount", "1.25")));
+    when(feePayments.findLockedByContractId(20L)).thenReturn(List.of());
+    when(rebatePayments.findLockedByContractId(20L)).thenReturn(List.of());
+
+    assertThatThrownBy(
+            () ->
+                service.close(
+                    authentication,
+                    TRANSACTION_REFERENCE,
+                    "CLOSE-REBATE-001",
+                    "close after final obligations"))
+        .isInstanceOf(SetupException.class)
+        .hasMessageContaining("unpaid or unresolved cash-rebate accrual");
+    assertThat(contract.getContractStatus()).isEqualTo(LoanContractStatus.RETURNED);
+    verify(contracts, never()).saveAndFlush(any(LoanContract.class));
+  }
+
+  @Test
   void duplicatePayoutConfirmationDoesNotApplyBalanceTwice() {
     instruction.setStatus(SettlementInstructionStatus.SETTLED);
     instruction.setExternalConfirmationReference(CONFIRMATION_REFERENCE);
@@ -292,6 +349,48 @@ class FinalCollateralReleaseServiceTest {
     assertThat(result.get("idempotent")).isEqualTo(true);
     verify(contracts, never()).saveAndFlush(any(LoanContract.class));
     verify(outgoing, never()).enqueue(anyString(), any(EventEnvelope.class));
+  }
+
+  @Test
+  void pendingQueueReadsReleaseFieldsFromStoredEventPayload() {
+    String releaseReference = "REL-QUEUE-001";
+    Map<String, Object> eventPayload = new LinkedHashMap<>();
+    eventPayload.put("transactionReference", TRANSACTION_REFERENCE);
+    eventPayload.put("releaseReference", releaseReference);
+    eventPayload.put("borrowerOrganizationReference", "BORROWER-001");
+    eventPayload.put("custodianOrganizationReference", "CUSTODIAN-001");
+    InboxMessage matchingRequest =
+        InboxMessage.builder()
+            .consumerName("custodian-messaging-v1")
+            .eventId("0188e266-d007-7acd-9fc9-7ea41de57c55")
+            .eventType("FINAL_COLLATERAL_RELEASE_REQUESTED")
+            .aggregateReference(releaseReference)
+            .status(InboxMessageStatus.PROCESSED)
+            .payload(Map.of(
+                "eventId", "0188e266-d007-7acd-9fc9-7ea41de57c55",
+                "eventType", "FINAL_COLLATERAL_RELEASE_REQUESTED",
+                "payload", eventPayload))
+            .receivedAt(NOW)
+            .build();
+    when(access.actor(authentication, false)).thenReturn(custodian());
+    when(messaging.getConsumerName()).thenReturn("custodian-messaging-v1");
+    when(inbox.findByConsumerNameAndEventTypeAndStatusOrderByReceivedAtDesc(
+        "custodian-messaging-v1",
+        "FINAL_COLLATERAL_RELEASE_REQUESTED",
+        InboxMessageStatus.PROCESSED))
+        .thenReturn(List.of(matchingRequest));
+    when(contracts.findByTransactionReference(TRANSACTION_REFERENCE))
+        .thenReturn(Optional.of(contract));
+    when(settlements.findByContractId(20L)).thenReturn(List.of());
+
+    List<Map<String, Object>> pending = service.pendingRequests(authentication);
+
+    assertThat(pending).hasSize(1);
+    assertThat(pending.get(0))
+        .containsEntry("transactionReference", TRANSACTION_REFERENCE)
+        .containsEntry("releaseReference", releaseReference)
+        .containsEntry("borrowerOrganizationReference", "BORROWER-001")
+        .containsEntry("status", "PENDING_APPROVAL");
   }
 
   private Organization custodian() {

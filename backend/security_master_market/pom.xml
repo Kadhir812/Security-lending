@@ -8,6 +8,9 @@
         <relativePath>../../pom.xml</relativePath>
     </parent>
     <artifactId>security-market-service</artifactId>
+    <properties>
+        <lombok.version>1.18.48</lombok.version>
+    </properties>
     <dependencies>
         <dependency>
             <groupId>org.springframework.boot</groupId>

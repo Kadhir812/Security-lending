@@ -23,10 +23,10 @@ import com.hexaware.custodian_service.repository.MarginCallRepository;
 import com.hexaware.custodian_service.repository.MslaAgreementRepository;
 import com.hexaware.custodian_service.repository.OrganizationRepository;
 import com.hexaware.custodian_service.repository.SettlementInstructionRepository;
+import com.hexaware.custodian_service.service.settlement.InitialCashCollateralRules;
 import com.hexaware.custodian_service.service.messaging.OutgoingEventService;
 import java.math.BigDecimal;
 import java.time.Clock;
-import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -59,7 +59,7 @@ public class CollateralInstructionSubmittedHandler implements MessageHandler {
     CollateralInstructionSubmittedPayload payload =
         mapper.convertValue(event.getPayload(), CollateralInstructionSubmittedPayload.class);
     validateEnvelope(event, payload);
-    LoanContract contract = contracts.findByTransactionReference(payload.transactionReference())
+    LoanContract contract = contracts.findLockedByTransactionReference(payload.transactionReference())
         .orElseThrow(() -> invalid("LOAN_CONTRACT_NOT_FOUND"));
     LoanRequest request = requests.findById(contract.getLoanRequestId())
         .orElseThrow(() -> invalid("LOAN_REQUEST_NOT_FOUND"));
@@ -117,6 +117,17 @@ public class CollateralInstructionSubmittedHandler implements MessageHandler {
         throw invalid("COLLATERAL_INSTRUCTION_REFERENCE_REUSED");
       }
     } else {
+      if (call == null) {
+        List<Collateral> contractCollaterals =
+            collaterals.findLockedByContractId(contract.getContractId());
+        BigDecimal required = requiredCashCollateral(contract);
+        if (InitialCashCollateralRules.exceedsRequirement(
+            InitialCashCollateralRules.reservedCash(contractCollaterals),
+            payload.amount(),
+            required)) {
+          throw invalid("INITIAL_CASH_COLLATERAL_EXCEEDS_REQUIREMENT");
+        }
+      }
       collateral = collaterals.save(Collateral.builder()
           .collateralReference(payload.instructionReference())
           .contractId(contract.getContractId())
@@ -153,7 +164,7 @@ public class CollateralInstructionSubmittedHandler implements MessageHandler {
             .amount(payload.amount())
             .currency(payload.currency())
             .status(SettlementInstructionStatus.PENDING)
-            .settlementDate(clock.instant().atZone(ZoneOffset.UTC).toLocalDate())
+            .settlementDate(clock.instant().atZone(clock.getZone()).toLocalDate())
             .createdAt(clock.instant())
             .build());
       }
@@ -197,6 +208,25 @@ public class CollateralInstructionSubmittedHandler implements MessageHandler {
     } catch (NumberFormatException exception) {
       throw invalid("CONTRACT_CASH_TERMS_INVALID");
     }
+  }
+
+  private BigDecimal requiredCashCollateral(LoanContract contract) {
+    Object value = contract.getCollateralTerms().get("requiredCashCollateral");
+    if (value == null) value = contract.getCollateralTerms().get("requiredAmount");
+    BigDecimal required;
+    try {
+      required = value instanceof Number number
+          ? new BigDecimal(number.toString())
+          : value instanceof String text
+              ? new BigDecimal(text)
+              : contract.getLatestRequiredCollateral();
+    } catch (NumberFormatException exception) {
+      throw invalid("INITIAL_CASH_COLLATERAL_REQUIREMENT_INVALID");
+    }
+    if (required == null || required.signum() <= 0) {
+      throw invalid("INITIAL_CASH_COLLATERAL_REQUIREMENT_INVALID");
+    }
+    return required;
   }
 
   private void validateEnvelope(

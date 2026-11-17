@@ -115,6 +115,33 @@ public class ValuationCalculationClient {
     }
   }
 
+  public RebateCalculationResponse calculateRebate(
+      RebateCalculationRequest request, String bearerToken) {
+    try {
+      var response =
+          builder
+              .baseUrl(baseUrl)
+              .build()
+              .post()
+              .uri("/api/calculations/rebate")
+              .header(HttpHeaders.AUTHORIZATION, "Bearer " + bearerToken)
+              .body(request)
+              .retrieve()
+              .body(RebateCalculationResponse.class);
+      if (response == null) {
+        throw SetupException.unavailable("Valuation service returned an empty rebate result");
+      }
+      return response;
+    } catch (RestClientResponseException exception) {
+      if (exception.getStatusCode().value() == HttpStatus.UNPROCESSABLE_ENTITY.value()) {
+        throw SetupException.conflict("Rebate calculation inputs are not eligible");
+      }
+      throw SetupException.unavailable("Valuation service could not process rebate calculation");
+    } catch (RestClientException exception) {
+      throw SetupException.unavailable("Valuation service is unavailable");
+    }
+  }
+
   public List<LendingFeeCalculationResponse> lendingFeeResults(
       String transactionReference,
       String custodianOrganizationReference,

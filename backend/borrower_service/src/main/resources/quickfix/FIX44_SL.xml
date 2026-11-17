@@ -86,6 +86,7 @@
       <field name="ContractSettlementDate" required="Y"/>
       <field name="EventID" required="Y"/>
       <field name="DecisionRespondedAtExact" required="Y"/>
+      <field name="AgreedAnnualRebatePercentage" required="Y"/>
     </message>
     <message name="LendingInitialSettlementConfirmation" msgtype="U2" msgcat="app">
       <field name="Currency" required="Y"/>
@@ -219,6 +220,7 @@
     <field number="9133" name="ContractSettlementDate" type="LOCALMKTDATE"/>
     <field number="9134" name="EventID" type="STRING"/>
     <field number="9135" name="DecisionRespondedAtExact" type="STRING"/>
+    <field number="9136" name="AgreedAnnualRebatePercentage" type="PERCENTAGE"/>
     <field number="9140" name="SettlementTransactionReference" type="STRING"/>
     <field number="9141" name="SettlementInstructionReference" type="STRING"/>
     <field number="9142" name="SettlementInstructionType" type="STRING">

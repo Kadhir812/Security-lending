@@ -16,7 +16,6 @@ import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Instant;
-import java.time.ZoneOffset;
 import java.util.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -190,7 +189,7 @@ public class SecuritiesReturnService {
         .quantity(BigDecimal.valueOf(quantity))
         .currency(contract.getSettlementCurrency())
         .status(SettlementInstructionStatus.PENDING)
-        .settlementDate(now.atZone(ZoneOffset.UTC).toLocalDate())
+        .settlementDate(now.atZone(clock.getZone()).toLocalDate())
         .createdAt(now)
         .build();
     settlements.save(instruction);

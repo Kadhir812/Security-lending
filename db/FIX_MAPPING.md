@@ -252,6 +252,7 @@ payload is published.
 | 9133 | ContractSettlementDate / LOCALMKTDATE | Yes | Project extension; settlement date |
 | 9134 | EventID / STRING | Yes | Project extension; must equal the immutable JSON envelope event ID |
 | 9135 | DecisionRespondedAtExact / STRING | Yes | Project extension; exact ISO-8601 decision timestamp, retaining precision beyond standard tag 60 |
+| 9136 | AgreedAnnualRebatePercentage / PERCENTAGE | Yes | Project extension; annual cash-collateral rebate rate agreed on the MSLA and fixed on the approved contract |
 
 Custom AK tags use FIX scalar types and carry one value per field; there is no
 JSON or serialized business blob inside FIX. Tag `9134` repeats the immutable

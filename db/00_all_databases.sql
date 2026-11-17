@@ -240,6 +240,7 @@ CREATE TABLE msla_agreement (
   eligible_securities JSON NOT NULL,
   collateral_type ENUM('CASH','ETF','GOVT_BOND','CORPORATE_BOND','EQUITY') NOT NULL DEFAULT 'CASH',
   collateral_coverage_pct DECIMAL(9,4) NOT NULL DEFAULT 105.0000,
+  agreed_annual_rebate_pct DECIMAL(10,6) NOT NULL DEFAULT 0,
   mtm_interval_minutes INT NOT NULL DEFAULT 60,
   margin_call_window_hours INT NOT NULL DEFAULT 24,
   recall_rule VARCHAR(500),
@@ -816,6 +817,7 @@ CREATE TABLE borrower_trade_activity (
   version BIGINT NOT NULL DEFAULT 0,
   trade_id BIGINT AUTO_INCREMENT PRIMARY KEY,
   trade_reference VARCHAR(80) NOT NULL UNIQUE,
+  order_reference VARCHAR(80),
   transaction_reference VARCHAR(80) NOT NULL,
   trade_type ENUM('SELL_SHORT','BUY_TO_COVER') NOT NULL,
   quantity BIGINT NOT NULL,
@@ -849,6 +851,10 @@ order_id BIGINT AUTO_INCREMENT PRIMARY KEY,
   CHECK (order_status NOT IN ('FILLED','CANCELLED','REJECTED','EXPIRED') OR leaves_quantity = 0),
   FOREIGN KEY (created_by) REFERENCES users(user_id)
 ) ENGINE=InnoDB;
+
+ALTER TABLE borrower_trade_activity
+  ADD CONSTRAINT fk_borrower_trade_activity_order
+    FOREIGN KEY (order_reference) REFERENCES borrower_order(order_reference);
 
 -- SUBMITTED INTENT + COPIED DECISION
 CREATE TABLE loan_request (

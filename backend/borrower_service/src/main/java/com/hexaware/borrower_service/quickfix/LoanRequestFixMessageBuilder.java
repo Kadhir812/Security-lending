@@ -186,6 +186,7 @@ public class LoanRequestFixMessageBuilder {
     contract.put("quantity", longValue(message, 9103));
     contract.put("settlementCurrency", string(message, 9104));
     contract.put("agreedAnnualFeePct", decimal(message, 9105));
+    contract.put("agreedAnnualRebatePct", decimal(message, 9136));
     contract.put("dayCountBasis", string(message, 9106));
     contract.put("collateralCoveragePct", decimal(message, 9107));
     contract.put("collateralTerms", collateralTerms);

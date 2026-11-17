@@ -13,6 +13,11 @@ public interface LoanContractViewRepository extends JpaRepository<LoanContractVi
 
   @Lock(LockModeType.PESSIMISTIC_WRITE)
   @Query("select contractView from LoanContractView contractView "
+      + "where contractView.requestReference = :requestReference")
+  Optional<LoanContractView> findLockedByRequestReference(String requestReference);
+
+  @Lock(LockModeType.PESSIMISTIC_WRITE)
+  @Query("select contractView from LoanContractView contractView "
       + "where contractView.transactionReference = :transactionReference")
   Optional<LoanContractView> findLockedByTransactionReference(String transactionReference);
 }

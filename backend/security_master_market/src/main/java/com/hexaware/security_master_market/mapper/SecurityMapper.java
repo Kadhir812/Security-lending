@@ -12,14 +12,21 @@ import org.springframework.stereotype.Component;
 public class SecurityMapper {
   public SecurityResponse security(SecurityMaster s) {
     return SecurityResponse.builder()
+        .id(s.getSecurityId())
         .securityId(s.getSecurityId())
         .version(s.getVersion())
         .isin(s.getIsin())
         .symbol(s.getSymbol())
         .securityName(s.getSecurityName())
+        .name(s.getSecurityName())
         .securityType(s.getSecurityType())
+        .type(s.getSecurityType())
         .currency(s.getCurrency())
         .exchangeName(s.getExchangeName())
+        .exchange(s.getExchangeName())
+        .sedol(s.getSedol())
+        .sector(s.getSector())
+        .lotSize(s.getLotSize())
         .status(s.getStatus())
         .build();
   }

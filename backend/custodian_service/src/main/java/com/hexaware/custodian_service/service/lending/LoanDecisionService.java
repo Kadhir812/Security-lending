@@ -80,7 +80,7 @@ public class LoanDecisionService {
     }
     validateAgreement(request, context.agreement(), context.mandate(), context.borrower(), context.lender());
     ReservationReviewRules.requireNotOverdue(
-        request.getRequestedSettlementDate(), clock.instant());
+        request.getRequestedSettlementDate(), clock.instant(), clock.getZone());
     var security = securities.require(request.getSecurityIsin());
     if (!request.getSecurityIsin().equals(security.isin())
         || !"ACTIVE".equals(security.status())

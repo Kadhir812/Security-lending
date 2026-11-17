@@ -162,6 +162,7 @@ CREATE TABLE borrower_trade_activity (
   version BIGINT NOT NULL DEFAULT 0,
   trade_id BIGINT AUTO_INCREMENT PRIMARY KEY,
   trade_reference VARCHAR(80) NOT NULL UNIQUE,
+  order_reference VARCHAR(80),
   transaction_reference VARCHAR(80) NOT NULL,
   trade_type ENUM('SELL_SHORT','BUY_TO_COVER') NOT NULL,
   quantity BIGINT NOT NULL,
@@ -195,6 +196,10 @@ order_id BIGINT AUTO_INCREMENT PRIMARY KEY,
   CHECK (order_status NOT IN ('FILLED','CANCELLED','REJECTED','EXPIRED') OR leaves_quantity = 0),
   FOREIGN KEY (created_by) REFERENCES users(user_id)
 ) ENGINE=InnoDB;
+
+ALTER TABLE borrower_trade_activity
+  ADD CONSTRAINT fk_borrower_trade_activity_order
+    FOREIGN KEY (order_reference) REFERENCES borrower_order(order_reference);
 
 -- SUBMITTED INTENT + COPIED DECISION
 CREATE TABLE loan_request (

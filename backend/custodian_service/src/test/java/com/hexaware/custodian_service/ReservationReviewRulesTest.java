@@ -8,13 +8,16 @@ import com.hexaware.custodian_service.service.inventory.InventoryQuantityRules;
 import com.hexaware.custodian_service.service.lending.ReservationReviewRules;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import org.junit.jupiter.api.Test;
 
 class ReservationReviewRulesTest {
+  private static final ZoneId IST = ZoneId.of("Asia/Kolkata");
+
   @Test
-  void usesTheStartOfTheFollowingUtcDayAsReviewDeadline() {
-    assertThat(ReservationReviewRules.reviewDeadline(LocalDate.of(2026, 11, 10)))
-        .isEqualTo(Instant.parse("2026-11-11T00:00:00Z"));
+  void usesTheStartOfTheFollowingIndianDayAsReviewDeadline() {
+    assertThat(ReservationReviewRules.reviewDeadline(LocalDate.of(2026, 11, 10), IST))
+        .isEqualTo(Instant.parse("2026-11-10T18:30:00Z"));
   }
 
   @Test
@@ -22,7 +25,9 @@ class ReservationReviewRulesTest {
     assertThatThrownBy(
             () ->
                 ReservationReviewRules.requireNotOverdue(
-                    LocalDate.of(2026, 11, 10), Instant.parse("2026-11-11T00:00:00Z")))
+                    LocalDate.of(2026, 11, 10),
+                    Instant.parse("2026-11-10T18:30:00Z"),
+                    IST))
         .isInstanceOf(SetupException.class)
         .hasMessageContaining("review deadline");
   }

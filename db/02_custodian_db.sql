@@ -202,6 +202,7 @@ CREATE TABLE msla_agreement (
   eligible_securities JSON NOT NULL,
   collateral_type ENUM('CASH','ETF','GOVT_BOND','CORPORATE_BOND','EQUITY') NOT NULL DEFAULT 'CASH',
   collateral_coverage_pct DECIMAL(9,4) NOT NULL DEFAULT 105.0000,
+  agreed_annual_rebate_pct DECIMAL(10,6) NOT NULL DEFAULT 0,
   mtm_interval_minutes INT NOT NULL DEFAULT 60,
   margin_call_window_hours INT NOT NULL DEFAULT 24,
   recall_rule VARCHAR(500),

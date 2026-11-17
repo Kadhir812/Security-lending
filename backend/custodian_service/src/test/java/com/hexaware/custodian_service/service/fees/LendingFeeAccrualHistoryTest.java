@@ -8,8 +8,10 @@ import com.hexaware.custodian_service.entity.OutboxEvent;
 import com.hexaware.custodian_service.entity.SettlementInstruction;
 import com.hexaware.custodian_service.repository.OutboxEventRepository;
 import java.math.BigDecimal;
+import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -17,8 +19,11 @@ import org.junit.jupiter.api.Test;
 
 class LendingFeeAccrualHistoryTest {
   private static final String TRANSACTION_REFERENCE = "CTR-TEST";
+  private static final Clock IST_CLOCK =
+      Clock.fixed(
+          Instant.parse("2026-11-17T12:00:00Z"), ZoneId.of("Asia/Kolkata"));
   private final LendingFeeAccrualHistory history =
-      new LendingFeeAccrualHistory(null, null, null);
+      new LendingFeeAccrualHistory(null, null, null, IST_CLOCK);
 
   @Test
   void includesDeliveryAndReturnSettlementDatesInDailyQuantity() {
@@ -32,6 +37,23 @@ class LendingFeeAccrualHistoryTest {
     assertThat(history.accrualQuantityOnDate(settlements, LocalDate.parse("2026-11-02")))
         .isEqualTo(100);
     assertThat(history.accrualQuantityOnDate(settlements, LocalDate.parse("2026-11-03")))
+        .isEqualTo(60);
+  }
+
+  @Test
+  void assignsSettlementsToIndianCalendarDaysAcrossUtcMidnight() {
+    List<SettlementInstruction> settlements =
+        List.of(
+            settlement("SECURITY_DELIVERY", 100, "2026-11-01T19:00:00Z"),
+            settlement("SECURITY_RETURN", 40, "2026-11-02T19:00:00Z"));
+
+    assertThat(history.accrualQuantityOnDate(settlements, LocalDate.parse("2026-11-01")))
+        .isZero();
+    assertThat(history.accrualQuantityOnDate(settlements, LocalDate.parse("2026-11-02")))
+        .isEqualTo(100);
+    assertThat(history.accrualQuantityOnDate(settlements, LocalDate.parse("2026-11-03")))
+        .isEqualTo(100);
+    assertThat(history.accrualQuantityOnDate(settlements, LocalDate.parse("2026-11-04")))
         .isEqualTo(60);
   }
 
@@ -73,7 +95,7 @@ class LendingFeeAccrualHistoryTest {
             "LENDING_FEE_CHARGE_UPDATED", "LENDING_FEE_CHARGE", TRANSACTION_REFERENCE))
         .thenReturn(2L);
     LendingFeeAccrualHistory accrualHistory =
-        new LendingFeeAccrualHistory(null, null, outbox);
+        new LendingFeeAccrualHistory(null, null, outbox, IST_CLOCK);
 
     assertThat(accrualHistory.acceptedChargeEvents(TRANSACTION_REFERENCE))
         .extracting(event -> accrualHistory.businessPayload(event).get("resultReference"))

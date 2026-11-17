@@ -222,7 +222,7 @@ public class LoanDecisionCommitter {
                 .quantity(request.getQuantity())
                 .settlementCurrency(request.getSettlementCurrency())
                 .agreedAnnualFeePct(fee.getAnnualFeePct())
-                .agreedAnnualRebatePct(BigDecimal.ZERO.setScale(6))
+                .agreedAnnualRebatePct(agreement.getAgreedAnnualRebatePct())
                 .dayCountBasis("ACT_365")
                 .collateralCoveragePct(agreement.getCollateralCoveragePct())
                 .collateralTerms(collateralTerms)
@@ -250,7 +250,9 @@ public class LoanDecisionCommitter {
             .reservedQuantity(request.getQuantity())
             .status(com.hexaware.custodian_service.enums.InventoryReservationStatus.ACTIVE)
             .createdAt(now)
-            .expiresAt(ReservationReviewRules.reviewDeadline(request.getRequestedSettlementDate()))
+            .expiresAt(
+                ReservationReviewRules.reviewDeadline(
+                    request.getRequestedSettlementDate(), clock.getZone()))
             .build());
     histories.saveAndFlush(
         ContractStatusHistory.builder()
@@ -425,7 +427,7 @@ public class LoanDecisionCommitter {
       throw SetupException.conflict("Request, mandate, or MSLA is not currently effective");
     }
     ReservationReviewRules.requireNotOverdue(
-        request.getRequestedSettlementDate(), clock.instant());
+        request.getRequestedSettlementDate(), clock.instant(), clock.getZone());
   }
 
   private void validateCalculation(
@@ -536,6 +538,7 @@ public class LoanDecisionCommitter {
     result.put("quantity", contract.getQuantity());
     result.put("settlementCurrency", contract.getSettlementCurrency());
     result.put("agreedAnnualFeePct", contract.getAgreedAnnualFeePct());
+    result.put("agreedAnnualRebatePct", contract.getAgreedAnnualRebatePct());
     result.put("dayCountBasis", contract.getDayCountBasis());
     result.put("collateralCoveragePct", contract.getCollateralCoveragePct());
     result.put("collateralTerms", contract.getCollateralTerms());

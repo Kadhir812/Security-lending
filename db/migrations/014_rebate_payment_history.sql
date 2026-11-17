@@ -1,0 +1,23 @@
+CREATE TABLE IF NOT EXISTS rebate_payment_history (
+  version BIGINT NOT NULL DEFAULT 0,
+  contract_id BIGINT NOT NULL,
+  obligation_reference VARCHAR(80) NOT NULL,
+  calculation_snapshot JSON NOT NULL,
+  INDEX idx_payment_obligation (obligation_reference),
+  FOREIGN KEY (contract_id) REFERENCES loan_contract(contract_id),
+  payment_id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  payment_reference VARCHAR(80) NOT NULL UNIQUE,
+  calculation_result_reference CHAR(36) NOT NULL,
+  from_organization_id BIGINT NOT NULL,
+  to_organization_id BIGINT NOT NULL,
+  payment_amount DECIMAL(20,2) NOT NULL,
+  currency CHAR(3) NOT NULL,
+  status ENUM('PENDING','PAID','FAILED','CANCELLED') NOT NULL DEFAULT 'PENDING',
+  paid_at DATETIME(6),
+  external_reference VARCHAR(150) UNIQUE,
+  failure_reason VARCHAR(500),
+  CHECK (payment_amount > 0 AND from_organization_id <> to_organization_id),
+  CHECK (status <> 'PAID' OR paid_at IS NOT NULL),
+  FOREIGN KEY (from_organization_id) REFERENCES organization(organization_id),
+  FOREIGN KEY (to_organization_id) REFERENCES organization(organization_id)
+) ENGINE=InnoDB;

@@ -31,7 +31,6 @@ import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.LocalDate;
-import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -90,17 +89,18 @@ public class FinalCollateralReleaseService {
         .stream()
         .filter(row -> Objects.equals(
             actor.getOrganizationReference(),
-            row.getPayload().get("custodianOrganizationReference")))
+            requestPayload(row).get("custodianOrganizationReference")))
         .map(row -> {
+          Map<String, Object> payload = requestPayload(row);
           Map<String, Object> request = new LinkedHashMap<>();
-          request.put("transactionReference", row.getPayload().get("transactionReference"));
-          request.put("releaseReference", row.getPayload().get("releaseReference"));
+          request.put("transactionReference", payload.get("transactionReference"));
+          request.put("releaseReference", payload.get("releaseReference"));
           request.put("borrowerOrganizationReference",
-              row.getPayload().get("borrowerOrganizationReference"));
+              payload.get("borrowerOrganizationReference"));
           request.put("receivedAt", row.getReceivedAt());
           request.put("status", releaseRequestStatus(
-              String.valueOf(row.getPayload().get("transactionReference")),
-              String.valueOf(row.getPayload().get("releaseReference"))));
+              String.valueOf(payload.get("transactionReference")),
+              String.valueOf(payload.get("releaseReference"))));
           return request;
         })
         .toList();
@@ -185,7 +185,7 @@ public class FinalCollateralReleaseService {
             .amount(amount)
             .currency(contract.getSettlementCurrency())
             .status(SettlementInstructionStatus.PENDING)
-            .settlementDate(LocalDate.now(clock.withZone(ZoneOffset.UTC)))
+            .settlementDate(LocalDate.now(clock))
             .createdAt(clock.instant())
             .build();
         settlements.saveAndFlush(instruction);
@@ -379,7 +379,7 @@ public class FinalCollateralReleaseService {
         inbox.findByConsumerNameAndEventId(messaging.getConsumerName(), eventId)
             .orElseThrow(
                 () -> SetupException.missing("Borrower final release request was not received"));
-    Map<String, Object> payload = message.getPayload();
+    Map<String, Object> payload = requestPayload(message);
     if (message.getStatus() != InboxMessageStatus.PROCESSED
         || !REQUEST_EVENT.equals(message.getEventType())
         || !Objects.equals(payload.get("transactionReference"), contract.getTransactionReference())
@@ -389,6 +389,19 @@ public class FinalCollateralReleaseService {
       throw SetupException.conflict("Received final release request does not match the contract");
     }
     return message;
+  }
+
+  private Map<String, Object> requestPayload(InboxMessage message) {
+    Object value = message.getPayload().get("payload");
+    if (!(value instanceof Map<?, ?> fields)) {
+      throw new IllegalStateException("Stored final release event has no payload object");
+    }
+    Map<String, Object> payload = new LinkedHashMap<>();
+    fields.forEach(
+        (key, field) -> {
+          if (key instanceof String name) payload.put(name, field);
+        });
+    return payload;
   }
 
   private Request validateRequestEnvelope(EventEnvelope event) {

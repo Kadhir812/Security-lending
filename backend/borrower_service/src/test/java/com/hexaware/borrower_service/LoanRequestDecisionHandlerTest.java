@@ -260,6 +260,7 @@ class LoanRequestDecisionHandlerTest {
     message.setString(9133, "20261110");
     message.setString(9134, event.getEventId());
     message.setString(9135, NOW.toString());
+    message.setString(9136, "0.5");
     return message.toString();
   }
 }

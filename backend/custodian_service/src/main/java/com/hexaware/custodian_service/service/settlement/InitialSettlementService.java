@@ -224,7 +224,7 @@ public class InitialSettlementService {
         .status(SettlementInstructionStatus.PENDING)
         .settlementDate(call == null
             ? contract.getSettlementDate()
-            : receivedAt.atZone(java.time.ZoneOffset.UTC).toLocalDate())
+            : receivedAt.atZone(clock.getZone()).toLocalDate())
         .createdAt(receivedAt)
         .build();
     settlements.save(instruction);
@@ -257,7 +257,7 @@ public class InitialSettlementService {
   public Collateral submitCash(Authentication authentication, String transactionReference,
       com.hexaware.custodian_service.dto.request.CashCollateralInstructionRequest request) {
     access.actor(authentication, true);
-    LoanContract contract = scopedContract(transactionReference);
+    LoanContract contract = scopedLockedContract(transactionReference);
     validateApprovedContract(contract);
     validateCash(contract, request);
 
@@ -268,6 +268,15 @@ public class InitialSettlementService {
         throw SetupException.conflict("Collateral instruction reference was reused");
       }
       return existing.get();
+    }
+    List<Collateral> contractCollaterals =
+        collaterals.findLockedByContractId(contract.getContractId());
+    if (InitialCashCollateralRules.exceedsRequirement(
+        InitialCashCollateralRules.reservedCash(contractCollaterals),
+        request.amount(),
+        requiredCollateral(contract))) {
+      throw SetupException.conflict(
+          "CASH instruction exceeds the remaining initial collateral requirement");
     }
     return collaterals.save(Collateral.builder()
         .collateralReference(request.instructionReference())
@@ -322,6 +331,21 @@ public class InitialSettlementService {
       }
       throw SetupException.conflict("A conflicting confirmation already settled this instruction");
     }
+    if (instruction == null || instruction.getMarginCallId() == null) {
+      List<Collateral> contractCollaterals =
+          collaterals.findLockedByContractId(contract.getContractId());
+      if (InitialCashCollateralRules.hasEarlierPendingCash(contractCollaterals, collateral)) {
+        throw SetupException.conflict(
+            "An earlier initial CASH instruction must be resolved first");
+      }
+      if (InitialCashCollateralRules.exceedsRequirement(
+          InitialCashCollateralRules.postedCash(contractCollaterals),
+          collateral.getPostedCashAmount(),
+          requiredCollateral(contract))) {
+        throw SetupException.conflict(
+            "CASH confirmation exceeds the remaining initial collateral requirement");
+      }
+    }
     if (instruction == null) {
       instruction = settlements.save(SettlementInstruction.builder()
           .instructionReference(request.instructionReference())
@@ -335,7 +359,7 @@ public class InitialSettlementService {
           .amount(collateral.getPostedCashAmount())
           .currency(contract.getSettlementCurrency())
           .status(SettlementInstructionStatus.PROCESSING)
-          .settlementDate(clock.instant().atZone(java.time.ZoneOffset.UTC).toLocalDate())
+          .settlementDate(clock.instant().atZone(clock.getZone()).toLocalDate())
           .createdAt(clock.instant())
           .build());
     }
@@ -658,13 +682,21 @@ public class InitialSettlementService {
   }
 
   private BigDecimal requiredCollateral(LoanContract contract) {
-    Object value = contract.getCollateralTerms().get("requiredCashCollateral");
-    if (value == null) value = contract.getCollateralTerms().get("requiredAmount");
+    Object value = contract.getCollateralTerms() == null
+        ? null
+        : contract.getCollateralTerms().get("requiredCashCollateral");
+    if (value == null && contract.getCollateralTerms() != null) {
+      value = contract.getCollateralTerms().get("requiredAmount");
+    }
     try {
-      return value instanceof Number n ? new BigDecimal(n.toString()).setScale(2)
+      BigDecimal required = value instanceof Number n ? new BigDecimal(n.toString()).setScale(2)
           : value instanceof String s ? new BigDecimal(s).setScale(2)
           : contract.getLatestRequiredCollateral();
-    } catch (RuntimeException exception) {
+      if (required == null || required.signum() <= 0) {
+        throw new NumberFormatException("Missing required collateral amount");
+      }
+      return required;
+    } catch (NumberFormatException | ArithmeticException exception) {
       throw SetupException.conflict("Approved collateral requirement is missing or invalid");
     }
   }

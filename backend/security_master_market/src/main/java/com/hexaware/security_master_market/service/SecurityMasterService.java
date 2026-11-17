@@ -38,6 +38,9 @@ public class SecurityMasterService {
             .securityType(request.getSecurityType())
             .currency(MarketInput.currency(request.getCurrency()))
             .exchangeName(MarketInput.optional(request.getExchangeName(), "exchange", 100))
+            .sedol(MarketInput.optional(request.getSedol(), "sedol", 7))
+            .sector(MarketInput.optional(request.getSector(), "sector", 100))
+            .lotSize(request.getLotSize())
             .status(request.getStatus())
             .build();
     return mapper.security(securities.saveAndFlush(security));

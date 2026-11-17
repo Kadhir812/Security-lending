@@ -3,12 +3,15 @@ package com.hexaware.valuation_accural.controller;
 import com.hexaware.valuation_accural.dto.request.LoanApprovalCalculationRequest;
 import com.hexaware.valuation_accural.dto.request.MtmCalculationRequest;
 import com.hexaware.valuation_accural.dto.request.LendingFeeCalculationRequest;
+import com.hexaware.valuation_accural.dto.request.RebateCalculationRequest;
 import com.hexaware.valuation_accural.dto.response.LoanApprovalCalculationResponse;
 import com.hexaware.valuation_accural.dto.response.LendingFeeCalculationResponse;
+import com.hexaware.valuation_accural.dto.response.RebateCalculationResponse;
 import com.hexaware.valuation_accural.dto.response.MtmCalculationResponse;
 import com.hexaware.valuation_accural.service.LendingFeeCalculationService;
 import com.hexaware.valuation_accural.service.LoanApprovalCalculationService;
 import com.hexaware.valuation_accural.service.MtmCalculationService;
+import com.hexaware.valuation_accural.service.RebateCalculationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
@@ -28,6 +31,7 @@ public class LoanApprovalCalculationController {
   private final LoanApprovalCalculationService calculations;
   private final MtmCalculationService mtmCalculations;
   private final LendingFeeCalculationService lendingFees;
+  private final RebateCalculationService rebates;
 
   @PostMapping("/loan-approval")
   public LoanApprovalCalculationResponse calculate(
@@ -59,5 +63,11 @@ public class LoanApprovalCalculationController {
       @RequestParam LocalDate to) {
     return lendingFees.list(
         authentication, transactionReference, custodianOrganizationReference, from, to);
+  }
+
+  @PostMapping("/rebate")
+  public RebateCalculationResponse calculateRebate(
+      Authentication authentication, @Valid @RequestBody RebateCalculationRequest request) {
+    return rebates.calculate(authentication, request);
   }
 }
