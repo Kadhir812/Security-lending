@@ -5,6 +5,10 @@ import com.hexaware.borrower_service.dto.response.BorrowerTradeActivityResponse;
 import com.hexaware.borrower_service.entity.BorrowerInventory;
 import com.hexaware.borrower_service.entity.BorrowerOrder;
 import com.hexaware.borrower_service.entity.BorrowerTradeActivity;
+import com.hexaware.borrower_service.entity.LoanContractView;
+import com.hexaware.borrower_service.entity.LoanRequest;
+import com.hexaware.borrower_service.enums.BorrowerCashActivityType;
+import com.hexaware.borrower_service.enums.BorrowerCashTransactionType;
 import com.hexaware.borrower_service.enums.BorrowerOrderSide;
 import com.hexaware.borrower_service.enums.BorrowerOrderStatus;
 import com.hexaware.borrower_service.enums.BorrowerTradeType;
@@ -12,6 +16,9 @@ import com.hexaware.borrower_service.exception.BorrowerException;
 import com.hexaware.borrower_service.repository.BorrowerInventoryRepository;
 import com.hexaware.borrower_service.repository.BorrowerOrderRepository;
 import com.hexaware.borrower_service.repository.BorrowerTradeActivityRepository;
+import com.hexaware.borrower_service.repository.LoanContractViewRepository;
+import com.hexaware.borrower_service.repository.LoanRequestRepository;
+import com.hexaware.borrower_service.service.cash.BorrowerCashService;
 import com.hexaware.borrower_service.service.loan.LoanRequestSubmissionValidator;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -31,6 +38,9 @@ public class BorrowerTradeActivityService {
   private final BorrowerTradeActivityRepository trades;
   private final BorrowerOrderRepository orders;
   private final BorrowerInventoryRepository inventories;
+  private final LoanContractViewRepository contractViews;
+  private final LoanRequestRepository requests;
+  private final BorrowerCashService cash;
   private final LoanRequestSubmissionValidator validator;
   private final Clock clock;
 
@@ -135,7 +145,9 @@ public class BorrowerTradeActivityService {
             .createdBy(order.getCreatedBy())
             .version(0L)
             .build();
-    return response(trades.save(trade));
+    BorrowerTradeActivity saved = trades.save(trade);
+    recordTradeCash(order, report, tradeType);
+    return response(saved);
   }
 
   @Transactional(readOnly = true)
@@ -196,6 +208,44 @@ public class BorrowerTradeActivityService {
     return existing == null
         ? incoming == null
         : incoming != null && existing.compareTo(incoming) == 0;
+  }
+
+  private void recordTradeCash(
+      BorrowerOrder order, ExecutionReportSubmission report, BorrowerTradeType tradeType) {
+    LoanContractView contract =
+        contractViews
+            .findByTransactionReference(order.getTransactionReference())
+            .orElseThrow(() -> BorrowerException.conflict("Trade contract is unavailable"));
+    LoanRequest request =
+        requests
+            .findByRequestReferenceAndBorrowerOrganizationReference(
+                contract.getRequestReference(), order.getBorrowerOrganizationReference())
+            .orElseThrow(() -> BorrowerException.conflict("Trade loan request is unavailable"));
+    if (request.getSettlementCurrency() == null) {
+      throw BorrowerException.conflict("Trade loan request has no settlement currency");
+    }
+    BigDecimal amount =
+        report
+            .price()
+            .multiply(BigDecimal.valueOf(report.quantity()))
+            .setScale(2, RoundingMode.HALF_UP);
+    if (amount.signum() <= 0 || amount.precision() > 20) {
+      throw BorrowerException.invalid("Trade cash amount is outside supported precision");
+    }
+    boolean shortSale = tradeType == BorrowerTradeType.SELL_SHORT;
+    cash.recordTransaction(
+        order.getBorrowerOrganizationReference(),
+        request.getSettlementCurrency(),
+        "CASH:TRADE:" + report.tradeReference(),
+        shortSale ? BorrowerCashTransactionType.CREDIT : BorrowerCashTransactionType.DEBIT,
+        shortSale
+            ? BorrowerCashActivityType.SHORT_SALE_PROCEEDS
+            : BorrowerCashActivityType.BUY_TO_COVER_PAYMENT,
+        amount,
+        "TRADE",
+        report.tradeReference(),
+        shortSale ? "Short-sale proceeds" : "Buy-to-cover payment",
+        report.tradeTime());
   }
 
   private BorrowerTradeActivityResponse response(BorrowerTradeActivity trade) {

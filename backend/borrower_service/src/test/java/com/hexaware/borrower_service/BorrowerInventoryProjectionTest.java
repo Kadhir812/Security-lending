@@ -9,6 +9,7 @@ import static org.mockito.Mockito.when;
 import com.hexaware.borrower_service.entity.BorrowerInventory;
 import com.hexaware.borrower_service.entity.LoanContractView;
 import com.hexaware.borrower_service.entity.LoanRequest;
+import com.hexaware.borrower_service.service.cash.BorrowerCashService;
 import com.hexaware.borrower_service.kafka.event.EventEnvelope;
 import com.hexaware.borrower_service.kafka.inbox.SettlementInstructionUpdatedHandler;
 import com.hexaware.borrower_service.quickfix.LoanRequestFixMessageBuilder;
@@ -43,6 +44,7 @@ class BorrowerInventoryProjectionTest {
   @Mock private LoanContractViewRepository contracts;
   @Mock private LoanRequestRepository requests;
   @Mock private BorrowerInventoryRepository inventories;
+  @Mock private BorrowerCashService cash;
 
   private SettlementInstructionUpdatedHandler handler;
   private LoanContractView contract;
@@ -55,6 +57,7 @@ class BorrowerInventoryProjectionTest {
         requests,
         inventories,
         new LoanRequestFixMessageBuilder(),
+        cash,
         Clock.fixed(NOW, ZoneOffset.UTC));
     contract = LoanContractView.builder()
         .requestReference(REQUEST_REFERENCE)

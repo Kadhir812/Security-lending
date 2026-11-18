@@ -3,13 +3,17 @@ package com.hexaware.borrower_service.service.fees;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.hexaware.borrower_service.entity.LoanContractView;
 import com.hexaware.borrower_service.entity.LoanRequest;
+import com.hexaware.borrower_service.enums.BorrowerCashActivityType;
+import com.hexaware.borrower_service.enums.BorrowerCashTransactionType;
 import com.hexaware.borrower_service.kafka.event.EventEnvelope;
 import com.hexaware.borrower_service.repository.LoanContractViewRepository;
 import com.hexaware.borrower_service.repository.LoanRequestRepository;
+import com.hexaware.borrower_service.service.cash.BorrowerCashService;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -56,6 +60,7 @@ class FeeProjectionServiceTest {
             .build();
     LoanContractViewRepository views = mock(LoanContractViewRepository.class);
     LoanRequestRepository requests = mock(LoanRequestRepository.class);
+    BorrowerCashService cash = mock(BorrowerCashService.class);
     when(views.findByTransactionReference(TRANSACTION_REFERENCE))
         .thenReturn(Optional.of(view));
     when(requests.findByRequestReference("REQ-TEST")).thenReturn(Optional.of(request));
@@ -63,6 +68,7 @@ class FeeProjectionServiceTest {
         new FeeProjectionService(
             views,
             requests,
+            cash,
             Clock.fixed(Instant.parse("2026-11-16T06:00:00Z"), ZoneOffset.UTC));
 
     assertDoesNotThrow(
@@ -72,6 +78,18 @@ class FeeProjectionServiceTest {
         (Map<?, ?>) ((List<?>) view.getContractSnapshot().get("feePayments")).get(0);
     assertEquals("PAID", projectedPayment.get("status"));
     assertEquals(2L, ((Number) projectedPayment.get("aggregateVersion")).longValue());
+    verify(cash)
+        .recordTransaction(
+            BORROWER_REFERENCE,
+            "INR",
+            "CASH:FEE:" + PAYMENT_REFERENCE,
+            BorrowerCashTransactionType.DEBIT,
+            BorrowerCashActivityType.LENDING_FEE_PAID,
+            new java.math.BigDecimal("4.60"),
+            "PAYMENT",
+            PAYMENT_REFERENCE,
+            "Lending fee paid",
+            Instant.parse("2026-11-16T05:18:36Z"));
   }
 
   private static Map<String, Object> allocation(String amount) {

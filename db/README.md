@@ -1,17 +1,19 @@
-# Securities lending — four services, 48 physical tables
+# Securities lending — four services
 
-This replaces the proposed 72-table design. Fresh creation scripts define the baseline; additive scripts under `migrations/` are applied separately. Service implementation status is tracked in `docs/PROGRESS.md`.
-
-| Database | Tables in current fresh-creation scripts |
-|---|---:|
-| security_market_db | 2 |
-| custodian_db | 29 |
-| borrower_db | 12 |
-| valuation_accrual_db | 5 |
-| Total | 48 |
+Fresh creation scripts define the baseline; additive scripts under `migrations/` are applied separately. Service implementation status is tracked in `docs/PROGRESS.md`.
 
 ## Run
 Use a migration administrator on empty databases. Run `00_all_databases.sql` OR the four individual scripts 01–04, not both. MySQL 8.0.16+ is required for enforced CHECK constraints. Replace example passwords/hosts in `05_permissions_template.sql` before use. Runtime credentials have access only to their own database. One MySQL server may host all four databases.
+
+For existing Borrower databases, apply `migrations/015_borrower_cash_account_and_transaction.sql` to add organization/currency cash accounts and posted cash transaction history. The Borrower service must update the account balance and insert its transaction in the same local transaction. Use `transaction_reference` as a stable unique reference; related lifecycle records are stored as type/reference values, not foreign keys.
+
+## Borrower cash accounts
+
+`POST /api/cash-accounts` opens a zero-balance account for the authenticated borrower's organization and a currency, for example `{"currency":"USD"}`. Use `GET /api/cash-accounts` or `GET /api/cash-accounts/{currency}` to read balances, and `GET /api/cash-accounts/{currency}/transactions` to page through posted movements.
+
+Borrowers can self-report an external deposit or withdrawal with `POST /api/cash-accounts/{currency}/transactions`. Include an `Idempotency-Key` header and a body such as `{"transactionType":"CREDIT","amount":2500.00,"externalReference":"BANK-001","description":"Opening cash deposit","transactionTime":"2026-11-18T05:30:00Z"}`. This immediately changes the recorded balance; it is a borrower-entered record, not a bank-verified transfer. The authenticated user is saved as the recorder. Reusing the idempotency key with matching details does not post the movement twice; conflicting reuse is rejected. Debits that would make the balance negative are rejected.
+
+System-recorded movements are posted from the Borrower service's existing lifecycle events: executed short-sale proceeds are credited, buy-to-cover execution cost is debited, confirmed collateral settlement transfers are debited and releases credited, and fee/rebate payments affect cash only when marked paid. Trade execution amounts are currently recorded when the execution report is processed; separate market cash-settlement confirmation is not modeled. Trade `realized_profit_loss` is not added separately, and this feature does not calculate P&L or track reserved-versus-available cash. Existing balances are not backfilled by migration; an account starts at zero until cash movements are recorded.
 
 For existing Borrower databases, `migrations/009_borrower_inventory.sql` adds the inventory projection and seeds it from contracts with outstanding delivered securities. The Borrower service then keeps each position synchronized from Custodian settlement events.
 
@@ -24,7 +26,7 @@ For existing Custodian databases, apply `migrations/014_rebate_payment_history.s
 Example review scenario: with INR 105,000 settled cash and a 3% annual MSLA rebate, a completed ACT/365 day accrues INR 8.63. Run accrual for that date, inspect `latestResultReference`, create a payout for it, then confirm using the external bank reference. Closure while that payout is PENDING should return a conflict; after it is PAID, the rebate gate passes (other closure checks still apply).
 
 ## Ownership and simplifications
-See TABLE_OWNERSHIP.md for every table. Security master/prices live only in Security & Market Data. Custodian owns organization registry, agreements, credit, lender inventory, contract/settlement obligations and payment states. Borrower owns submitted requests, the decision-fed `loan_contract_view`, orders and borrower activity. Calculation owns versioned financial runs/results. The contract view is the sole added business projection table; `borrower_identity_link` records one-time link-code consumption. The current schema uses 48 of the 50 allowed physical tables. A request appears in both Borrower and Custodian because submission intent and processing decisions have different owners; shared request references correlate them.
+See TABLE_OWNERSHIP.md for every table. Security master/prices live only in Security & Market Data. Custodian owns organization registry, agreements, credit, lender inventory, contract/settlement obligations and payment states. Borrower owns submitted requests, the decision-fed `loan_contract_view`, orders, trade activity, and its cash account and posted cash transactions. Calculation owns versioned financial runs/results. `borrower_identity_link` records one-time link-code consumption. A request appears in both Borrower and Custodian because submission intent and processing decisions have different owners; shared request references correlate them.
 
 External references replace remote foreign keys: `security_isin`, `msla_reference`, `transaction_reference`, organization references and calculation result UUIDs. Local FKs are retained. Custodian owns MSLA and therefore retains its local MSLA FKs. Borrower fetches current security/MSLA/contracts/obligations over REST. Historical terms required for decisions are snapshots, not live remote joins. The UI shows queued/sent separately from approved and handles unavailable reference services explicitly.
 

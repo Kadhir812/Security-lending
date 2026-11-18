@@ -1,10 +1,12 @@
-# Dependencies
-node_modules/
+# Dependencies and local package-manager caches
+**/node_modules/
+**/.npm/
 
 # Build output and test coverage
-dist/
-dist-ssr/
-coverage/
+**/dist/
+**/dist-ssr/
+**/coverage/
+**/.vite/
 
 # Local environment settings
 .env

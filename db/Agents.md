@@ -4,8 +4,7 @@ Architecture and stack:
 - Security & Market Data, Custodian, Borrower, Valuation & Accrual services.
 - Java 21, installed Spring Boot 4 version, Maven, MySQL, and Kafka.
 - Each service accesses only its own database; no shared JPA entities.
-- The supplied 48-table schema is authoritative. Stay within 50 physical tables
-  across all databases, counting repeated inbox/outbox tables.
+- The checked-in service schemas and ownership boundaries are authoritative.
 - Inspect the existing project, schema, and docs/PROGRESS.md before coding.
 - Preserve table/column names and exact SQL enum values.
 - Explain blocking schema gaps and propose the smallest necessary change.

@@ -10,6 +10,8 @@ import static org.mockito.Mockito.when;
 import com.hexaware.borrower_service.entity.LoanContractView;
 import com.hexaware.borrower_service.entity.LoanRequest;
 import com.hexaware.borrower_service.exception.InvalidEnvelopeException;
+import com.hexaware.borrower_service.enums.BorrowerCashActivityType;
+import com.hexaware.borrower_service.enums.BorrowerCashTransactionType;
 import com.hexaware.borrower_service.kafka.event.EventEnvelope;
 import com.hexaware.borrower_service.kafka.inbox.ContractClosedHandler;
 import com.hexaware.borrower_service.kafka.inbox.SettlementInstructionUpdatedHandler;
@@ -17,6 +19,7 @@ import com.hexaware.borrower_service.repository.LoanContractViewRepository;
 import com.hexaware.borrower_service.repository.BorrowerInventoryRepository;
 import com.hexaware.borrower_service.repository.LoanRequestRepository;
 import com.hexaware.borrower_service.quickfix.LoanRequestFixMessageBuilder;
+import com.hexaware.borrower_service.service.cash.BorrowerCashService;
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Instant;
@@ -45,6 +48,7 @@ class FinalReleaseProjectionTest {
   @Mock private LoanContractViewRepository contracts;
   @Mock private LoanRequestRepository requests;
   @Mock private BorrowerInventoryRepository inventories;
+  @Mock private BorrowerCashService cash;
   private LoanContractView contract;
   private SettlementInstructionUpdatedHandler settlements;
   private ContractClosedHandler closures;
@@ -53,6 +57,7 @@ class FinalReleaseProjectionTest {
   void setUp() {
     settlements = new SettlementInstructionUpdatedHandler(
         contracts, requests, inventories, new LoanRequestFixMessageBuilder(),
+        cash,
         Clock.fixed(NOW, ZoneOffset.UTC));
     closures = new ContractClosedHandler(contracts, requests, Clock.fixed(NOW, ZoneOffset.UTC));
     Map<String, Object> releaseRequest = new LinkedHashMap<>();
@@ -93,6 +98,18 @@ class FinalReleaseProjectionTest {
     assertThat(release.get("amount")).isEqualTo("100.00");
     assertThat(contract.getContractSnapshot().get("confirmedCashCollateral")).isEqualTo("0.00");
     verify(contracts, times(2)).save(contract);
+    verify(cash)
+        .recordTransaction(
+            "BORROWER-001",
+            "INR",
+            "CASH:SETTLEMENT:" + INSTRUCTION_REFERENCE,
+            BorrowerCashTransactionType.CREDIT,
+            BorrowerCashActivityType.COLLATERAL_RELEASE,
+            new java.math.BigDecimal("100.00"),
+            "SETTLEMENT_INSTRUCTION",
+            INSTRUCTION_REFERENCE,
+            "Cash collateral returned",
+            NOW);
   }
 
   @Test

@@ -6,6 +6,9 @@ import com.hexaware.borrower_service.exception.InvalidEnvelopeException;
 import com.hexaware.borrower_service.kafka.event.EventEnvelope;
 import com.hexaware.borrower_service.repository.LoanContractViewRepository;
 import com.hexaware.borrower_service.repository.LoanRequestRepository;
+import com.hexaware.borrower_service.enums.BorrowerCashActivityType;
+import com.hexaware.borrower_service.enums.BorrowerCashTransactionType;
+import com.hexaware.borrower_service.service.cash.BorrowerCashService;
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.util.ArrayList;
@@ -22,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class FeeProjectionService {
   private final LoanContractViewRepository contractViews;
   private final LoanRequestRepository requests;
+  private final BorrowerCashService cash;
   private final Clock clock;
 
   @Transactional
@@ -221,6 +225,19 @@ public class FeeProjectionService {
     snapshot.put("feePayments", payments);
     view.setContractSnapshot(snapshot);
     contractViews.save(view);
+    if ("PAID".equals(status)) {
+      cash.recordTransaction(
+          borrowerReference,
+          request.getSettlementCurrency(),
+          "CASH:FEE:" + paymentReference,
+          BorrowerCashTransactionType.DEBIT,
+          BorrowerCashActivityType.LENDING_FEE_PAID,
+          decimal(payload.get("amount")),
+          "PAYMENT",
+          paymentReference,
+          "Lending fee paid",
+          event.getOccurredAt());
+    }
   }
 
   private List<Map<String, Object>> mapList(Object value) {

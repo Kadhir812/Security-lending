@@ -11,6 +11,10 @@ import com.hexaware.borrower_service.dto.request.ExecutionReportSubmission;
 import com.hexaware.borrower_service.entity.BorrowerInventory;
 import com.hexaware.borrower_service.entity.BorrowerOrder;
 import com.hexaware.borrower_service.entity.BorrowerTradeActivity;
+import com.hexaware.borrower_service.entity.LoanContractView;
+import com.hexaware.borrower_service.entity.LoanRequest;
+import com.hexaware.borrower_service.enums.BorrowerCashActivityType;
+import com.hexaware.borrower_service.enums.BorrowerCashTransactionType;
 import com.hexaware.borrower_service.enums.BorrowerOrderSide;
 import com.hexaware.borrower_service.enums.BorrowerOrderStatus;
 import com.hexaware.borrower_service.enums.BorrowerTradeType;
@@ -18,6 +22,9 @@ import com.hexaware.borrower_service.exception.BorrowerException;
 import com.hexaware.borrower_service.repository.BorrowerInventoryRepository;
 import com.hexaware.borrower_service.repository.BorrowerOrderRepository;
 import com.hexaware.borrower_service.repository.BorrowerTradeActivityRepository;
+import com.hexaware.borrower_service.repository.LoanContractViewRepository;
+import com.hexaware.borrower_service.repository.LoanRequestRepository;
+import com.hexaware.borrower_service.service.cash.BorrowerCashService;
 import com.hexaware.borrower_service.service.loan.LoanRequestSubmissionValidator;
 import com.hexaware.borrower_service.service.orders.BorrowerTradeActivityService;
 import java.math.BigDecimal;
@@ -42,6 +49,9 @@ class BorrowerTradeActivityServiceTest {
   @Mock private BorrowerTradeActivityRepository trades;
   @Mock private BorrowerOrderRepository orders;
   @Mock private BorrowerInventoryRepository inventories;
+  @Mock private LoanContractViewRepository contractViews;
+  @Mock private LoanRequestRepository requests;
+  @Mock private BorrowerCashService cash;
   @Mock private LoanRequestSubmissionValidator validator;
 
   private BorrowerTradeActivityService service;
@@ -54,6 +64,9 @@ class BorrowerTradeActivityServiceTest {
             trades,
             orders,
             inventories,
+            contractViews,
+            requests,
+            cash,
             validator,
             Clock.fixed(NOW, ZoneOffset.UTC));
     order = order(BorrowerOrderSide.SELL, 60L);
@@ -73,6 +86,18 @@ class BorrowerTradeActivityServiceTest {
     assertThat(order.getLeavesQuantity()).isEqualTo(20L);
     assertThat(order.getOrderStatus()).isEqualTo(BorrowerOrderStatus.PARTIALLY_FILLED);
     assertThat(order.getAverageFillPrice()).isEqualByComparingTo("102.500000");
+    verify(cash)
+        .recordTransaction(
+            BORROWER_REFERENCE,
+            "USD",
+            "CASH:TRADE:TRADE-001",
+            BorrowerCashTransactionType.CREDIT,
+            BorrowerCashActivityType.SHORT_SALE_PROCEEDS,
+            new BigDecimal("4100.00"),
+            "TRADE",
+            "TRADE-001",
+            "Short-sale proceeds",
+            NOW.minusSeconds(10));
   }
 
   @Test
@@ -134,12 +159,25 @@ class BorrowerTradeActivityServiceTest {
         .thenReturn(0L);
     when(trades.save(any(BorrowerTradeActivity.class)))
         .thenAnswer(invocation -> invocation.getArgument(0));
+    stubCashCurrency();
 
     var response =
         service.recordExecution(report("TRADE-006", 40L, "98.00"));
 
     assertThat(response.tradeType()).isEqualTo(BorrowerTradeType.BUY_TO_COVER);
     assertThat(order.getOrderStatus()).isEqualTo(BorrowerOrderStatus.FILLED);
+    verify(cash)
+        .recordTransaction(
+            BORROWER_REFERENCE,
+            "USD",
+            "CASH:TRADE:TRADE-006",
+            BorrowerCashTransactionType.DEBIT,
+            BorrowerCashActivityType.BUY_TO_COVER_PAYMENT,
+            new BigDecimal("3920.00"),
+            "TRADE",
+            "TRADE-006",
+            "Buy-to-cover payment",
+            NOW.minusSeconds(10));
   }
 
   private void stubSellExecution(String tradeReference, long leavesQuantity) {
@@ -151,8 +189,28 @@ class BorrowerTradeActivityServiceTest {
         .thenReturn(60L);
     when(orders.sumFilledQuantity(TRANSACTION_REFERENCE, BorrowerOrderSide.BUY))
         .thenReturn(0L);
+    stubCashCurrency();
     order.setLeavesQuantity(leavesQuantity);
     order.setFilledQuantity(order.getOrderQuantity() - leavesQuantity);
+  }
+
+  private void stubCashCurrency() {
+    when(contractViews.findByTransactionReference(TRANSACTION_REFERENCE))
+        .thenReturn(
+            Optional.of(
+                LoanContractView.builder()
+                    .requestReference("REQ-001")
+                    .transactionReference(TRANSACTION_REFERENCE)
+                    .build()));
+    when(requests.findByRequestReferenceAndBorrowerOrganizationReference(
+            "REQ-001", BORROWER_REFERENCE))
+        .thenReturn(
+            Optional.of(
+                LoanRequest.builder()
+                    .requestReference("REQ-001")
+                    .borrowerOrganizationReference(BORROWER_REFERENCE)
+                    .settlementCurrency("USD")
+                    .build()));
   }
 
   private ExecutionReportSubmission report(

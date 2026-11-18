@@ -6,9 +6,12 @@ import static org.mockito.Mockito.when;
 
 import com.hexaware.borrower_service.entity.LoanContractView;
 import com.hexaware.borrower_service.entity.LoanRequest;
+import com.hexaware.borrower_service.enums.BorrowerCashActivityType;
+import com.hexaware.borrower_service.enums.BorrowerCashTransactionType;
 import com.hexaware.borrower_service.kafka.event.EventEnvelope;
 import com.hexaware.borrower_service.repository.LoanContractViewRepository;
 import com.hexaware.borrower_service.repository.LoanRequestRepository;
+import com.hexaware.borrower_service.service.cash.BorrowerCashService;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -30,6 +33,7 @@ class RebateProjectionServiceTest {
 
   @Mock private LoanContractViewRepository contractViews;
   @Mock private LoanRequestRepository requests;
+  @Mock private BorrowerCashService cash;
 
   private RebateProjectionService service;
   private LoanContractView view;
@@ -38,7 +42,7 @@ class RebateProjectionServiceTest {
   void setUp() {
     service =
         new RebateProjectionService(
-            contractViews, requests, Clock.fixed(NOW, ZoneOffset.UTC));
+            contractViews, requests, cash, Clock.fixed(NOW, ZoneOffset.UTC));
     view =
         LoanContractView.builder()
             .requestReference("REQ-REBATE-001")
@@ -89,6 +93,18 @@ class RebateProjectionServiceTest {
         .containsEntry("externalConfirmationReference", "BANK-001");
     assertThat(view.getContractSnapshot().get("rebatePaymentAggregateVersion")).isEqualTo(2L);
     verify(contractViews, org.mockito.Mockito.times(2)).save(view);
+    verify(cash)
+        .recordTransaction(
+            "BORROWER-001",
+            "INR",
+            "CASH:REBATE:PAY-REBATE-001",
+            BorrowerCashTransactionType.CREDIT,
+            BorrowerCashActivityType.REBATE_RECEIVED,
+            new java.math.BigDecimal("0.86"),
+            "PAYMENT",
+            "PAY-REBATE-001",
+            "Lending rebate received",
+            NOW);
   }
 
   private EventEnvelope paymentEvent(

@@ -1,4 +1,4 @@
-# 48-table ownership map
+# Table ownership map
 
 | Database | Table | Ownership |
 |---|---|---|
@@ -45,6 +45,8 @@
 | borrower_db | `borrower_order` | AUTHORITATIVE LOCAL RECORD |
 | borrower_db | `loan_request` | SUBMITTED INTENT + COPIED DECISION |
 | borrower_db | `loan_contract_view` | READ-ONLY CUSTODIAN CONTRACT SNAPSHOT |
+| borrower_db | `borrower_cash_account` | BORROWER CASH BALANCE BY ORGANIZATION AND CURRENCY |
+| borrower_db | `borrower_cash_transaction` | POSTED BORROWER CASH MOVEMENT HISTORY |
 | valuation_accrual_db | `calculation_run` | AUTHORITATIVE LOCAL RECORD |
 | valuation_accrual_db | `message_log` | TECHNICAL |
 | valuation_accrual_db | `outbox_event` | TECHNICAL |

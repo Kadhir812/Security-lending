@@ -281,8 +281,7 @@
   active recalls oldest-first. No automatic recall-deadline derivation, overdue/
   default processing, cancellation API, collateral release, or contract closure
   is added; the caller supplies dueAt because no recall calendar policy is defined.
-- 3A–3E remain the historical baseline. The combined schema defines 50 physical
-  tables (the project limit); current 3G adds no table beyond that limit.
+- 3A–3E remain the historical baseline.
 - 3F implementation is complete: Borrower CASH instructions are delivered by
   Kafka, persisted as pending by Custodian, and confirmed only through the
   authorized simulated-settlement endpoint. Full initial CASH gates full
@@ -513,9 +512,8 @@ Changed-file groups: Valuation MTM DTO/service and existing run/result mappings;
 Custodian MTM client/token, scheduler, margin-call service/controller, exposure
 history mapping, and collateral-instruction handler; Borrower top-up controller,
 service, and call/instruction inbox handlers; Custodian/Borrower SQL snapshots
-and V3G migrations; this progress entry. Combined `00_all_databases.sql` defines
-50 tables: the exposure-history table is the only new physical table, and the
-Borrower contract-view version is a column migration.
+and V3G migrations; this progress entry. The combined schema includes
+`credit_exposure_history`; the Borrower contract-view version is a column migration.
 
 Verification: latest source compiled successfully with the command above. No
 tests were added or run at the user's request. Full Kafka/MySQL E2E, duplicate

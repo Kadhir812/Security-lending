@@ -10,6 +10,9 @@ import com.hexaware.borrower_service.quickfix.LoanRequestFixMessageBuilder;
 import com.hexaware.borrower_service.repository.BorrowerInventoryRepository;
 import com.hexaware.borrower_service.repository.LoanContractViewRepository;
 import com.hexaware.borrower_service.repository.LoanRequestRepository;
+import com.hexaware.borrower_service.enums.BorrowerCashActivityType;
+import com.hexaware.borrower_service.enums.BorrowerCashTransactionType;
+import com.hexaware.borrower_service.service.cash.BorrowerCashService;
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.util.ArrayList;
@@ -28,6 +31,7 @@ public class SettlementInstructionUpdatedHandler implements MessageHandler {
   private final LoanRequestRepository requests;
   private final BorrowerInventoryRepository inventories;
   private final LoanRequestFixMessageBuilder fixMessages;
+  private final BorrowerCashService cash;
   private final Clock clock;
 
   @Override
@@ -143,6 +147,24 @@ public class SettlementInstructionUpdatedHandler implements MessageHandler {
     }
     view.setContractSnapshot(snapshot);
     contracts.save(view);
+    if ("SETTLED".equals(status)
+        && ("COLLATERAL_TRANSFER".equals(instructionType)
+            || "COLLATERAL_RELEASE".equals(instructionType))) {
+      boolean release = "COLLATERAL_RELEASE".equals(instructionType);
+      cash.recordTransaction(
+          borrowerReference,
+          request.getSettlementCurrency(),
+          "CASH:SETTLEMENT:" + instructionReference,
+          release ? BorrowerCashTransactionType.CREDIT : BorrowerCashTransactionType.DEBIT,
+          release
+              ? BorrowerCashActivityType.COLLATERAL_RELEASE
+              : BorrowerCashActivityType.COLLATERAL_TRANSFER,
+          decimal(payload.get("amount")),
+          "SETTLEMENT_INSTRUCTION",
+          instructionReference,
+          release ? "Cash collateral returned" : "Cash collateral posted",
+          event.getOccurredAt());
+    }
   }
 
   private void syncBorrowerInventory(
