@@ -1,5 +1,38 @@
 # Implementation progress
 
+## Cash account and ledger schema
+
+- Added borrower and lender cash account/transaction tables to the fresh schemas
+  and `migrations/008_cash_accounts_and_ledger.sql`; existing business tables are
+  retained. Each currency account starts at zero, records immutable signed cash
+  and reservation/restriction deltas, stores post-transaction balances, and has
+  an account-scoped idempotency key.
+- Borrower accounts support manually recorded deposits/withdrawals, short-sale
+  proceeds, buy-to-cover debits, collateral settlement, and fee payment holds.
+  Lender accounts receive settled collateral as restricted cash and confirmed
+  fee payments as available cash; collateral release removes both cash and its
+  restriction.
+- The schema count is 52 physical tables (security market 2, Custodian 31,
+  Borrower 14, Valuation 5).
+- Borrower cash account, transaction-history, deposit, withdrawal and trade
+  endpoints are exposed under `/api/cash-accounts`; the UI has cash and trade
+  activity pages. Trade executions are keyed by broker reference, restricted
+  to confirmed on-loan shares, debit/credit cash, and record FIFO buy-to-cover
+  realized P&L. The UI captures externally confirmed cash movements and trade
+  executions; it does not connect to a bank or broker for confirmation.
+- Collateral and fee submissions reserve borrower cash. Settlement/payment
+  confirmations debit cash and release reservations; failures release them.
+  Confirmed collateral is credited to the lender's restricted balance, fee
+  receipts to available cash, and collateral releases reduce the lender cash
+  and restricted balances. Borrower returns are limited to shares currently
+  held after short sales, covers and pending returns.
+- Added `migrations/009_cash_reservation_types.sql` for borrower reservation
+  ledger enum values. Migration 008 was applied to both local Borrower and
+  Custodian databases, and 009 to Borrower; all four cash tables exist and no
+  opening balances were invented.
+- Main-source compilation succeeded for Borrower and Custodian using Maven 3.10.
+  No test suite was run.
+
 ## Borrower-Custodian Locate workflow
 
 - Added Borrower Locate submission/list/detail APIs and Custodian pending,
@@ -35,8 +68,7 @@
   expire after 24 hours.
 - Added the `borrower_identity_link` replay/audit table to fresh Custodian
   schemas and `migrations/005_borrower_identity_link.sql` for existing ones.
-  The current fresh schemas now contain 48 physical tables, within the 50-table
-  ceiling.
+  At that milestone, the fresh schemas contained 48 physical tables.
 - Focused Borrower/Custodian token-link tests and both frontend production
   builds passed. Live login, authenticated link/MSLA lookup, and live BB/BA
   integration checks remain pending; no live service test was run.
@@ -251,8 +283,9 @@
   active recalls oldest-first. No automatic recall-deadline derivation, overdue/
   default processing, cancellation API, collateral release, or contract closure
   is added; the caller supplies dueAt because no recall calendar policy is defined.
-- 3A–3E remain the historical baseline. The combined schema defines 50 physical
-  tables (the project limit); current 3G adds no table beyond that limit.
+- 3A–3E remain the historical baseline. The cash-ledger schema below expands
+  the current combined schema to 52 physical tables to model borrower and lender
+  balances with immutable transaction history.
 - 3F implementation is complete: Borrower CASH instructions are delivered by
   Kafka, persisted as pending by Custodian, and confirmed only through the
   authorized simulated-settlement endpoint. Full initial CASH gates full

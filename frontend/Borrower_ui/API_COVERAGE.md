@@ -2,7 +2,7 @@
 
 Source of truth: Java controller classes under `backend/borrower_service/src/main/java/com/hexaware/borrower_service/controller/` on the current checkout. The UI uses the Borrower service on port 8082 through `/api`.
 
-## Mapped Borrower endpoints (23 mappings)
+## Mapped Borrower endpoints (29 mappings)
 
 | # | HTTP | Path | Frontend client / surface |
 |---|---|---|---|
@@ -29,6 +29,12 @@ Source of truth: Java controller classes under `backend/borrower_service/src/mai
 | 21 | POST | `/api/contracts/{transactionReference}/payments` | `contracts.submitPayment` · requires `Idempotency-Key` |
 | 22 | GET | `/api/contracts/{transactionReference}/collateral-releases` | `contracts.releases` · release state |
 | 23 | POST | `/api/contracts/{transactionReference}/collateral-releases` | `contracts.requestRelease` · final release request |
+| 24 | GET | `/api/cash-accounts/{currency}` | `cash.account` · cash balance and available balance |
+| 25 | GET | `/api/cash-accounts/{currency}/transactions` | `cash.transactions` · cash and reservation ledger |
+| 26 | POST | `/api/cash-accounts/{currency}/deposits` | `cash.deposit` · externally confirmed cash movement |
+| 27 | POST | `/api/cash-accounts/{currency}/withdrawals` | `cash.withdraw` · cash withdrawal, limited to available balance |
+| 28 | POST | `/api/cash-accounts/trades` | `cash.trade` · short sale or buy-to-cover execution |
+| 29 | GET | `/api/cash-accounts/trades/{transactionReference}` | `cash.trades` · contract trade history and realized P&L |
 
 ## Confirmed API gaps
 

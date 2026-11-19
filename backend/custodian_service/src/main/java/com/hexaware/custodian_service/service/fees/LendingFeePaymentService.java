@@ -21,6 +21,7 @@ import com.hexaware.custodian_service.repository.LoanRequestRepository;
 import com.hexaware.custodian_service.repository.MslaAgreementRepository;
 import com.hexaware.custodian_service.repository.OrganizationRepository;
 import com.hexaware.custodian_service.security.authorization.SetupAccess;
+import com.hexaware.custodian_service.service.cash.LenderCashLedgerService;
 import org.springframework.dao.DataIntegrityViolationException;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
@@ -49,6 +50,7 @@ public class LendingFeePaymentService {
   private final LendingFeePaymentRepository payments;
   private final Clock clock;
   private final LendingFeePaymentSupport support;
+  private final LenderCashLedgerService cashLedger;
 
   @Transactional
   public void receiveSubmitted(EventEnvelope event) {
@@ -201,6 +203,8 @@ public class LendingFeePaymentService {
     } catch (DataIntegrityViolationException exception) {
       throw SetupException.conflict("External confirmation reference was reused");
     }
+    cashLedger.receiveFeePayment(parties.lenderId(), rows.get(0).getCurrency(), amount,
+        paymentReference);
     support.enqueueUpdate(null, contract, parties, paymentReference, "FEE_PAYMENT_UPDATED", "PAID",
         amount, rows.get(0).getCurrency(), allocations, 2, externalReference, null);
     return support.paymentResponse(paymentReference, rows, true);

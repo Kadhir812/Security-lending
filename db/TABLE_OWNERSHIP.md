@@ -1,4 +1,4 @@
-# 48-table ownership map
+# 52-table ownership map
 
 | Database | Table | Ownership |
 |---|---|---|
@@ -11,6 +11,8 @@
 | custodian_db | `outbox_event` | TECHNICAL |
 | custodian_db | `inbox_message` | TECHNICAL |
 | custodian_db | `users` | AUTHORITATIVE LOCAL RECORD |
+| custodian_db | `lender_cash_account` | LENDER CASH BALANCE; RESTRICTED COLLATERAL EXCLUDED FROM AVAILABLE CASH |
+| custodian_db | `lender_cash_transaction` | IMMUTABLE LENDER CASH LEDGER |
 | custodian_db | `lender_custodian_mandate` | AUTHORITATIVE LOCAL RECORD |
 | custodian_db | `lender_inventory` | AUTHORITATIVE LOCAL RECORD |
 | custodian_db | `user_roles` | AUTHORITATIVE LOCAL RECORD |
@@ -38,6 +40,8 @@
 | borrower_db | `outbox_event` | TECHNICAL |
 | borrower_db | `inbox_message` | TECHNICAL |
 | borrower_db | `users` | AUTHORITATIVE LOCAL RECORD |
+| borrower_db | `borrower_cash_account` | BORROWER CASH BALANCE AND ORDER RESERVATIONS |
+| borrower_db | `borrower_cash_transaction` | IMMUTABLE BORROWER CASH LEDGER |
 | borrower_db | `borrower_inventory` | BORROWER HOLDING; SETTLED QUANTITY UPDATED FROM CUSTODIAN EVENTS |
 | borrower_db | `user_roles` | AUTHORITATIVE LOCAL RECORD |
 | borrower_db | `locate_request` | SUBMITTED INTENT + COPIED DECISION |

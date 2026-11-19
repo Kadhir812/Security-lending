@@ -8,6 +8,7 @@ import com.hexaware.borrower_service.kafka.event.EventEnvelope;
 import com.hexaware.borrower_service.quickfix.LoanRequestFixMessageBuilder;
 import com.hexaware.borrower_service.repository.LoanContractViewRepository;
 import com.hexaware.borrower_service.repository.LoanRequestRepository;
+import com.hexaware.borrower_service.service.cash.BorrowerCashAccountService;
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.util.ArrayList;
@@ -25,6 +26,7 @@ public class SettlementInstructionUpdatedHandler implements MessageHandler {
   private final LoanContractViewRepository contracts;
   private final LoanRequestRepository requests;
   private final LoanRequestFixMessageBuilder fixMessages;
+  private final BorrowerCashAccountService cashAccounts;
   private final Clock clock;
 
   @Override
@@ -126,10 +128,18 @@ public class SettlementInstructionUpdatedHandler implements MessageHandler {
     }
     if (collateralRelease) {
       if (!applyCollateralRelease(snapshot, payload, instructionReference, incomingVersion)) return;
+      if ("SETTLED".equals(settlementStatus)) {
+        cashAccounts.receiveCollateralRelease(borrowerReference,
+            String.valueOf(payload.get("currency")), decimal(payload.get("amount")),
+            instructionReference);
+      }
     } else if ("SECURITY_RETURN".equals(instructionType)) {
       applyReturnOutcome(snapshot, payload, instructionReference, incomingVersion, request);
     } else if ("COLLATERAL_TRANSFER".equals(instructionType)) {
       applyCashConfirmation(snapshot, payload, instructionReference, incomingVersion, status);
+      cashAccounts.settleCollateral(borrowerReference,
+          String.valueOf(payload.get("currency")), decimal(payload.get("amount")),
+          instructionReference, "SETTLED".equals(settlementStatus));
     } else {
       applySecurityDelivery(snapshot, payload, instructionReference, incomingVersion, status, request);
     }
@@ -241,7 +251,7 @@ public class SettlementInstructionUpdatedHandler implements MessageHandler {
         || !"CASH".equals(payload.get("collateralType"))) {
       throw invalid("SETTLEMENT_DOES_NOT_MATCH_COLLATERAL_INSTRUCTION");
     }
-    instruction.put("status", "POSTED");
+    instruction.put("status", "SETTLED".equals(status) ? "POSTED" : "FAILED");
     instruction.put("settlementStatus", status);
     instruction.put("settlementAggregateVersion", incomingVersion);
     instruction.put("settledAt", payload.get("settledAt"));

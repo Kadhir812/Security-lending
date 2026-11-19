@@ -6,6 +6,7 @@ import com.hexaware.borrower_service.exception.InvalidEnvelopeException;
 import com.hexaware.borrower_service.kafka.event.EventEnvelope;
 import com.hexaware.borrower_service.repository.LoanContractViewRepository;
 import com.hexaware.borrower_service.repository.LoanRequestRepository;
+import com.hexaware.borrower_service.service.cash.BorrowerCashAccountService;
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.util.ArrayList;
@@ -22,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class FeeProjectionService {
   private final LoanContractViewRepository contractViews;
   private final LoanRequestRepository requests;
+  private final BorrowerCashAccountService cashAccounts;
   private final Clock clock;
 
   @Transactional
@@ -201,6 +203,11 @@ public class FeeProjectionService {
               .equals(canonicalAllocations(allocations))) {
         throw invalid("FEE_PAYMENT_STATUS_TRANSITION_INVALID");
       }
+    }
+
+    if ("PAID".equals(status) || "FAILED".equals(status)) {
+      cashAccounts.settleFeePayment(borrowerReference, request.getSettlementCurrency(),
+          decimal(payload.get("amount")), paymentReference, "PAID".equals(status));
     }
 
     Map<String, Object> payment = existing == null

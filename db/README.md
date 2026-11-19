@@ -1,20 +1,20 @@
-# Securities lending — four services, 48 physical tables
+# Securities lending — four services, 52 physical tables
 
-This replaces the proposed 72-table design. Fresh creation scripts define the baseline; additive scripts under `migrations/` are applied separately. Service implementation status is tracked in `docs/PROGRESS.md`.
+This replaces the proposed 72-table design. Fresh creation scripts define the baseline; additive scripts under `migrations/` are applied separately. Service implementation status is tracked in `PROGRESS.md`.
 
 | Database | Tables in current fresh-creation scripts |
 |---|---:|
 | security_market_db | 2 |
-| custodian_db | 29 |
-| borrower_db | 12 |
+| custodian_db | 31 |
+| borrower_db | 14 |
 | valuation_accrual_db | 5 |
-| Total | 48 |
+| Total | 52 |
 
 ## Run
 Use a migration administrator on empty databases. Run `00_all_databases.sql` OR the four individual scripts 01–04, not both. MySQL 8.0.16+ is required for enforced CHECK constraints. Replace example passwords/hosts in `05_permissions_template.sql` before use. Runtime credentials have access only to their own database. One MySQL server may host all four databases.
 
 ## Ownership and simplifications
-See TABLE_OWNERSHIP.md for every table. Security master/prices live only in Security & Market Data. Custodian owns organization registry, agreements, credit, lender inventory, contract/settlement obligations and payment states. Borrower owns submitted requests, the decision-fed `loan_contract_view`, orders and borrower activity. Calculation owns versioned financial runs/results. The contract view is the sole added business projection table; `borrower_identity_link` records one-time link-code consumption. The current schema uses 48 of the 50 allowed physical tables. A request appears in both Borrower and Custodian because submission intent and processing decisions have different owners; shared request references correlate them.
+See TABLE_OWNERSHIP.md for every table. Security master/prices live only in Security & Market Data. Custodian owns organization registry, agreements, credit, lender inventory, contract/settlement obligations, lender cash accounts and payment states. Borrower owns submitted requests, the decision-fed `loan_contract_view`, orders, trading activity and borrower cash accounts. Calculation owns versioned financial runs/results. Cash accounts start at zero; deposits, withdrawals, trades, collateral settlements and payments change balances through idempotent immutable transaction rows. The combined schema currently defines 52 physical tables. A request appears in both Borrower and Custodian because submission intent and processing decisions have different owners; shared request references correlate them.
 
 External references replace remote foreign keys: `security_isin`, `msla_reference`, `transaction_reference`, organization references and calculation result UUIDs. Local FKs are retained. Custodian owns MSLA and therefore retains its local MSLA FKs. Borrower fetches current security/MSLA/contracts/obligations over REST. Historical terms required for decisions are snapshots, not live remote joins. The UI shows queued/sent separately from approved and handles unavailable reference services explicitly.
 
@@ -33,6 +33,8 @@ Valuation & Accrual performs valuation, coverage, margin/release amounts, fees, 
 
 Current executable workflow must enforce same-currency CASH collateral and 0% haircut. Reject currency mismatch until FX inputs/conversion are designed. Zero loan value produces NULL coverage, not division by zero. Agree day-count, rounding, thresholds and fee/rebate bases before implementation. Negative rebates require correct payment direction with positive payment amounts. Do not treat accruals as payments.
 
+Borrower cash is debited when collateral transfer settles or a buy-to-cover execution is recorded; short-sale proceeds are credited on execution. Submitted collateral and fee payments reserve cash until the Custodian confirms or fails them; failed instructions release the reservation. Custodian credits settled collateral to the lender account as restricted cash; release settlement reduces both cash and restriction. Account balance changes and transaction rows must commit together under an account-row lock, with an idempotency key. Cross-service cash movement is confirmed by settlement and projected through the existing outbox/inbox flow. Never seed or infer an opening cash balance.
+
 ## Fewer tables without dropping audit or reliability
 The four previous valuation/accrual table types are consolidated into calculation_result with result_type, typed common values and versioned detail JSON; input and price snapshots are consolidated into calculation_run. Fee/rebate payment records link stable result and obligation references, plus a local contract FK. Backend locks the contract/obligation scope to prevent overpayment, duplicated obligations and paying superseded results. Corrections create new run/result references with supersedes links and adjustment logic, not overwrites. Accepted snapshots must include approved obligation totals, currency, period, result reference and input versions.
 
@@ -47,10 +49,10 @@ borrower_order is the AF existing-order source. ExecutionReport (8) responses ar
 
 ## Implementation order
 1. Confirm ownership (TABLE_OWNERSHIP.md).
-2. Create four databases with isolated credentials.
+2. Create four databases with isolated credentials; apply pending migrations `008_cash_accounts_and_ledger.sql` and `009_cash_reservation_types.sql` in order.
 3. Implement external-reference validation and keep local FKs.
 4. Implement REST/Kafka contracts (COMMUNICATION.md).
-5. Implement request response updates and required event consumers; run integration tests. Add no new physical tables without exceeding the agreed 50-table ceiling.
+5. Implement request response updates and required event consumers; add tables when a requirement needs a separately owned balance or audit ledger.
 
 ## Required backend checks
 MSLA validity and borrower/mandate relationship; eligible asset type; available credit; atomic inventory reservation; effective non-overlapping terms; same-contract settlement links; permitted statuses; one active margin/recall according to policy; no double settlement, payment or release; authorization; immutable history. Revalidate current versions after REST calculation before committing approval; do not hold database locks across network calls. Invalid/stale calculations are rejected and recalculated. Service outages must return pending/error, not fabricate financial results.

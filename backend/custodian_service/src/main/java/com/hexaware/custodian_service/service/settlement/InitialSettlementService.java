@@ -9,6 +9,7 @@ import com.hexaware.custodian_service.security.authorization.SetupAccess;
 import com.hexaware.custodian_service.quickfix.SettlementStatusFixMessageBuilder;
 import com.hexaware.custodian_service.service.margin.MarginCallService;
 import com.hexaware.custodian_service.service.messaging.OutgoingEventService;
+import com.hexaware.custodian_service.service.cash.LenderCashLedgerService;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
@@ -39,6 +40,7 @@ public class InitialSettlementService {
   private final OrganizationRepository organizations;
   private final InventoryMovementRepository inventoryMovements;
   private final OutgoingEventService outgoing;
+  private final LenderCashLedgerService cashLedger;
   private final SettlementStatusFixMessageBuilder settlementFix;
   private final Clock clock;
 
@@ -95,6 +97,11 @@ public class InitialSettlementService {
     response.put("outstandingQuantity", contract.getOutstandingQuantity());
     response.put("requiredCashCollateral", requiredCollateral(contract));
     response.put("confirmedCashCollateral", confirmedCash(contract.getContractId()));
+    Map<String, Object> lenderCash = cashLedger.balance(
+        lenderOrganizationId(loanRequest), contract.getSettlementCurrency());
+    response.put("lenderCashBalance", lenderCash.get("cashBalance"));
+    response.put("lenderRestrictedBalance", lenderCash.get("restrictedBalance"));
+    response.put("lenderAvailableBalance", lenderCash.get("availableBalance"));
     response.put("collateralInstructions", collateralRows);
     response.put("settlementInstructions", settlementRows);
     return response;
@@ -269,15 +276,8 @@ public class InitialSettlementService {
       }
       return existing.get();
     }
-    return collaterals.save(Collateral.builder()
-        .collateralReference(request.instructionReference())
-        .contractId(contract.getContractId())
-        .collateralType(CollateralType.CASH)
-        .currency(contract.getSettlementCurrency())
-        .postedCashAmount(request.amount())
-        .appliedHaircutPct(BigDecimal.ZERO)
-        .status("PENDING")
-        .build());
+    throw SetupException.conflict(
+        "Cash instructions must be submitted by the Borrower so account funds can be reserved");
   }
 
   @Transactional
@@ -358,6 +358,8 @@ public class InitialSettlementService {
     collateral.setAppliedHaircutPct(BigDecimal.ZERO);
     settlements.save(instruction);
     collaterals.saveAndFlush(collateral);
+    cashLedger.receiveCollateral(lenderOrganizationId(loanRequest),
+        contract.getSettlementCurrency(), instruction.getAmount(), instruction.getInstructionReference());
     if (instruction.getMarginCallId() != null) {
       MarginCall call = marginCalls.findLockedById(instruction.getMarginCallId())
           .orElseThrow(() -> SetupException.missing("Margin call not found"));

@@ -27,6 +27,7 @@ import com.hexaware.custodian_service.repository.MslaAgreementRepository;
 import com.hexaware.custodian_service.repository.OrganizationRepository;
 import com.hexaware.custodian_service.repository.SettlementInstructionRepository;
 import com.hexaware.custodian_service.security.authorization.SetupAccess;
+import com.hexaware.custodian_service.service.cash.LenderCashLedgerService;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
@@ -61,6 +62,7 @@ public class FinalCollateralReleaseService {
   private final MessagingProperties messaging;
   private final FinalCollateralReleaseEvents events;
   private final ContractClosureService closure;
+  private final LenderCashLedgerService cashLedger;
   private final Clock clock;
 
   @Transactional
@@ -275,6 +277,8 @@ public class FinalCollateralReleaseService {
         ? "RELEASED" : "PARTIALLY_RELEASED");
     settlements.saveAndFlush(instruction);
     collaterals.saveAndFlush(collateral);
+    cashLedger.releaseCollateral(parties.lenderId(), instruction.getCurrency(),
+        instruction.getAmount(), instruction.getInstructionReference());
     String releaseReference =
         FinalCollateralReleaseRules.releaseReference(instruction.getInstructionReference());
     events.publishReleaseUpdate(
@@ -442,6 +446,9 @@ public class FinalCollateralReleaseService {
         organizations
             .findById(agreement.getBorrowerOrgId())
             .orElseThrow(() -> SetupException.missing("Borrower organization not found"));
+    Organization lender = organizations
+        .findById(mandate.getLenderOrgId())
+        .orElseThrow(() -> SetupException.missing("Lender organization not found"));
     Organization custodian =
         organizations
             .findById(mandate.getCustodianOrgId())
@@ -456,6 +463,8 @@ public class FinalCollateralReleaseService {
     return new FinalReleaseParties(
         borrower.getOrganizationId(),
         borrower.getOrganizationReference(),
+        lender.getOrganizationId(),
+        lender.getOrganizationReference(),
         custodian.getOrganizationId(),
         custodian.getOrganizationReference());
   }

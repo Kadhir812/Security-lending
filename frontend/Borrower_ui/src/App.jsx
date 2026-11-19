@@ -8,6 +8,7 @@ import { MarginPage, ReturnsPage, FeesPage, ReleasesPage, ActivityPage } from '.
 import AuthPage from './pages/AuthPage'
 import { GlossaryPage } from './pages/Misc'
 import CustodianLinkPage from './pages/CustodianLinkPage'
+import CashAccountPage from './pages/CashAccountPage'
 import { useApp } from './hooks/useApp'
 
 /** Borrower-only routes; no Custodian writes, loan approve/reject or settlement simulation. */
@@ -33,6 +34,7 @@ export default function App() {
         <Route path="settlement/:requestReference" element={<SettlementPage />} />
         <Route path="collateral" element={<CashCollateralPage />} />
         <Route path="collateral/:requestReference" element={<CashCollateralPage />} />
+        <Route path="cash" element={<CashAccountPage />} />
         <Route path="margin" element={<MarginPage />} />
         <Route path="margin/:requestReference" element={<MarginPage />} />
         <Route path="returns" element={<ReturnsPage />} />

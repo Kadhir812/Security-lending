@@ -1,12 +1,12 @@
 # Schema validation
 
-- security_market_db: 5 physical tables
-- custodian_db: 28 physical tables
-- borrower_db: 12 physical tables
+- security_market_db: 2 physical tables
+- custodian_db: 31 physical tables
+- borrower_db: 14 physical tables
 - valuation_accrual_db: 5 physical tables
 
-Total: 50, including all 12 messaging tables. No hidden projection or calendar
-tables. These counts describe the checked-in fresh schema scripts.
+Total: 52, including all 12 messaging tables. These counts describe the
+checked-in fresh schema scripts.
 
 `python db/validate_structure.py` performs static checks on those scripts:
 FK target/order, FK type, index columns, parentheses, and table counts. It does

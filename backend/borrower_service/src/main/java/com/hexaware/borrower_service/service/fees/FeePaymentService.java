@@ -8,6 +8,7 @@ import com.hexaware.borrower_service.repository.LoanContractViewRepository;
 import com.hexaware.borrower_service.repository.LoanRequestRepository;
 import com.hexaware.borrower_service.security.authentication.LocalUserAuthentication;
 import com.hexaware.borrower_service.service.messaging.OutgoingEventService;
+import com.hexaware.borrower_service.service.cash.BorrowerCashAccountService;
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.util.ArrayList;
@@ -28,6 +29,7 @@ public class FeePaymentService {
   private final LoanContractViewRepository contractViews;
   private final LoanRequestRepository requests;
   private final OutgoingEventService outgoing;
+  private final BorrowerCashAccountService cashAccounts;
   private final Clock clock;
 
   public List<Map<String, Object>> charges(
@@ -190,6 +192,9 @@ public class FeePaymentService {
         throw BorrowerException.conflict("Payment exceeds the current charge balance");
       }
     }
+
+    cashAccounts.reserveFeePayment(user.getOrganizationReference(), request.getCurrency(),
+        request.getAmount(), paymentReference, user.getUserId());
 
     Map<String, Object> payment = new LinkedHashMap<>();
     payment.put("paymentReference", paymentReference);

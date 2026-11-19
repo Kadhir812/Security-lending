@@ -4,12 +4,15 @@ import com.hexaware.borrower_service.dto.request.CashCollateralInstructionReques
 import com.hexaware.borrower_service.dto.request.FinalCollateralReleaseRequest;
 import com.hexaware.borrower_service.dto.request.SecuritiesReturnRequest;
 import com.hexaware.borrower_service.entity.LoanContractView;
+import com.hexaware.borrower_service.enums.BorrowerTradeType;
 import com.hexaware.borrower_service.exception.BorrowerException;
 import com.hexaware.borrower_service.kafka.event.EventEnvelope;
 import com.hexaware.borrower_service.repository.LoanContractViewRepository;
+import com.hexaware.borrower_service.repository.BorrowerTradeActivityRepository;
 import com.hexaware.borrower_service.repository.LoanRequestRepository;
 import com.hexaware.borrower_service.security.authentication.LocalUserAuthentication;
 import com.hexaware.borrower_service.service.messaging.OutgoingEventService;
+import com.hexaware.borrower_service.service.cash.BorrowerCashAccountService;
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.util.ArrayList;
@@ -30,7 +33,9 @@ import org.springframework.transaction.annotation.Transactional;
 public class CollateralInstructionService {
   private final LoanContractViewRepository contractViews;
   private final LoanRequestRepository requests;
+  private final BorrowerTradeActivityRepository trades;
   private final OutgoingEventService outgoing;
+  private final BorrowerCashAccountService cashAccounts;
   private final Clock clock;
 
   @Transactional(readOnly = true)
@@ -86,6 +91,9 @@ public class CollateralInstructionService {
         return existing;
       }
     }
+
+    cashAccounts.reserveCollateral(user.getOrganizationReference(), request.currency(),
+        request.amount(), request.instructionReference(), user.getUserId());
 
     Map<String, Object> instruction = new LinkedHashMap<>();
     instruction.put("instructionReference", request.instructionReference());
@@ -162,6 +170,9 @@ public class CollateralInstructionService {
         && !"BREACHED".equals(callStatus)) {
       throw BorrowerException.conflict("Only an active margin call accepts a CASH top-up");
     }
+
+    cashAccounts.reserveCollateral(user.getOrganizationReference(), request.currency(),
+        request.amount(), request.instructionReference(), user.getUserId());
 
     Map<String, Object> instruction = new LinkedHashMap<>();
     instruction.put("instructionReference", request.instructionReference());
@@ -249,8 +260,26 @@ public class CollateralInstructionService {
             .contains(String.valueOf(row.get("status"))))
         .mapToLong(row -> number(row.get("quantity")))
         .sum();
-    if (request.quantity() > outstanding - pendingQuantity) {
-      throw BorrowerException.conflict("Return quantity exceeds outstanding quantity after pending returns");
+    List<com.hexaware.borrower_service.entity.BorrowerTradeActivity> tradeRows =
+        trades.findByTransactionReferenceOrderByTradeIdAsc(transactionReference);
+    long soldShort = tradeRows.stream()
+        .filter(row -> row.getTradeType() == BorrowerTradeType.SELL_SHORT)
+        .mapToLong(com.hexaware.borrower_service.entity.BorrowerTradeActivity::getQuantity)
+        .sum();
+    long boughtToCover = tradeRows.stream()
+        .filter(row -> row.getTradeType() == BorrowerTradeType.BUY_TO_COVER)
+        .mapToLong(com.hexaware.borrower_service.entity.BorrowerTradeActivity::getQuantity)
+        .sum();
+    long settledReturned = returns.stream()
+        .filter(row -> "SETTLED".equals(row.get("status")))
+        .mapToLong(row -> number(row.get("quantity")))
+        .sum();
+    long borrowerHeld = number(snapshot.get("deliveredQuantity"))
+        - soldShort + boughtToCover - settledReturned - pendingQuantity;
+    long returnable = Math.min(outstanding - pendingQuantity, Math.max(0, borrowerHeld));
+    if (request.quantity() > returnable) {
+      throw BorrowerException.conflict(
+          "Return quantity exceeds borrowed shares currently held after shorts, covers and pending returns");
     }
     Map<String, Object> recall = request.recallReference() == null
         ? null : findRecall(snapshot, request.recallReference());
