@@ -40,8 +40,14 @@ public class BorrowerTradeActivity {
   @Column(name = "trade_reference", nullable = false, unique = true, length = 80)
   private String tradeReference;
 
-  @Column(name = "transaction_reference", nullable = false, length = 80)
+  @Column(name = "transaction_reference", length = 80)
   private String transactionReference;
+
+  @Column(name = "borrower_organization_reference", length = 80)
+  private String borrowerOrganizationReference;
+
+  @Column(name = "security_isin", length = 12)
+  private String securityIsin;
 
   @Enumerated(EnumType.STRING)
   @Column(name = "trade_type", nullable = false, length = 20)

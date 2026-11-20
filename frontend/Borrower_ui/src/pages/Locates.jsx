@@ -7,10 +7,10 @@ import { useApp } from '../hooks/useApp'
 import { useRemote } from '../hooks/useRemote'
 import { loans } from '../api/loans'
 import { locates } from '../api/locates'
+import { securities } from '../api/securities'
 import { newReference } from '../api/client'
 import { stamp } from '../utils/format'
 
-const ISIN_PATTERN = /^[A-Z0-9]{12}$/
 
 export function LocatesPage() {
   const { mode } = useApp()
@@ -64,19 +64,27 @@ export function NewLocatePage() {
   const { mode, notify } = useApp()
   const navigate = useNavigate()
   const mslaQuery = useRemote(() => loans.eligible(), [], { enabled: mode === 'live' })
+  const securityQuery = useRemote(() => securities.active(), [], { enabled: mode === 'live' })
   const [form, setForm] = useState({ mslaReference: '', securityIsin: '', quantity: '' })
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const key = useRef(newReference('LOC'))
   const mslas = mslaQuery.data || []
+  const selectedMsla = mslas.find(msla => msla.mslaReference === form.mslaReference)
+  const securityRows = (securityQuery.data || []).filter(security =>
+    security.status === 'ACTIVE'
+      && (!selectedMsla?.allowedAssetTypes?.length
+        || selectedMsla.allowedAssetTypes.includes(security.securityType)),
+  )
   const update = (name, value) => setForm(current => ({ ...current, [name]: value }))
 
   async function submit(event) {
     event.preventDefault()
     setError('')
     const quantity = Number(form.quantity)
-    if (!form.mslaReference || !ISIN_PATTERN.test(form.securityIsin) || !Number.isSafeInteger(quantity) || quantity <= 0) {
-      setError('Select an eligible MSLA, enter a 12-character ISIN and a positive whole quantity.')
+    if (!form.mslaReference || !securityRows.some(row => row.isin === form.securityIsin)
+        || !Number.isSafeInteger(quantity) || quantity <= 0) {
+      setError('Select an eligible MSLA, active security and positive whole quantity.')
       return
     }
     setBusy(true)
@@ -121,18 +129,16 @@ export function NewLocatePage() {
                     label="Eligible MSLA"
                     required
                     value={form.mslaReference}
-                    onChange={value => update('mslaReference', value)}
+                    onChange={value => setForm(current => ({ ...current, mslaReference: value, securityIsin: '' }))}
                     options={mslas.map(msla => ({ value: msla.mslaReference, label: `${msla.mslaReference} · ${msla.baseCurrency} · ${msla.lenderOrganizationReference}` }))}
                   />
                   <Field
                     name="securityIsin"
-                    label="Security ISIN"
+                    label="Eligible security"
                     required
                     value={form.securityIsin}
-                    onChange={value => update('securityIsin', value.toUpperCase().trim())}
-                    pattern="[A-Z0-9]{12}"
-                    max={12}
-                    placeholder="INE002A01018"
+                    onChange={value => update('securityIsin', value)}
+                    options={securityRows.map(security => ({ value: security.isin, label: `${security.symbol || security.securityName} · ${security.isin} · ${security.currency}` }))}
                   />
                   <Field
                     name="quantity"
@@ -148,7 +154,7 @@ export function NewLocatePage() {
                 </div>
                 <FormMessage error={error} />
                 <div className="form-actions">
-                  <Button type="submit" icon={ArrowRight} busy={busy} disabled={busy || mslaQuery.loading}>Submit locate request</Button>
+                  <Button type="submit" icon={ArrowRight} busy={busy} disabled={busy || mslaQuery.loading || securityQuery.loading || !securityRows.length}>Submit locate request</Button>
                   <Link className="btn btn--outline" to="/locates">Cancel</Link>
                 </div>
               </form>

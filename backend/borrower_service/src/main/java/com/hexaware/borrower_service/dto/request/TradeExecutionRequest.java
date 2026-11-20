@@ -11,7 +11,8 @@ import java.math.BigDecimal;
 
 public record TradeExecutionRequest(
     @NotBlank @Pattern(regexp = "[A-Za-z0-9._:-]{1,80}") String tradeReference,
-    @NotBlank @Pattern(regexp = "[A-Za-z0-9._:-]{1,80}") String transactionReference,
+    @Pattern(regexp = "[A-Za-z0-9._:-]{1,80}") String transactionReference,
+    @Pattern(regexp = "[A-Za-z0-9]{12}") String securityIsin,
     @NotNull BorrowerTradeType tradeType,
     @NotNull @Positive Long quantity,
-    @NotNull @DecimalMin("0.000001") @Digits(integer = 14, fraction = 6) BigDecimal price) {}
+    @DecimalMin("0.000001") @Digits(integer = 14, fraction = 6) BigDecimal price) {}

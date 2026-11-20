@@ -20,7 +20,10 @@ public interface LoanRequestRepository extends JpaRepository<LoanRequest, Long> 
   @Query(
       """
       select new com.hexaware.custodian_service.dto.response.CustodianLoanRequestResponse(
-          request.requestReference, agreement.mslaReference, borrower.organizationReference,
+          request.requestReference,
+          (select contract.transactionReference from LoanContract contract
+              where contract.loanRequestId = request.requestId),
+          agreement.mslaReference, borrower.organizationReference,
           lender.organizationReference, custodian.organizationReference, request.securityIsin,
           request.quantity, request.requestedSettlementDate, request.settlementCurrency,
           request.submittedByIssuer, request.submittedBySubject, request.requestedAt, request.status)
@@ -40,7 +43,10 @@ public interface LoanRequestRepository extends JpaRepository<LoanRequest, Long> 
   @Query(
       """
       select new com.hexaware.custodian_service.dto.response.CustodianLoanRequestResponse(
-          request.requestReference, agreement.mslaReference, borrower.organizationReference,
+          request.requestReference,
+          (select contract.transactionReference from LoanContract contract
+              where contract.loanRequestId = request.requestId),
+          agreement.mslaReference, borrower.organizationReference,
           lender.organizationReference, custodian.organizationReference, request.securityIsin,
           request.quantity, request.requestedSettlementDate, request.settlementCurrency,
           request.submittedByIssuer, request.submittedBySubject, request.requestedAt, request.status)

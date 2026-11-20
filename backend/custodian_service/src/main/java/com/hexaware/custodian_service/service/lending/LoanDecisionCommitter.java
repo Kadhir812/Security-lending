@@ -448,7 +448,14 @@ public class LoanDecisionCommitter {
   }
 
   private String transactionReference(String requestReference) {
-    return "CTR-" + UUID.nameUUIDFromBytes(requestReference.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+    try {
+      byte[] digest = java.security.MessageDigest.getInstance("SHA-256")
+          .digest(requestReference.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+      return "CONT-" + java.util.HexFormat.of().formatHex(digest).substring(0, 12)
+          .toUpperCase(java.util.Locale.ROOT);
+    } catch (java.security.NoSuchAlgorithmException exception) {
+      throw new IllegalStateException("SHA-256 is unavailable", exception);
+    }
   }
 
   private Map<String, Object> valuationSnapshot(ValuationCalculationResponse result) {

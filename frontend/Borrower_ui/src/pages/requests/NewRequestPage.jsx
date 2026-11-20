@@ -8,9 +8,9 @@ import { useRemote } from '../../hooks/useRemote'
 import { newReference } from '../../api/client'
 import { loans } from '../../api/loans'
 import { locates } from '../../api/locates'
+import { securities } from '../../api/securities'
 import { number } from '../../utils/format'
 
-const ISIN_PATTERN = /^[A-Z0-9]{12}$/
 
 function getToday() {
   const now = new Date()
@@ -23,6 +23,7 @@ export function NewRequestPage() {
   const [searchParams] = useSearchParams()
   const mslaQuery = useRemote(() => loans.eligible(), [], { enabled: mode === 'live' })
   const locateQuery = useRemote(() => locates.list(), [], { enabled: mode === 'live' })
+  const securityQuery = useRemote(() => securities.active(), [], { enabled: mode === 'live' })
   const [form, setForm] = useState({
     mslaReference: '',
     securityIsin: '',
@@ -40,6 +41,11 @@ export function NewRequestPage() {
   const mslas = mslaQuery.data || []
   const locateRows = locateQuery.data || []
   const selectedMsla = mslas.find(msla => msla.mslaReference === form.mslaReference)
+  const securityRows = (securityQuery.data || []).filter(security =>
+    security.status === 'ACTIVE'
+      && (!selectedMsla?.allowedAssetTypes?.length
+        || selectedMsla.allowedAssetTypes.includes(security.securityType)),
+  )
   const approvedLocates = locateRows.filter(
     locate => locate.status === 'APPROVED'
       && (!locate.expiryTime || Date.parse(locate.expiryTime) > Date.now()),
@@ -102,8 +108,8 @@ export function NewRequestPage() {
       setError('Select an eligible live MSLA.')
       return
     }
-    if (!ISIN_PATTERN.test(form.securityIsin)) {
-      setError('Security ISIN must be exactly 12 uppercase alphanumeric characters.')
+    if (!securityRows.some(security => security.isin === form.securityIsin)) {
+      setError('Choose an active eligible security from the list.')
       return
     }
     if (!Number.isSafeInteger(quantity) || quantity < 1) {
@@ -217,13 +223,14 @@ export function NewRequestPage() {
               />
               <Field
                 name="securityIsin"
-                label="Security ISIN"
+                label="Eligible security"
                 required
                 value={form.securityIsin}
-                onChange={value => updateForm('securityIsin', value.toUpperCase().trim())}
-                pattern="[A-Z0-9]{12}"
-                max={12}
-                placeholder="INE002A01018"
+                onChange={value => updateForm('securityIsin', value)}
+                options={securityRows.map(security => ({
+                  value: security.isin,
+                  label: `${security.symbol || security.securityName} · ${security.isin} · ${security.currency}`,
+                }))}
                 hint="Must be ACTIVE and eligible under the selected MSLA"
               />
               <Field
@@ -270,7 +277,7 @@ export function NewRequestPage() {
             {locateQuery.error && <FormMessage error={locateQuery.error} />}
             <FormMessage error={error} />
             <div className="form-actions">
-              <Button type="submit" icon={ArrowRight} disabled={sending || mslaQuery.loading || !mslas.length}>
+              <Button type="submit" icon={ArrowRight} disabled={sending || mslaQuery.loading || securityQuery.loading || !mslas.length || !securityRows.length}>
                 Review submission
               </Button>
               <Link className="btn btn--outline" to="/requests">Cancel</Link>

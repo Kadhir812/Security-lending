@@ -10,4 +10,18 @@ export const loans = {
   collateralReports: ref => request.get(`/loan-requests/${url(ref)}/collateral-reports`),
   contract: ref => request.get(`/loan-requests/${url(ref)}/contract`),
   cash: (ref, body) => request.post(`/loan-requests/${url(ref)}/collateral/cash-instructions`, body),
+  activeContracts: async () => {
+    const page = await request.get('/loan-requests', { page: 0, size: 100 })
+    const approved = (page?.content || []).filter(row => row.status === 'APPROVED')
+    const projections = await Promise.allSettled(
+      approved.map(row => request.get(`/loan-requests/${url(row.requestReference)}/contract`)),
+    )
+    return projections.flatMap((result, index) => {
+      if (result.status !== 'fulfilled') return []
+      const projection = result.value
+      const snapshot = projection.contractSnapshot || {}
+      if (snapshot.contractStatus !== 'ON_LOAN') return []
+      return [{ ...approved[index], ...projection, contractSnapshot: snapshot }]
+    })
+  },
 }

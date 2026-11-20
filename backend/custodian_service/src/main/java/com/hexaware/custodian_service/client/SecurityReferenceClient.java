@@ -6,6 +6,7 @@ import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestClient;
+import java.util.List;
 
 @Component
 @RequiredArgsConstructor
@@ -36,6 +37,23 @@ public class SecurityReferenceClient {
         throw SetupException.unavailable("Security reference service returned an empty response");
       }
       return security;
+    } catch (RestClientException exception) {
+      throw SetupException.unavailable("Security reference service is unavailable");
+    }
+  }
+
+  public List<SecurityReferenceResponse> listActive() {
+    try {
+      SecurityReferencePageResponse page = securityMarketRestClient.get()
+          .uri(builder -> builder.path("/api/securities")
+              .queryParam("activeOnly", true).queryParam("page", 0).queryParam("size", 100)
+              .build())
+          .retrieve()
+          .body(SecurityReferencePageResponse.class);
+      if (page == null || page.content() == null) {
+        throw SetupException.unavailable("Security reference service returned no data");
+      }
+      return page.content();
     } catch (RestClientException exception) {
       throw SetupException.unavailable("Security reference service is unavailable");
     }

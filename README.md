@@ -2,6 +2,8 @@
 
 This distribution keeps the backend, database migrations, Kafka integrations and workflow implementations from the latest uploaded repository. The previous Securities Lending OS design is reapplied to both React portals with the newest operational pages and API wrappers preserved.
 
+For the Borrower Trade workspace, apply `db/migrations/010_borrower_cash_stock_trading.sql` to an existing `borrower_db`, then run `db/07_security_market_trade_seed.sql` after the market database schema or `db/00_all_databases.sql`. The six-month prices are deterministic `DEMO_SIMULATED` values and are not exchange data.
+
 **Start here:** [`docs/OS_BACKEND_INTEGRATION_REPORT.md`](docs/OS_BACKEND_INTEGRATION_REPORT.md)
 
 **Endpoint inventory:** [`docs/OS_BACKEND_ENDPOINT_MATRIX.csv`](docs/OS_BACKEND_ENDPOINT_MATRIX.csv)

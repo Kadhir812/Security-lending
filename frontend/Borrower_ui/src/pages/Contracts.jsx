@@ -308,7 +308,7 @@ export function CashCollateralPage() {
               {snapshot && (
                 <form className="resource-form" onSubmit={prepare}>
                   <div className="form-grid">
-                    <Field name="instructionReference" label="Unique instruction reference" required value={form.instructionReference} onChange={value => setForm(current => ({ ...current, instructionReference: value }))} max={80} />
+                    <Field name="instructionReference" label="Cash instruction reference" required value={form.instructionReference} readOnly hint="Generated automatically for this instruction." max={80} />
                     <Field name="amount" label="CASH amount" required type="number" min="0.01" step="0.01" value={form.amount} onChange={value => setForm(current => ({ ...current, amount: value }))} />
                     <Field name="currency" label="Currency" value={currency} readOnly hint="Must equal contract settlementCurrency" />
                     <Field name="collateralType" label="Collateral type" value="CASH" readOnly hint="Backend currently only supports CASH" />

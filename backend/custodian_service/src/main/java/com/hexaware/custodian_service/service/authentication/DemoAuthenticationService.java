@@ -61,7 +61,7 @@ public class DemoAuthenticationService {
         organizations.save(
             Organization.builder()
                 .organizationReference(
-                    "CUSTODIAN-" + UUID.randomUUID().toString().replace("-", ""))
+                    "CUST-" + UUID.randomUUID().toString().replace("-", "").substring(0, 12).toUpperCase(Locale.ROOT))
                 .organizationName(request.organizationName().trim())
                 .organizationType(OrganizationType.CUSTODIAN)
                 .status(OrganizationStatus.ACTIVE)

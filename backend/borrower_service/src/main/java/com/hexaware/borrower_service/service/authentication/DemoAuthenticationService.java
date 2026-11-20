@@ -54,7 +54,7 @@ public class DemoAuthenticationService {
                             .build()));
 
     String organizationReference =
-        "BORROWER-" + UUID.randomUUID().toString().replace("-", "");
+        "BOR-" + UUID.randomUUID().toString().replace("-", "").substring(0, 12).toUpperCase(Locale.ROOT);
     User user =
         users.save(
             User.builder()

@@ -14,6 +14,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class CustodianLoanRequestResponse {
   private String requestReference;
+  private String transactionReference;
   private String mslaReference;
   private String borrowerOrganizationReference;
   private String lenderOrganizationReference;

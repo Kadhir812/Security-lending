@@ -58,6 +58,11 @@ public class CashAccountController {
     return cashAccounts.executeTrade(authentication, request);
   }
 
+  @GetMapping("/trades")
+  public List<Map<String, Object>> tradeActivity(Authentication authentication) {
+    return cashAccounts.tradeActivity(authentication);
+  }
+
   @GetMapping("/trades/{transactionReference}")
   public List<Map<String, Object>> tradeHistory(
       Authentication authentication, @PathVariable String transactionReference) {

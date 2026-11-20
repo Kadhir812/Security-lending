@@ -68,7 +68,7 @@ public class LenderCashLedgerService {
     if (organizationId == null || currency == null || !currency.matches("[A-Z]{3}")) {
       throw SetupException.conflict("Lender cash account identity is invalid");
     }
-    accounts.ensureAccount("LCA-" + UUID.randomUUID(), organizationId, currency);
+    accounts.ensureAccount("LCASH-" + shortId(), organizationId, currency);
     return accounts.findLocked(organizationId, currency)
         .orElseThrow(() -> SetupException.conflict("Lender cash account could not be created"));
   }
@@ -99,7 +99,7 @@ public class LenderCashLedgerService {
     account.setUpdatedAt(clock.instant());
     accounts.save(account);
     transactions.save(LenderCashTransaction.builder()
-        .transactionReference("LCT-" + UUID.randomUUID())
+        .transactionReference("LCASH-TXN-" + shortId())
         .cashAccountId(account.getCashAccountId())
         .transactionType(type)
         .sourceType(sourceType)
@@ -112,5 +112,10 @@ public class LenderCashLedgerService {
         .description(description)
         .createdAt(clock.instant())
         .build());
+  }
+
+  private String shortId() {
+    return UUID.randomUUID().toString().replace("-", "").substring(0, 12)
+        .toUpperCase(java.util.Locale.ROOT);
   }
 }

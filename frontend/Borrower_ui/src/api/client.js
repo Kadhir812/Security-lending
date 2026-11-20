@@ -11,7 +11,12 @@ export function setSessionToken(value) {
   else sessionStorage.setItem(SESSION_KEY, '')
   window.dispatchEvent(new CustomEvent('borrower:token'))
 }
-export const newReference = (prefix = 'BRW') => `${prefix}-${crypto.randomUUID()}`
+export const newReference = (prefix = 'REF') => {
+  const kind = String(prefix).replace(/[^A-Za-z0-9]/g, '').toUpperCase() || 'REF'
+  const time = Date.now().toString(36).toUpperCase()
+  const suffix = crypto.randomUUID().replaceAll('-', '').slice(0, 6).toUpperCase()
+  return `${kind}-${time}-${suffix}`
+}
 const prefix = String(import.meta.env.VITE_BORROWER_API_URL || '/api').replace(/\/$/, '')
 export const http = axios.create({ baseURL: prefix, timeout: 20000, headers: { Accept: 'application/json' } })
 

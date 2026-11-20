@@ -1,5 +1,5 @@
 -- Reusable seed data for the market database.
--- Run this after 01_security_market_db.sql or as a standalone file.
+-- Run this after 01_security_market_db.sql, then run 07_security_market_trade_seed.sql.
 
 USE security_market_db;
 SET time_zone = '+00:00';

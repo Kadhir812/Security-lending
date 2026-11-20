@@ -2,6 +2,9 @@ package com.hexaware.borrower_service.service.cash;
 
 import com.hexaware.borrower_service.dto.request.CashMovementRequest;
 import com.hexaware.borrower_service.dto.request.TradeExecutionRequest;
+import com.hexaware.borrower_service.client.BorrowerSecurityPrice;
+import com.hexaware.borrower_service.client.BorrowerSecurityReference;
+import com.hexaware.borrower_service.client.SecurityReferenceClient;
 import com.hexaware.borrower_service.entity.BorrowerCashAccount;
 import com.hexaware.borrower_service.entity.BorrowerCashTransaction;
 import com.hexaware.borrower_service.entity.BorrowerTradeActivity;
@@ -39,6 +42,7 @@ public class BorrowerCashAccountService {
   private final BorrowerTradeActivityRepository trades;
   private final LoanContractViewRepository contractViews;
   private final LoanRequestRepository requests;
+  private final SecurityReferenceClient securityReferences;
   private final Clock clock;
 
   @Transactional
@@ -90,41 +94,82 @@ public class BorrowerCashAccountService {
   public Map<String, Object> executeTrade(
       Authentication authentication, TradeExecutionRequest request) {
     LocalUserAuthentication user = trader(authentication);
-    LoanContractView view = contractViews.findLockedByTransactionReference(
-            request.transactionReference())
-        .orElseThrow(() -> BorrowerException.missing("Loan contract not found"));
-    LoanRequest loanRequest = requests.findByRequestReferenceAndBorrowerOrganizationReference(
-            view.getRequestReference(), user.getOrganizationReference())
-        .orElseThrow(() -> BorrowerException.missing("Loan contract not found"));
-    Map<String, Object> snapshot = view.getContractSnapshot();
-    if (!"ON_LOAN".equals(snapshot.get("contractStatus"))) {
-      throw BorrowerException.conflict("Trading requires confirmed securities delivery");
-    }
-    String currency = String.valueOf(snapshot.get("settlementCurrency"));
-    if (!currency.equals(loanRequest.getSettlementCurrency())) {
-      throw BorrowerException.conflict("Contract currency projection is invalid");
-    }
     BorrowerTradeActivity existing = trades.findByTradeReference(request.tradeReference())
         .orElse(null);
     if (existing != null) {
-      if (!existing.getTransactionReference().equals(request.transactionReference())
+      if (!Objects.equals(existing.getTransactionReference(), request.transactionReference())
+          || !Objects.equals(existing.getSecurityIsin(), request.securityIsin())
           || existing.getTradeType() != request.tradeType()
-          || existing.getQuantity().longValue() != request.quantity().longValue()
-          || existing.getPrice().compareTo(request.price()) != 0) {
+          || existing.getQuantity().longValue() != request.quantity().longValue()) {
         throw BorrowerException.conflict("Trade reference was reused with different inputs");
       }
-      return tradeView(existing, currency);
+      return tradeView(existing, existing.getSecurityIsin() == null ? "INR" :
+          securityReferences.require(existing.getSecurityIsin()).currency());
     }
 
-    List<BorrowerTradeActivity> history =
-        trades.findByTransactionReferenceOrderByTradeIdAsc(request.transactionReference());
+    boolean cashEquityTrade = request.tradeType() == BorrowerTradeType.BUY
+        || request.tradeType() == BorrowerTradeType.SELL;
+    String isin = request.securityIsin();
+    LoanContractView view = null;
+    LoanRequest loanRequest = null;
+    Map<String, Object> snapshot = Map.of();
+    if (cashEquityTrade) {
+      if (isin == null || request.transactionReference() != null)
+        throw BorrowerException.invalid("A cash stock trade needs a security and no loan contract");
+    } else {
+      if (request.transactionReference() == null)
+        throw BorrowerException.invalid("Short sales and covers require an active loan contract");
+      view = contractViews.findLockedByTransactionReference(request.transactionReference())
+          .orElseThrow(() -> BorrowerException.missing("Loan contract not found"));
+      loanRequest = requests.findByRequestReferenceAndBorrowerOrganizationReference(
+              view.getRequestReference(), user.getOrganizationReference())
+          .orElseThrow(() -> BorrowerException.missing("Loan contract not found"));
+      snapshot = view.getContractSnapshot();
+      if (!"ON_LOAN".equals(snapshot.get("contractStatus")))
+        throw BorrowerException.conflict("Trading requires confirmed securities delivery");
+      if (isin == null) isin = loanRequest.getSecurityIsin();
+      if (!Objects.equals(isin, loanRequest.getSecurityIsin()))
+        throw BorrowerException.conflict("Selected security does not match the borrowed contract");
+    }
+
+    BorrowerSecurityReference security = securityReferences.require(isin);
+    if (!"ACTIVE".equals(security.status()))
+      throw BorrowerException.conflict("Security is not active for trading");
+    String currency = security.currency();
+    if (!cashEquityTrade && (!currency.equals(loanRequest.getSettlementCurrency())
+        || !currency.equals(snapshot.get("settlementCurrency"))))
+      throw BorrowerException.conflict("Contract currency does not match the security currency");
+    BigDecimal executionPrice = request.price();
+    if (cashEquityTrade || request.securityIsin() != null) {
+      BorrowerSecurityPrice quote = securityReferences.latestPrice(isin);
+      if (quote.stale() && !"DEMO_SIMULATED".equals(quote.sourceName()))
+        throw BorrowerException.conflict("The latest market quote is stale");
+      executionPrice = quote.marketPrice();
+    }
+    if (executionPrice == null || executionPrice.signum() <= 0)
+      throw BorrowerException.invalid("A valid market price is required");
+
+    List<BorrowerTradeActivity> history = cashEquityTrade
+        ? trades.findByBorrowerOrganizationReferenceAndSecurityIsinOrderByTradeIdAsc(
+            user.getOrganizationReference(), isin)
+        : trades.findByTransactionReferenceOrderByTradeIdAsc(request.transactionReference());
     Deque<ShortLot> openLots = openShortLots(history);
     long openQuantity = openLots.stream().mapToLong(ShortLot::quantity).sum();
-    BigDecimal notional = request.price().multiply(BigDecimal.valueOf(request.quantity()))
+    BigDecimal notional = executionPrice.multiply(BigDecimal.valueOf(request.quantity()))
         .setScale(2, RoundingMode.HALF_UP);
     BigDecimal realized = ZERO;
     BigDecimal cashDelta;
-    if (request.tradeType() == BorrowerTradeType.SELL_SHORT) {
+    if (request.tradeType() == BorrowerTradeType.BUY) {
+      cashDelta = notional.negate();
+    } else if (request.tradeType() == BorrowerTradeType.SELL) {
+      long holdings = history.stream().mapToLong(row ->
+          row.getTradeType() == BorrowerTradeType.BUY ? row.getQuantity()
+              : row.getTradeType() == BorrowerTradeType.SELL ? -row.getQuantity() : 0).sum();
+      if (request.quantity() > holdings)
+        throw BorrowerException.conflict("Sell quantity exceeds owned shares");
+      realized = realizeLongSale(history, request.quantity(), executionPrice);
+      cashDelta = notional;
+    } else if (request.tradeType() == BorrowerTradeType.SELL_SHORT) {
       long outstanding = longValue(snapshot.get("outstandingQuantity"));
       if (outstanding <= 0 || Math.addExact(openQuantity, request.quantity()) > outstanding) {
         throw BorrowerException.conflict("Short sale exceeds confirmed, unreturned borrowed shares");
@@ -134,29 +179,45 @@ public class BorrowerCashAccountService {
       if (request.quantity() > openQuantity) {
         throw BorrowerException.conflict("Buy-to-cover exceeds the open short position");
       }
-      realized = realizeCover(openLots, request.quantity(), request.price());
+      realized = realizeCover(openLots, request.quantity(), executionPrice);
       cashDelta = notional.negate();
     }
 
     BorrowerCashAccount account = lockAccount(user.getOrganizationReference(), currency);
-    String cashType = request.tradeType() == BorrowerTradeType.SELL_SHORT
-        ? "SHORT_SALE_PROCEEDS" : "BUY_TO_COVER";
+    String cashType = switch (request.tradeType()) {
+      case BUY -> "TRADE_BUY";
+      case SELL -> "TRADE_SELL";
+      case SELL_SHORT -> "SHORT_SALE_PROCEEDS";
+      case BUY_TO_COVER -> "BUY_TO_COVER";
+    };
     post(account, cashType, "TRADE", request.tradeReference(),
         request.tradeReference(), cashDelta, ZERO,
-        request.tradeType() + " " + request.quantity() + " @ " + request.price(),
+        request.tradeType() + " " + request.quantity() + " " + isin + " @ " + executionPrice,
         user.getUserId());
     BorrowerTradeActivity trade = trades.save(BorrowerTradeActivity.builder()
         .tradeReference(request.tradeReference())
         .transactionReference(request.transactionReference())
+        .borrowerOrganizationReference(user.getOrganizationReference())
+        .securityIsin(isin)
         .tradeType(request.tradeType())
         .quantity(request.quantity())
-        .price(request.price())
+        .price(executionPrice)
         .realizedProfitLoss(request.tradeType() == BorrowerTradeType.BUY_TO_COVER
+            || request.tradeType() == BorrowerTradeType.SELL
             ? realized.setScale(2, RoundingMode.HALF_UP) : null)
         .tradeTime(clock.instant())
         .createdBy(user.getUserId())
         .build());
     return tradeView(trade, currency);
+  }
+
+  @Transactional(readOnly = true)
+  public List<Map<String, Object>> tradeActivity(Authentication authentication) {
+    LocalUserAuthentication user = trader(authentication);
+    return trades.findByBorrowerOrganizationReferenceOrderByTradeIdDesc(
+            user.getOrganizationReference()).stream()
+        .limit(200).map(row -> tradeView(row, row.getSecurityIsin() == null ? "INR"
+            : securityReferences.require(row.getSecurityIsin()).currency())).toList();
   }
 
   @Transactional(readOnly = true)
@@ -242,7 +303,7 @@ public class BorrowerCashAccountService {
     if (currency == null || !currency.matches("[A-Z]{3}")) {
       throw BorrowerException.invalid("Currency must be a three-letter uppercase code");
     }
-    accounts.ensureAccount("BCA-" + UUID.randomUUID(), organizationReference, currency);
+    accounts.ensureAccount("CASH-" + shortId(), organizationReference, currency);
     BorrowerCashAccount account = accounts.findLocked(organizationReference, currency)
         .orElseThrow(() -> BorrowerException.conflict("Cash account could not be created"));
     if (!"ACTIVE".equals(account.getStatus())) {
@@ -276,7 +337,7 @@ public class BorrowerCashAccountService {
     account.setUpdatedAt(clock.instant());
     accounts.save(account);
     return transactions.save(BorrowerCashTransaction.builder()
-        .transactionReference("BCT-" + UUID.randomUUID())
+        .transactionReference("CASH-TXN-" + shortId())
         .cashAccountId(account.getCashAccountId())
         .transactionType(type)
         .sourceType(sourceType)
@@ -297,7 +358,7 @@ public class BorrowerCashAccountService {
     for (BorrowerTradeActivity trade : history) {
       if (trade.getTradeType() == BorrowerTradeType.SELL_SHORT) {
         lots.addLast(new ShortLot(trade.getQuantity(), trade.getPrice()));
-      } else {
+      } else if (trade.getTradeType() == BorrowerTradeType.BUY_TO_COVER) {
         realizeCover(lots, trade.getQuantity(), trade.getPrice());
       }
     }
@@ -319,6 +380,43 @@ public class BorrowerCashAccountService {
     }
     if (remaining > 0) throw BorrowerException.conflict("Buy-to-cover exceeds the open short position");
     return realized;
+  }
+
+  private BigDecimal realizeLongSale(
+      List<BorrowerTradeActivity> history, long quantity, BigDecimal salePrice) {
+    Deque<ShortLot> lots = new ArrayDeque<>();
+    for (BorrowerTradeActivity trade : history) {
+      if (trade.getTradeType() == BorrowerTradeType.BUY) {
+        lots.addLast(new ShortLot(trade.getQuantity(), trade.getPrice()));
+      } else if (trade.getTradeType() == BorrowerTradeType.SELL) {
+        consumeLongLots(lots, trade.getQuantity());
+      }
+    }
+    long remaining = quantity;
+    BigDecimal realized = BigDecimal.ZERO;
+    while (remaining > 0 && !lots.isEmpty()) {
+      ShortLot lot = lots.removeFirst();
+      long matched = Math.min(remaining, lot.quantity());
+      realized = realized.add(salePrice.subtract(lot.sellPrice())
+          .multiply(BigDecimal.valueOf(matched)));
+      if (lot.quantity() > matched)
+        lots.addFirst(new ShortLot(lot.quantity() - matched, lot.sellPrice()));
+      remaining -= matched;
+    }
+    if (remaining > 0) throw BorrowerException.conflict("Sell quantity exceeds owned shares");
+    return realized;
+  }
+
+  private void consumeLongLots(Deque<ShortLot> lots, long quantity) {
+    long remaining = quantity;
+    while (remaining > 0 && !lots.isEmpty()) {
+      ShortLot lot = lots.removeFirst();
+      long matched = Math.min(remaining, lot.quantity());
+      if (lot.quantity() > matched)
+        lots.addFirst(new ShortLot(lot.quantity() - matched, lot.sellPrice()));
+      remaining -= matched;
+    }
+    if (remaining > 0) throw BorrowerException.conflict("Recorded sell exceeds owned shares");
   }
 
   private Map<String, Object> accountView(BorrowerCashAccount account) {
@@ -354,6 +452,7 @@ public class BorrowerCashAccountService {
     Map<String, Object> result = new LinkedHashMap<>();
     result.put("tradeReference", trade.getTradeReference());
     result.put("transactionReference", trade.getTransactionReference());
+    result.put("securityIsin", trade.getSecurityIsin());
     result.put("tradeType", trade.getTradeType());
     result.put("quantity", trade.getQuantity());
     result.put("price", trade.getPrice());
@@ -398,4 +497,9 @@ public class BorrowerCashAccountService {
   }
 
   private record ShortLot(long quantity, BigDecimal sellPrice) {}
+
+  private String shortId() {
+    return UUID.randomUUID().toString().replace("-", "").substring(0, 12)
+        .toUpperCase(java.util.Locale.ROOT);
+  }
 }

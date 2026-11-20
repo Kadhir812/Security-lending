@@ -2,7 +2,7 @@
 import { get, post } from './shared'
 export { foundation } from './foundation'
 export { loanRequests } from './loans'
-export { organizations, mandates, inventory, mslas, creditLimits, haircuts, lendingFees } from './setup'
+export { organizations, mandates, inventory, mslas, creditLimits, haircuts, lendingFees, securityReferences } from './setup'
 export { settlements } from './settlement'
 export { marginCalls } from './margin'
 export { recalls } from './recalls'

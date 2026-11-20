@@ -906,8 +906,10 @@ CREATE TABLE borrower_trade_activity (
   version BIGINT NOT NULL DEFAULT 0,
   trade_id BIGINT AUTO_INCREMENT PRIMARY KEY,
   trade_reference VARCHAR(80) NOT NULL UNIQUE,
-  transaction_reference VARCHAR(80) NOT NULL,
-  trade_type ENUM('SELL_SHORT','BUY_TO_COVER') NOT NULL,
+  transaction_reference VARCHAR(80),
+  borrower_organization_reference VARCHAR(80),
+  security_isin CHAR(12),
+  trade_type ENUM('BUY','SELL','SELL_SHORT','BUY_TO_COVER') NOT NULL,
   quantity BIGINT NOT NULL,
   price DECIMAL(20,6) NOT NULL,
   realized_profit_loss DECIMAL(20,2),
@@ -916,6 +918,8 @@ CREATE TABLE borrower_trade_activity (
   CHECK (quantity > 0 AND price > 0),
   FOREIGN KEY (created_by) REFERENCES users(user_id)
 ) ENGINE=InnoDB;
+CREATE INDEX idx_borrower_trade_positions
+  ON borrower_trade_activity (borrower_organization_reference, security_isin, trade_id);
 
 -- AUTHORITATIVE LOCAL RECORD
 CREATE TABLE borrower_order (
@@ -1138,6 +1142,8 @@ CREATE INDEX idx_calculation_run_processing ON calculation_run (status, created_
 CREATE INDEX idx_calculation_result_processing ON calculation_result (transaction_reference, calculation_date, result_type);
 
 -- Seed a known market universe across the core services so a clean local stack is immediately usable.
+-- Run db/07_security_market_trade_seed.sql after this file for the Trade screen's
+-- expanded equity universe and six months of deterministic DEMO_SIMULATED prices.
 USE security_market_db;
 INSERT INTO security_master (symbol, security_name, isin, security_type, currency, exchange_name, status)
 VALUES

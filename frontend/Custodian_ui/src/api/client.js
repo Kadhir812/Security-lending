@@ -19,6 +19,12 @@ export function setSessionToken(value) {
   window.dispatchEvent(new CustomEvent('custodian:token'))
 }
 export function idempotencyKey() { return crypto.randomUUID() }
+export function newReference(prefix = 'REF') {
+  const kind = String(prefix).replace(/[^A-Za-z0-9]/g, '').toUpperCase() || 'REF'
+  const time = Date.now().toString(36).toUpperCase()
+  const suffix = crypto.randomUUID().replaceAll('-', '').slice(0, 6).toUpperCase()
+  return `${kind}-${time}-${suffix}`
+}
 export class ApiError extends Error {
   constructor(status, message, data, correlationId) {
     super(message)
