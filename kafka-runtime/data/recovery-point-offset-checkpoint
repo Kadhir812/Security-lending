@@ -21,10 +21,10 @@ __consumer_offsets 20 0
 __consumer_offsets 49 0
 __consumer_offsets 0 0
 __consumer_offsets 29 0
-__consumer_offsets 25 0
 sec-lending-requests.DLT 0 0
-__consumer_offsets 8 0
+__consumer_offsets 25 0
 sec-lending-responses 0 0
+__consumer_offsets 8 0
 __consumer_offsets 37 0
 __consumer_offsets 4 0
 __consumer_offsets 33 0
