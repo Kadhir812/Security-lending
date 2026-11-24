@@ -12,6 +12,7 @@
 | Market | Custodian | Kafka market-price-events | Schedule MTM against relevant active contracts |
 | Borrower/Custodian | counterpart | Kafka sec-lending-requests / sec-lending-responses | FIX and workflow messages |
 | Borrower | Custodian | Kafka sec-lending-requests / sec-lending-responses | Locate submission and decision workflow |
+| Custodian | Borrower | Kafka outbox `REBATE_CHARGE_UPDATED` | Daily accepted cash-collateral rebate charge or signed correction |
 
 Additional topics are proposed for the four-service architecture. No standalone local master-data views: use REST reads; optional in-memory caches have explicit freshness limits. Custodian revalidates security status/terms at processing. Borrower request decision fields update from authorized Custodian responses. Borrower settled inventory updates from idempotent settlement events; authoritative contract balance remains Custodian-owned.
 
@@ -27,3 +28,15 @@ A calculation request contains the complete input snapshot and a stable requestR
 Custodian compares all relevant versions, including collateral, contract and terms, before accepting a result. A price-driven result includes valuation time and price-source policy. Credit/inventory are revalidated under local locks. Custodian writes accepted snapshot, margin/payment obligation and outgoing event in its transaction. Borrower receives resulting business events, not permission to apply a calculation independently.
 
 For reliable reconstruction, keep authoritative records and immutable calculations; REST endpoints expose scoped current state. Replay of messages is deduplicated. Pending messages are retained in outbox during broker outage. Jobs/messages have bounded retries, lease recovery, dead-letter handling and operational replay. Missing master data stops the affected action rather than bypassing validation.
+
+Cash-collateral rebates use the annual percentage snapshotted on the approved
+loan contract. Custodian reconstructs settled CASH from confirmed collateral
+transfer/release instructions, requests an immutable ACT/365 daily calculation
+from Valuation, and atomically records a signed, versioned obligation event;
+daily accrual does not move cash. Borrower
+consumes `REBATE_CHARGE_UPDATED` through its inbox and accumulates the obligation
+in its contract projection. On the first confirmed final collateral release,
+Custodian pays that total from lender cash and includes it with the collateral
+return in `SETTLEMENT_INSTRUCTION_UPDATED`; Borrower records both cash movements
+from that event. Corrections carry `supersedesResultReference`; the final payout
+fails for reconciliation if lender cash cannot fund it.

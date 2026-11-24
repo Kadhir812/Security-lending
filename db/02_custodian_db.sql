@@ -5,6 +5,23 @@ CREATE DATABASE custodian_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE custodian_db;
 SET time_zone = '+00:00';
 
+-- AUTHORITATIVE OPERATIONAL CONFIGURATION
+CREATE TABLE calculation_schedule_config (
+  schedule_key VARCHAR(40) PRIMARY KEY,
+  version BIGINT NOT NULL DEFAULT 0,
+  interval_minutes INT NOT NULL DEFAULT 60,
+  next_run_at DATETIME(6) NOT NULL,
+  last_run_at DATETIME(6),
+  last_posted_count INT NOT NULL DEFAULT 0,
+  updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  CHECK (interval_minutes BETWEEN 5 AND 1440),
+  CHECK (last_posted_count >= 0)
+) ENGINE=InnoDB;
+
+INSERT INTO calculation_schedule_config
+  (schedule_key, interval_minutes, next_run_at, last_posted_count)
+VALUES ('CUSTODIAN_ACCRUAL', 60, DATE_ADD(UTC_TIMESTAMP(6), INTERVAL 60 MINUTE), 0);
+
 -- AUTHORITATIVE LOCAL RECORD
 CREATE TABLE organization (
   registered_by_custodian_id BIGINT NULL,
@@ -246,6 +263,7 @@ CREATE TABLE msla_agreement (
   eligible_securities JSON NOT NULL,
   collateral_type ENUM('CASH','ETF','GOVT_BOND','CORPORATE_BOND','EQUITY') NOT NULL DEFAULT 'CASH',
   collateral_coverage_pct DECIMAL(9,4) NOT NULL DEFAULT 105.0000,
+  annual_rebate_pct DECIMAL(10,6) NOT NULL DEFAULT 0,
   mtm_interval_minutes INT NOT NULL DEFAULT 60,
   margin_call_window_hours INT NOT NULL DEFAULT 24,
   recall_rule VARCHAR(500),
@@ -253,6 +271,7 @@ CREATE TABLE msla_agreement (
   created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
   CHECK (expiry_date IS NULL OR expiry_date >= effective_date),
   CHECK (collateral_coverage_pct >= 100),
+  CHECK (annual_rebate_pct >= 0),
   CHECK (mtm_interval_minutes > 0 AND margin_call_window_hours > 0),
   FOREIGN KEY (mandate_id) REFERENCES lender_custodian_mandate(mandate_id),
   FOREIGN KEY (borrower_org_id) REFERENCES organization(organization_id)
@@ -398,7 +417,7 @@ CREATE TABLE loan_contract (
   contract_created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
   CHECK (quantity > 0 AND delivered_quantity >= 0 AND delivered_quantity <= quantity),
   CHECK (returned_quantity >= 0 AND returned_quantity <= delivered_quantity),
-  CHECK (agreed_annual_fee_pct >= 0 AND collateral_coverage_pct >= 100),
+  CHECK (agreed_annual_fee_pct >= 0 AND agreed_annual_rebate_pct >= 0 AND collateral_coverage_pct >= 100),
   CHECK (reserved_credit_amount >= 0 AND used_credit_amount >= 0),
   CHECK (settlement_date >= trade_date),
   CHECK (maturity_date IS NULL OR maturity_date >= settlement_date),
@@ -592,6 +611,7 @@ CREATE TABLE settlement_instruction (
   security_isin CHAR(12),
   quantity DECIMAL(24,6),
   amount DECIMAL(20,2),
+  rebate_amount DECIMAL(20,2) NOT NULL DEFAULT 0,
   currency CHAR(3) NOT NULL,
   status ENUM('PENDING','PROCESSING','SETTLED','FAILED','CANCELLED') NOT NULL DEFAULT 'PENDING',
   settlement_date DATE NOT NULL,
@@ -599,6 +619,7 @@ CREATE TABLE settlement_instruction (
   external_confirmation_reference VARCHAR(150) UNIQUE,
   failure_reason VARCHAR(500),
   created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  CHECK (rebate_amount >= 0),
   CHECK (from_organization_id <> to_organization_id),
   CHECK ((quantity IS NOT NULL AND quantity > 0 AND security_isin IS NOT NULL AND amount IS NULL)
    OR (amount IS NOT NULL AND amount > 0 AND quantity IS NULL AND security_isin IS NULL)),

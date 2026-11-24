@@ -272,6 +272,12 @@ definitions. The AK message profile intentionally defines the required fields
 used by this application; it is not the full QuickFIX/J `Confirmation`
 message schema.
 
+Approved contracts also carry the MSLA's annual cash-rebate rate in optional
+custom tag 9136 (`AgreedAnnualRebatePercentage`, percentage units, up to six
+decimal places). Optionality preserves compatibility with earlier AK messages;
+the Borrower defaults an absent rate to zero. It is an approved contract term,
+not a Borrower calculation input.
+
 Example (`|` represents SOH; framing values are computed):
 
 ```text

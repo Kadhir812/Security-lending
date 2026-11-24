@@ -45,6 +45,9 @@ public class SettlementInstruction {
   private BigDecimal quantity;
   @Column(precision = 20, scale = 2)
   private BigDecimal amount;
+  @Builder.Default
+  @Column(name = "rebate_amount", nullable = false, precision = 20, scale = 2)
+  private BigDecimal rebateAmount = BigDecimal.ZERO.setScale(2);
   @Column(nullable = false, length = 3)
   private String currency;
   @Enumerated(EnumType.STRING)

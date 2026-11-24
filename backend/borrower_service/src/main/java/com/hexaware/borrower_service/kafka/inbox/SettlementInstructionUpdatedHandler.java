@@ -129,9 +129,15 @@ public class SettlementInstructionUpdatedHandler implements MessageHandler {
     if (collateralRelease) {
       if (!applyCollateralRelease(snapshot, payload, instructionReference, incomingVersion)) return;
       if ("SETTLED".equals(settlementStatus)) {
+        BigDecimal collateralAmount = amount(payload.get("collateralAmount"), payload.get("amount"));
+        BigDecimal rebateAmount = amount(payload.get("rebateAmount"), BigDecimal.ZERO);
         cashAccounts.receiveCollateralRelease(borrowerReference,
-            String.valueOf(payload.get("currency")), decimal(payload.get("amount")),
+            String.valueOf(payload.get("currency")), collateralAmount,
             instructionReference);
+        if (rebateAmount.signum() > 0) {
+          cashAccounts.receiveRebate(borrowerReference, String.valueOf(payload.get("currency")),
+              rebateAmount, text(payload.get("releaseReference")) + ":REBATE");
+        }
       }
     } else if ("SECURITY_RETURN".equals(instructionType)) {
       applyReturnOutcome(snapshot, payload, instructionReference, incomingVersion, request);
@@ -280,10 +286,14 @@ public class SettlementInstructionUpdatedHandler implements MessageHandler {
             ? instructionReference.substring(2, lastSeparator)
             : null;
     BigDecimal amount = decimal(payload.get("amount"));
+    BigDecimal collateralAmount = amount(payload.get("collateralAmount"), amount);
+    BigDecimal rebateAmount = amount(payload.get("rebateAmount"), BigDecimal.ZERO);
     long instructionCount = integer(payload.get("releaseInstructionCount"));
     if (releaseReference == null
         || !releaseReference.equals(instructionReleaseReference)
-        || amount.signum() <= 0
+        || collateralAmount.signum() <= 0
+        || rebateAmount.signum() < 0
+        || amount.compareTo(collateralAmount.add(rebateAmount)) != 0
         || instructionCount <= 0) {
       throw invalid("COLLATERAL_RELEASE_INSTRUCTION_INVALID");
     }
@@ -310,7 +320,8 @@ public class SettlementInstructionUpdatedHandler implements MessageHandler {
     if (instruction == null) {
       instruction = new LinkedHashMap<>();
       instructions.add(instruction);
-    } else if (decimal(instruction.get("amount")).compareTo(amount) != 0
+    } else if (amount(instruction.get("collateralAmount"), instruction.get("amount"))
+            .compareTo(collateralAmount) != 0
         || !Objects.equals(instruction.get("currency"), payload.get("currency"))
         || !Objects.equals(instruction.get("releaseReference"), releaseReference)) {
       throw invalid("COLLATERAL_RELEASE_INPUT_CHANGED");
@@ -318,6 +329,8 @@ public class SettlementInstructionUpdatedHandler implements MessageHandler {
     instruction.put("instructionReference", instructionReference);
     instruction.put("releaseReference", releaseReference);
     instruction.put("amount", amount.toPlainString());
+    instruction.put("collateralAmount", collateralAmount.toPlainString());
+    instruction.put("rebateAmount", rebateAmount.toPlainString());
     instruction.put("currency", payload.get("currency"));
     instruction.put("status", status);
     instruction.put("settlementStatus", status);
@@ -350,7 +363,7 @@ public class SettlementInstructionUpdatedHandler implements MessageHandler {
     snapshot.put("collateralReleaseRequests", releases);
     if ("SETTLED".equals(status) && !"CLOSED".equals(snapshot.get("contractStatus"))) {
       BigDecimal heldCash = decimal(snapshot.get("confirmedCashCollateral"));
-      BigDecimal remainingCash = heldCash.subtract(amount);
+      BigDecimal remainingCash = heldCash.subtract(collateralAmount);
       if (remainingCash.signum() < 0) {
         throw invalid("COLLATERAL_RELEASE_EXCEEDS_BORROWER_BALANCE");
       }
@@ -482,6 +495,10 @@ public class SettlementInstructionUpdatedHandler implements MessageHandler {
     } catch (NumberFormatException exception) {
       throw invalid("INVALID_SETTLEMENT_AMOUNT");
     }
+  }
+
+  private BigDecimal amount(Object value, Object fallback) {
+    return decimal(value == null ? fallback : value);
   }
 
   private long integer(Object value) {

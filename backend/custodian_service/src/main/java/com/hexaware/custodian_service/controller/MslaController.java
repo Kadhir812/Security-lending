@@ -1,9 +1,12 @@
 package com.hexaware.custodian_service.controller;
 
 import com.hexaware.custodian_service.dto.request.MslaRequest;
+import com.hexaware.custodian_service.dto.request.MslaSetupRequest;
 import com.hexaware.custodian_service.dto.response.MslaResponse;
+import com.hexaware.custodian_service.dto.response.MslaSetupResponse;
 import com.hexaware.custodian_service.dto.response.PageResponse;
 import com.hexaware.custodian_service.service.agreement.MslaService;
+import com.hexaware.custodian_service.service.agreement.MslaSetupService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
@@ -22,6 +25,13 @@ import org.springframework.web.bind.annotation.RestController;
 public class MslaController {
 
   private final MslaService service;
+  private final MslaSetupService setupService;
+
+  @PostMapping("/setup")
+  public MslaSetupResponse createSetup(
+      Authentication authentication, @Valid @RequestBody MslaSetupRequest request) {
+    return setupService.create(authentication, request);
+  }
 
   @PostMapping
   public MslaResponse create(

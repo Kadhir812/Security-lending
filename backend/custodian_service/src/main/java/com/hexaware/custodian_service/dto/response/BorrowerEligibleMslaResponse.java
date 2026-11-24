@@ -4,6 +4,7 @@ import com.hexaware.custodian_service.dto.request.EligibleSecurities;
 import com.hexaware.custodian_service.enums.AgreementStatus;
 import com.hexaware.custodian_service.enums.MandateStatus;
 import java.time.LocalDate;
+import java.math.BigDecimal;
 import java.util.List;
 
 public record BorrowerEligibleMslaResponse(
@@ -19,5 +20,6 @@ public record BorrowerEligibleMslaResponse(
     LocalDate mandateEffectiveTo,
     MandateStatus mandateStatus,
     String baseCurrency,
+    BigDecimal annualRebatePct,
     List<String> allowedAssetTypes,
     EligibleSecurities eligibleSecurities) {}

@@ -59,6 +59,12 @@ public class MslaRequest {
   private BigDecimal collateralCoveragePct;
 
   @NotNull
+  @PositiveOrZero
+  @Digits(integer = 4, fraction = 6)
+  @Builder.Default
+  private BigDecimal annualRebatePct = BigDecimal.ZERO;
+
+  @NotNull
   @Positive
   private Integer mtmIntervalMinutes;
 

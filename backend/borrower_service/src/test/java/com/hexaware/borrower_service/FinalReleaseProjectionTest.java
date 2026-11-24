@@ -16,6 +16,7 @@ import com.hexaware.borrower_service.kafka.inbox.SettlementInstructionUpdatedHan
 import com.hexaware.borrower_service.repository.LoanContractViewRepository;
 import com.hexaware.borrower_service.repository.LoanRequestRepository;
 import com.hexaware.borrower_service.quickfix.LoanRequestFixMessageBuilder;
+import com.hexaware.borrower_service.service.cash.BorrowerCashAccountService;
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Instant;
@@ -43,6 +44,7 @@ class FinalReleaseProjectionTest {
 
   @Mock private LoanContractViewRepository contracts;
   @Mock private LoanRequestRepository requests;
+  @Mock private BorrowerCashAccountService cashAccounts;
   private LoanContractView contract;
   private SettlementInstructionUpdatedHandler settlements;
   private ContractClosedHandler closures;
@@ -50,7 +52,8 @@ class FinalReleaseProjectionTest {
   @BeforeEach
   void setUp() {
     settlements = new SettlementInstructionUpdatedHandler(
-        contracts, requests, new LoanRequestFixMessageBuilder(), Clock.fixed(NOW, ZoneOffset.UTC));
+        contracts, requests, new LoanRequestFixMessageBuilder(), cashAccounts,
+        Clock.fixed(NOW, ZoneOffset.UTC));
     closures = new ContractClosedHandler(contracts, requests, Clock.fixed(NOW, ZoneOffset.UTC));
     Map<String, Object> releaseRequest = new LinkedHashMap<>();
     releaseRequest.put("releaseReference", "REL-001");

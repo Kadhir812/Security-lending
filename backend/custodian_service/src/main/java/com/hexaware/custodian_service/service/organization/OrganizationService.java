@@ -8,6 +8,7 @@ import com.hexaware.custodian_service.enums.OrganizationType;
 import com.hexaware.custodian_service.exception.SetupException;
 import com.hexaware.custodian_service.mapper.SetupMapper;
 import com.hexaware.custodian_service.repository.OrganizationRepository;
+import com.hexaware.custodian_service.repository.MslaAgreementRepository;
 import com.hexaware.custodian_service.repository.SetupUsageRepository;
 import com.hexaware.custodian_service.security.authorization.SetupAccess;
 import com.hexaware.custodian_service.service.setup.SetupValidation;
@@ -27,6 +28,7 @@ public class OrganizationService {
   private final SetupMapper mapper;
   private final Clock clock;
   private final SetupUsageRepository usage;
+  private final MslaAgreementRepository agreements;
 
   @Transactional
   public OrganizationResponse create(
@@ -132,5 +134,29 @@ public class OrganizationService {
         organizations.findVisible(
             actor.getOrganizationId(), SetupValidation.page(page, size, "organizationReference"));
     return PageResponse.from(organizationsPage.map(mapper::organization));
+  }
+
+  @Transactional(readOnly = true)
+  public PageResponse<OrganizationResponse> listBorrowers(
+      Authentication authentication, int page, int size) {
+    var actor = access.actor(authentication, false);
+    var borrowers =
+        organizations.findVisibleBorrowers(
+            actor.getOrganizationId(),
+            SetupValidation.page(page, size, "organizationReference"));
+    return PageResponse.from(borrowers.map(mapper::organization));
+  }
+
+  @Transactional(readOnly = true)
+  public long countActiveBorrowerMslas(Authentication authentication, String reference) {
+    var actor = access.actor(authentication, false);
+    var borrower = access.visibleOrganization(
+        SetupValidation.reference(reference), actor.getOrganizationId());
+    if (borrower.getOrganizationType() != OrganizationType.BORROWER) {
+      throw SetupException.missing("Borrower organization not found in your scope");
+    }
+    return agreements.countEligibleForBorrowerAndCustodian(
+        borrower.getOrganizationId(), actor.getOrganizationId(),
+        java.time.LocalDate.now(clock));
   }
 }

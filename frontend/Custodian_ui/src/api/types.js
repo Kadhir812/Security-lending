@@ -16,7 +16,7 @@
 /** @typedef {{lenderOrganizationReference:string,securityIsin:string,totalQuantity:number}} InventoryCreateRequest */
 /** @typedef {{totalQuantity:number,version:number}} InventoryUpdateRequest */
 /** @typedef {InventoryCreateRequest & {onLoanQuantity:number,reservedQuantity:number,availableQuantity:number,version:number}} InventoryResponse */
-/** @typedef {{mslaReference:string,mandateReference:string,borrowerOrganizationReference:string,effectiveDate:string,expiryDate?:string,agreementStatus:AgreementStatus,baseCurrency:string,eligibleSecurities:{allowed_types:AssetType[]},collateralType:CollateralType,collateralCoveragePct:number,mtmIntervalMinutes:number,marginCallWindowHours:number,recallRule?:string,defaultRules?:Record<string,unknown>,settlementCalendarCode:string,version?:number}} MslaRequest */
+/** @typedef {{mslaReference:string,mandateReference:string,borrowerOrganizationReference:string,effectiveDate:string,expiryDate?:string,agreementStatus:AgreementStatus,baseCurrency:string,eligibleSecurities:{allowed_types:AssetType[]},collateralType:CollateralType,collateralCoveragePct:number,annualRebatePct:number,mtmIntervalMinutes:number,marginCallWindowHours:number,recallRule?:string,defaultRules?:Record<string,unknown>,settlementCalendarCode:string,version?:number}} MslaRequest */
 /** @typedef {MslaRequest & {currentlyEffective:boolean,lenderOrganizationReference:string,custodianOrganizationReference:string}} MslaResponse */
 /** @typedef {{mslaReference:string,limitAmount:number,usedAmount:number,reservedAmount:number,availableAmount:number,currency:string,status:RuleStatus,version:number}} CreditLimitResponse */
 /** @typedef {{limitAmount:number,reason:string}} CreditLimitCreateRequest */

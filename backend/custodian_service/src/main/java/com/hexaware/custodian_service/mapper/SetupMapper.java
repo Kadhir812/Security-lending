@@ -90,6 +90,7 @@ public class SetupMapper {
         .eligibleSecurities(agreement.getEligibleSecurities())
         .collateralType(agreement.getCollateralType())
         .collateralCoveragePct(agreement.getCollateralCoveragePct())
+        .annualRebatePct(agreement.getAnnualRebatePct())
         .mtmIntervalMinutes(agreement.getMtmIntervalMinutes())
         .marginCallWindowHours(agreement.getMarginCallWindowHours())
         .recallRule(agreement.getRecallRule())

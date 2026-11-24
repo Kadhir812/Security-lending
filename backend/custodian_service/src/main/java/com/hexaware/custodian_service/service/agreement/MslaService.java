@@ -45,10 +45,23 @@ public class MslaService {
 
   @Transactional
   public MslaResponse create(Authentication authentication, MslaRequest request) {
+    return create(authentication, request, false);
+  }
+
+  @Transactional
+  public MslaResponse createActive(Authentication authentication, MslaRequest request) {
+    return create(authentication, request, true);
+  }
+
+  private MslaResponse create(
+      Authentication authentication, MslaRequest request, boolean activeImmediately) {
     var actor = access.actor(authentication, true);
     SetupValidation.newVersion(request.getVersion());
     rules.validate(request);
-    if (request.getAgreementStatus() != AgreementStatus.DRAFT) {
+    if (activeImmediately && request.getAgreementStatus() != AgreementStatus.ACTIVE) {
+      throw SetupException.invalid("A bundled MSLA setup must be ACTIVE immediately");
+    }
+    if (!activeImmediately && request.getAgreementStatus() != AgreementStatus.DRAFT) {
       throw SetupException.invalid("Create an MSLA as DRAFT, then explicitly activate it");
     }
 
@@ -90,6 +103,10 @@ public class MslaService {
             .createdByUserId(userId)
             .build();
     apply(agreement, request, userId);
+
+    if (activeImmediately) {
+      validateActivation(agreement, mandate, borrower);
+    }
 
     agreements.saveAndFlush(agreement);
     return response(agreement, mandate);
@@ -205,6 +222,7 @@ public class MslaService {
                 .getCollateralCoveragePct()
                 .compareTo(request.getCollateralCoveragePct())
             != 0
+        || agreement.getAnnualRebatePct().compareTo(request.getAnnualRebatePct()) != 0
         || !Objects.equals(agreement.getMtmIntervalMinutes(), request.getMtmIntervalMinutes())
         || !Objects.equals(
             agreement.getMarginCallWindowHours(), request.getMarginCallWindowHours())
@@ -223,6 +241,7 @@ public class MslaService {
     agreement.setEligibleSecurities(request.getEligibleSecurities());
     agreement.setCollateralType(request.getCollateralType());
     agreement.setCollateralCoveragePct(request.getCollateralCoveragePct());
+    agreement.setAnnualRebatePct(request.getAnnualRebatePct());
     agreement.setMtmIntervalMinutes(request.getMtmIntervalMinutes());
     agreement.setMarginCallWindowHours(request.getMarginCallWindowHours());
     agreement.setRecallRule(request.getRecallRule());

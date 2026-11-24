@@ -26,6 +26,7 @@ import com.hexaware.custodian_service.repository.MslaAgreementRepository;
 import com.hexaware.custodian_service.repository.OrganizationRepository;
 import com.hexaware.custodian_service.repository.OutboxEventRepository;
 import com.hexaware.custodian_service.security.authorization.SetupAccess;
+import com.hexaware.custodian_service.service.cash.LenderCashLedgerService;
 import com.hexaware.custodian_service.service.messaging.OutgoingEventService;
 import java.time.Clock;
 import java.time.Instant;
@@ -54,6 +55,7 @@ class LendingFeePaymentServiceTest {
   private final OutboxEventRepository outbox = mock(OutboxEventRepository.class);
   private final LendingFeeAccrualService accruals = mock(LendingFeeAccrualService.class);
   private final OutgoingEventService outgoing = mock(OutgoingEventService.class);
+  private final LenderCashLedgerService cashLedger = mock(LenderCashLedgerService.class);
   private final Clock clock = Clock.fixed(NOW, ZoneOffset.UTC);
 
   private LendingFeePaymentService service;
@@ -65,7 +67,8 @@ class LendingFeePaymentServiceTest {
         new LendingFeePaymentSupport(payments, contracts, outbox, accruals, outgoing, clock);
     service =
         new LendingFeePaymentService(
-            access, contracts, requests, agreements, mandates, organizations, payments, clock, support);
+            access, contracts, requests, agreements, mandates, organizations, payments, clock,
+            support, cashLedger);
     contract = mock(LoanContract.class);
     when(contract.getContractId()).thenReturn(100L);
     when(contract.getTransactionReference()).thenReturn(TRANSACTION_REFERENCE);

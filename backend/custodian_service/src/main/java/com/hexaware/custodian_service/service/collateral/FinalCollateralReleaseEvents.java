@@ -30,6 +30,8 @@ public class FinalCollateralReleaseEvents {
       String status,
       long aggregateVersion,
       boolean simulatedConfirmation) {
+    java.math.BigDecimal rebateAmount = instruction.getRebateAmount() == null
+        ? java.math.BigDecimal.ZERO.setScale(2) : instruction.getRebateAmount();
     Map<String, Object> payload = new LinkedHashMap<>();
     payload.put("payloadVersion", 1);
     payload.put("transactionReference", contract.getTransactionReference());
@@ -42,7 +44,9 @@ public class FinalCollateralReleaseEvents {
     payload.put("custodianOrganizationReference", parties.custodianReference());
     payload.put("settlementStatus", status);
     payload.put("instructionStatus", status);
-    payload.put("amount", instruction.getAmount().toPlainString());
+    payload.put("collateralAmount", instruction.getAmount().toPlainString());
+    payload.put("rebateAmount", rebateAmount.toPlainString());
+    payload.put("amount", instruction.getAmount().add(rebateAmount).toPlainString());
     payload.put("currency", instruction.getCurrency());
     payload.put("contractStatus", contract.getContractStatus().name());
     payload.put("contractVersion", contract.getVersion());

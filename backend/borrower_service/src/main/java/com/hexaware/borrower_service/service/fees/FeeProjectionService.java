@@ -115,6 +115,86 @@ public class FeeProjectionService {
   }
 
   @Transactional
+  public void applyRebateCharge(EventEnvelope event) {
+    Map<String, Object> payload = event.getPayload();
+    String transactionReference = text(payload.get("transactionReference"));
+    String resultReference = text(payload.get("resultReference"));
+    String borrowerReference = text(payload.get("borrowerOrganizationReference"));
+    String custodianReference = text(payload.get("custodianOrganizationReference"));
+    long aggregateVersion = integer(event.getAggregateVersion());
+    if (!"REBATE_CHARGE_UPDATED".equals(event.getEventType())
+        || !"CUSTODIAN".equals(event.getProducerService())
+        || !"BORROWER".equals(event.getDestinationService())
+        || event.getSchemaVersion() != 1
+        || integer(payload.get("payloadVersion")) != 1
+        || !Objects.equals(event.getAggregateReference(), transactionReference)
+        || !Objects.equals(event.getCorrelationId(), transactionReference)
+        || !Objects.equals(event.getSenderOrganizationReference(), custodianReference)
+        || !Objects.equals(event.getReceiverOrganizationReference(), borrowerReference)
+        || event.getOccurredAt() == null || event.getOccurredAt().isAfter(clock.instant())
+        || !Objects.equals(payload.get("status"), "POSTED")
+        || transactionReference == null || resultReference == null
+        || borrowerReference == null || custodianReference == null || aggregateVersion <= 0) {
+      throw invalid("REBATE_CHARGE_ENVELOPE_MISMATCH");
+    }
+    LoanContractView view = contractViews.findByTransactionReference(transactionReference)
+        .orElseThrow(() -> invalid("UNKNOWN_CONTRACT"));
+    LoanRequest request = requests.findByRequestReference(view.getRequestReference())
+        .orElseThrow(() -> invalid("UNKNOWN_LOAN_REQUEST"));
+    if (!borrowerReference.equals(request.getBorrowerOrganizationReference())
+        || !custodianReference.equals(request.getCustodianOrganizationReference())
+        || !Objects.equals(request.getSettlementCurrency(), payload.get("currency"))) {
+      throw invalid("REBATE_CHARGE_PARTIES_OR_CURRENCY_MISMATCH");
+    }
+    BigDecimal amount = decimal(payload.get("amount"));
+    BigDecimal grossAmount = decimal(payload.get("grossAmount"));
+    BigDecimal collateral = decimal(payload.get("settledCashCollateral"));
+    BigDecimal rate = decimal(payload.get("annualRebatePercentage"));
+    String accrualDate = text(payload.get("accrualDate"));
+    String itemKey = text(payload.get("itemKey"));
+    if (accrualDate == null
+        || !Objects.equals(itemKey, "REBATE:" + accrualDate)
+        || amount.signum() == 0 || amount.scale() > 2 || grossAmount.signum() < 0
+        || collateral.signum() < 0 || rate.signum() < 0
+        || !Objects.equals(payload.get("dayCountBasis"), "ACT_365")
+        || !Objects.equals(payload.get("rebateBasis"), "DAILY_SETTLED_CASH_COLLATERAL")) {
+      throw invalid("REBATE_CHARGE_CONTENT_INVALID");
+    }
+
+    Map<String, Object> snapshot = new LinkedHashMap<>(view.getContractSnapshot());
+    List<Map<String, Object>> charges = mapList(snapshot.get("rebateCharges"));
+    Map<String, Object> sameResult = charges.stream()
+        .filter(row -> resultReference.equals(row.get("resultReference")))
+        .findFirst().orElse(null);
+    if (sameResult != null) {
+      if (decimal(sameResult.get("amount")).compareTo(amount) != 0
+          || !Objects.equals(sameResult.get("inputVersion"), payload.get("inputVersion"))) {
+        throw invalid("REBATE_RESULT_REFERENCE_REUSED");
+      }
+      return;
+    }
+    long currentVersion = number(snapshot.get("rebateChargeAggregateVersion"));
+    if (aggregateVersion <= currentVersion) return;
+    if (aggregateVersion != currentVersion + 1) throw invalid("REBATE_CHARGE_VERSION_GAP");
+    String latestItemResult = charges.stream()
+        .filter(row -> Objects.equals(row.get("itemKey"), itemKey))
+        .map(row -> text(row.get("resultReference")))
+        .filter(Objects::nonNull)
+        .reduce((first, second) -> second).orElse(null);
+    if (!Objects.equals(text(payload.get("supersedesResultReference")), latestItemResult)) {
+      throw invalid("REBATE_CORRECTION_BASE_MISSING");
+    }
+
+    Map<String, Object> charge = new LinkedHashMap<>(payload);
+    charge.put("receivedAt", event.getOccurredAt().toString());
+    charges.add(charge);
+    snapshot.put("rebateCharges", charges);
+    snapshot.put("rebateChargeAggregateVersion", aggregateVersion);
+    view.setContractSnapshot(snapshot);
+    contractViews.save(view);
+  }
+
+  @Transactional
   public void applyPayment(EventEnvelope event, String expectedEventType) {
     Map<String, Object> payload = event.getPayload();
     String transactionReference = text(payload.get("transactionReference"));

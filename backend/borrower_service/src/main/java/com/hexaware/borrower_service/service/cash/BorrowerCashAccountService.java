@@ -299,6 +299,21 @@ public class BorrowerCashAccountService {
         paid ? "Confirmed lending fee payment" : "Released failed fee payment reservation", null);
   }
 
+  @Transactional
+  public void receiveRebate(String organizationReference, String currency,
+      BigDecimal rebateAdjustment, String resultReference) {
+    if (rebateAdjustment == null || rebateAdjustment.signum() == 0
+        || rebateAdjustment.scale() > 2 || resultReference == null || resultReference.isBlank()) {
+      throw BorrowerException.invalid("Rebate adjustment and result reference are invalid");
+    }
+    BorrowerCashAccount account = lockAccount(organizationReference, currency);
+    boolean receipt = rebateAdjustment.signum() > 0;
+    post(account, receipt ? "REBATE_RECEIVED" : "REVERSAL",
+        receipt ? "REBATE" : "REVERSAL", resultReference,
+        "REBATE-RECEIVED:" + resultReference, rebateAdjustment, ZERO,
+        receipt ? "Daily cash-collateral rebate received" : "Reversed prior cash-collateral rebate", null);
+  }
+
   private BorrowerCashAccount lockAccount(String organizationReference, String currency) {
     if (currency == null || !currency.matches("[A-Z]{3}")) {
       throw BorrowerException.invalid("Currency must be a three-letter uppercase code");

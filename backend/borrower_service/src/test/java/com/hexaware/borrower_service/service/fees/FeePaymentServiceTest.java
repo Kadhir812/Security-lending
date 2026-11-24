@@ -18,6 +18,7 @@ import com.hexaware.borrower_service.kafka.event.EventEnvelope;
 import com.hexaware.borrower_service.repository.LoanContractViewRepository;
 import com.hexaware.borrower_service.repository.LoanRequestRepository;
 import com.hexaware.borrower_service.security.authentication.LocalUserAuthentication;
+import com.hexaware.borrower_service.service.cash.BorrowerCashAccountService;
 import com.hexaware.borrower_service.service.messaging.OutgoingEventService;
 import java.math.BigDecimal;
 import java.time.Clock;
@@ -44,6 +45,7 @@ class FeePaymentServiceTest {
       mock(LoanContractViewRepository.class);
   private final LoanRequestRepository requests = mock(LoanRequestRepository.class);
   private final OutgoingEventService outgoing = mock(OutgoingEventService.class);
+  private final BorrowerCashAccountService cashAccounts = mock(BorrowerCashAccountService.class);
   private final Clock clock = Clock.fixed(NOW, ZoneOffset.UTC);
 
   private FeePaymentService service;
@@ -52,7 +54,7 @@ class FeePaymentServiceTest {
 
   @BeforeEach
   void setUp() {
-    service = new FeePaymentService(contractViews, requests, outgoing, clock);
+    service = new FeePaymentService(contractViews, requests, outgoing, cashAccounts, clock);
     Jwt token =
         Jwt.withTokenValue("borrower-token")
             .header("alg", "RS256")

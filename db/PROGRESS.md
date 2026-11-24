@@ -1,5 +1,53 @@
 # Implementation progress
 
+## Custodian Borrower Directory
+
+- Added a paginated Borrower Directory for organizations registered by or otherwise visible to the authenticated Custodian.
+- Added a Custodian-scoped active-MSLA count for the selected Borrower, based on agreement, mandate, organization status, and effective dates.
+- The directory can open the combined MSLA and Lending Setup form with the selected Borrower reference.
+- No tests or builds were run for this module.
+
+## Lender inventory removal
+
+- Added a confirmed Remove action for lender inventory rows alongside create and quantity maintenance.
+- The DELETE endpoint is Custodian-scoped, requires the current inventory version, and blocks rows with on-loan, reserved, or historical reservation quantities so inventory history stays valid.
+- No schema change was required. Tests and builds were not run for this module.
+
+## Combined locate and loan request desk
+
+- Replaced the separate Custodian Locate Review navigation experience with a single Locate & Loan Request Desk containing both live request tables.
+- Added in-page request details and kept the full loan review route for MSLA, inventory, and credit context.
+- Locate approval remains availability-only; loan approval remains the reservation and contract decision. Existing Kafka/FIX endpoints and payloads are unchanged.
+- The legacy `/locate-requests` route redirects to `/requests`.
+
+## Security master and live market prices
+
+- Added read-only Security Master and recent-price screens to both Custodian and Borrower portals, using the shared Security Market service.
+- Custodian reference API now exposes authenticated latest quote and bounded 200-row price history reads; Borrower's existing quote API powers its screen.
+- Borrower can start a locate from a selected ISIN; the new Locate form carries the ISIN into the request.
+- Quotes remain informational; authorization and valuation still revalidate data server-side.
+
+## Custodian lender cash account
+
+- Added active-mandate-scoped lender cash and recent ledger history views to the Custodian portal.
+- Added externally confirmed deposit/withdraw operations using mandatory idempotency keys and external references; restricted collateral cannot be withdrawn.
+- Existing settlement collateral and lending-fee cash postings use the same lender ledger and are visible in this account.
+
+## Borrower holdings inventory
+
+- Added `GET /api/holdings`, a Borrower-authorized projection built from the Borrower's approved contract projections and full trade ledger.
+- Added a Holdings screen showing owned, borrowed outstanding, open short, and not-yet-shorted borrowed quantities by security; added links into trade and return workflows.
+- Holdings quantities are calculated by the Borrower service, not inferred from a browser-side 200-row activity slice.
+
+## Combined Custodian MSLA setup
+
+- Replaced the separate Mandates navigation item with one MSLA & Lending Setup page.
+- Its single form submits lender, borrower, active mandate selection/creation, active MSLA terms, credit limit and annual fee together.
+- Custodian `POST /api/mslas/setup` creates or reuses the mandate and atomically commits the agreement and rule records; any failure rolls back newly created records.
+- The backend creates the mandatory CASH haircut at 0%, scoped to the MSLA dates. New agreements are ACTIVE immediately; draft-only default rules are omitted.
+- Existing mandate endpoints remain available for compatibility, while `/mandates` redirects to `/mslas` in the portal.
+- No schema change was needed. Build and tests were not run in this step.
+
 ## Cash account and ledger schema
 
 - Added borrower and lender cash account/transaction tables to the fresh schemas
@@ -805,3 +853,40 @@ unverified.
 - The same-key design means compromise of any service can allow token forgery
   for all three; keep the secret private and rotate it if exposed.
 - Targeted JWT decoder tests passed for all three services (3 tests total).
+### Custodian collateral inquiry visibility
+
+- Added `GET /api/collateral-inquiries` with bounded pagination and authenticated
+  Custodian scoping. It returns processed inbound FIX BB records and correlates
+  each inquiry with the FIX BA outbox publication state and timestamp.
+- Replaced the Custodian collateral inquiry placeholder with a live, paginated
+  BB/BA operations table. The UI distinguishes report broker publication from
+  Borrower receipt and from later collateral settlement.
+- Verification is limited to static inspection and `git diff --check`; no tests
+  or builds were run, per the user's instruction.
+
+## Cash rebates and calculation workspace
+
+- Added annual rebate percentage to the one-step MSLA setup and approved loan
+  snapshot. Custodian includes optional FIX tag 9136 in AK; older messages
+  without the tag remain compatible and Borrower treats the rate as zero.
+- Valuation persists daily ACT/365 results on confirmed settled CASH collateral,
+  using UTC settlement history and HALF_UP cent rounding. Custodian validates
+  that history and emits signed, versioned `REBATE_CHARGE_UPDATED` accruals;
+  these update the Borrower projection without moving cash. On final collateral
+  confirmation, Custodian pays the accumulated rebate and publishes it with the
+  collateral return; Borrower records both cash ledger movements idempotently.
+- Added a Custodian Calculation workspace for fee/rebate accrual, MTM runs,
+  settled collateral history and backend-returned result tables; contract views
+  show fee and rebate ledger activity in both portals.
+- Added `GET/PUT /api/calculations/schedule` and frontend interval control.
+  Cadence defaults to 60 minutes and is bounded to 5–1440 minutes. Custodian
+  persists the cadence, next run, last run and posted count; a locked schedule
+  row prevents duplicate triggers across service instances.
+- Migrations `011_msla_annual_rebate_pct.sql` and
+  `012_settlement_rebate_amount.sql` add the MSLA/contract rates, Custodian
+  schedule record and accumulated rebate amount on final settlement instructions. Fresh
+  schemas and FIX/event mapping docs include the fields and events.
+- The schema now has 53 physical tables; ownership and count documentation were
+  updated for the persisted schedule row.
+- No tests or builds were run, per the user's instruction. Full service, Kafka,
+  settlement and cash-ledger runtime verification remains outstanding.

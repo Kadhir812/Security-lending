@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 public interface OrganizationRepository
     extends JpaRepository<Organization, Long>, JpaSpecificationExecutor<Organization> {
@@ -43,4 +44,42 @@ public interface OrganizationRepository
         )
       """)
   Page<Organization> findVisible(Long custodian, Pageable pageable);
+
+  @Query(
+      value =
+          """
+          select organization
+          from Organization organization
+          where organization.organizationType =
+              com.hexaware.custodian_service.enums.OrganizationType.BORROWER
+            and (
+              organization.registeredByCustodianId = :custodian
+              or exists (
+                select agreement.mslaId
+                from MslaAgreement agreement, LenderMandate mandate
+                where agreement.mandateId = mandate.mandateId
+                  and agreement.borrowerOrgId = organization.organizationId
+                  and mandate.custodianOrgId = :custodian
+              )
+            )
+          """,
+      countQuery =
+          """
+          select count(organization)
+          from Organization organization
+          where organization.organizationType =
+              com.hexaware.custodian_service.enums.OrganizationType.BORROWER
+            and (
+              organization.registeredByCustodianId = :custodian
+              or exists (
+                select agreement.mslaId
+                from MslaAgreement agreement, LenderMandate mandate
+                where agreement.mandateId = mandate.mandateId
+                  and agreement.borrowerOrgId = organization.organizationId
+                  and mandate.custodianOrgId = :custodian
+              )
+            )
+          """)
+  Page<Organization> findVisibleBorrowers(
+      @Param("custodian") Long custodian, Pageable pageable);
 }

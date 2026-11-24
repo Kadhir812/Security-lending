@@ -45,6 +45,7 @@ import com.hexaware.custodian_service.security.authorization.SetupAccess;
 import com.hexaware.custodian_service.service.collateral.FinalCollateralReleaseService;
 import com.hexaware.custodian_service.service.collateral.FinalCollateralReleaseEvents;
 import com.hexaware.custodian_service.service.collateral.ContractClosureService;
+import com.hexaware.custodian_service.service.cash.LenderCashLedgerService;
 import com.hexaware.custodian_service.service.fees.LendingFeeAccrualService;
 import com.hexaware.custodian_service.service.messaging.OutgoingEventService;
 import java.math.BigDecimal;
@@ -89,6 +90,7 @@ class FinalCollateralReleaseServiceTest {
   @Mock private MessagingProperties messaging;
   @Mock private LendingFeeAccrualService accruals;
   @Mock private OutgoingEventService outgoing;
+  @Mock private LenderCashLedgerService cashLedger;
   @Mock private Authentication authentication;
   @Mock private LocalUserAuthentication user;
 
@@ -128,6 +130,7 @@ class FinalCollateralReleaseServiceTest {
             messaging,
             events,
             closure,
+            cashLedger,
             clock);
     contract = LoanContract.builder()
         .contractId(20L)

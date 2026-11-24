@@ -107,6 +107,8 @@ public class LoanApprovalFixMessageBuilder {
     message.setString(9134, required(event.getEventId(), "event ID"));
     message.setString(
         9135, instant(decisionPayload.get("respondedAt"), "respondedAt").toString());
+    message.setString(
+        9136, decimal(contract.get("agreedAnnualRebatePct"), "agreedAnnualRebatePct"));
 
     String wireMessage = message.toString();
     validate(event, wireMessage);

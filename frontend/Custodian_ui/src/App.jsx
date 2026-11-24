@@ -3,10 +3,14 @@ import Shell from './layouts/Shell'
 import Dashboard from './pages/Dashboard'
 import ResourcePage from './pages/ResourcePage'
 import Contracts from './pages/Contracts'
-import { RequestQueue, RequestReview } from './pages/Requests'
+import { RequestReview } from './pages/Requests'
 import { AuditPage, OperationsPage } from './pages/Operations'
 import { CollateralInquiries, ReleaseQueue } from './pages/MiscPages'
-import LocateQueue from './pages/LocateQueue'
+import LendingQueue from './pages/LendingQueue'
+import Borrowers from './pages/Borrowers'
+import Securities from './pages/Securities'
+import LenderCash from './pages/LenderCash'
+import Calculations from './pages/Calculations'
 import AuthPage from './pages/AuthPage'
 import { useApp } from './hooks/useApp'
 /** App: all Custodian-only views are routed; no Borrower operations are exposed. */
@@ -16,13 +20,16 @@ export default function App(){
     <Route path="auth" element={<AuthPage/>}/>
     <Route element={token?<Shell/>:<Navigate replace to="/auth"/>}>
       <Route index element={<Dashboard/>}/>
-      <Route path="requests" element={<RequestQueue/>}/>
-      <Route path="locate-requests" element={<LocateQueue/>}/>
+      <Route path="requests" element={<LendingQueue/>}/>
+      <Route path="locate-requests" element={<Navigate replace to="/requests"/>}/>
       <Route path="requests/review" element={<RequestReview/>}/>
       <Route path="requests/review/:reference" element={<RequestReview/>}/>
       <Route path="organizations" element={<ResourcePage name="organizations"/>}/>
-      <Route path="mandates" element={<ResourcePage name="mandates"/>}/>
+      <Route path="borrowers" element={<Borrowers/>}/>
+      <Route path="mandates" element={<Navigate replace to="/mslas"/>}/>
       <Route path="inventory" element={<ResourcePage name="inventory"/>}/>
+      <Route path="securities" element={<Securities/>}/>
+      <Route path="lender-cash" element={<LenderCash/>}/>
       <Route path="mslas" element={<ResourcePage name="mslas"/>}/>
       <Route path="credit-limits" element={<ResourcePage name="credit"/>}/>
       <Route path="haircuts" element={<ResourcePage name="haircuts"/>}/>
@@ -32,6 +39,7 @@ export default function App(){
       <Route path="margin" element={<OperationsPage kind="margin"/>}/>
       <Route path="recalls" element={<OperationsPage kind="recalls"/>}/>
       <Route path="payments" element={<OperationsPage kind="payments"/>}/>
+      <Route path="calculations" element={<Calculations/>}/>
       <Route path="release-queue" element={<ReleaseQueue/>}/>
       <Route path="close" element={<OperationsPage kind="close"/>}/>
       <Route path="audit" element={<AuditPage/>}/>

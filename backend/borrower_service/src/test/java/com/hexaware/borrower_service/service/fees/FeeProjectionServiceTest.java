@@ -10,6 +10,7 @@ import com.hexaware.borrower_service.entity.LoanRequest;
 import com.hexaware.borrower_service.kafka.event.EventEnvelope;
 import com.hexaware.borrower_service.repository.LoanContractViewRepository;
 import com.hexaware.borrower_service.repository.LoanRequestRepository;
+import com.hexaware.borrower_service.service.cash.BorrowerCashAccountService;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -56,6 +57,7 @@ class FeeProjectionServiceTest {
             .build();
     LoanContractViewRepository views = mock(LoanContractViewRepository.class);
     LoanRequestRepository requests = mock(LoanRequestRepository.class);
+    BorrowerCashAccountService cashAccounts = mock(BorrowerCashAccountService.class);
     when(views.findByTransactionReference(TRANSACTION_REFERENCE))
         .thenReturn(Optional.of(view));
     when(requests.findByRequestReference("REQ-TEST")).thenReturn(Optional.of(request));
@@ -63,6 +65,7 @@ class FeeProjectionServiceTest {
         new FeeProjectionService(
             views,
             requests,
+            cashAccounts,
             Clock.fixed(Instant.parse("2026-11-16T06:00:00Z"), ZoneOffset.UTC));
 
     assertDoesNotThrow(

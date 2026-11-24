@@ -42,6 +42,7 @@ export function EligibleMslaPage() {
                 { key: 'lenderOrganizationReference', label: 'Lender' },
                 { key: 'custodianOrganizationReference', label: 'Custodian' },
                 { key: 'baseCurrency', label: 'Currency' },
+                { key: 'annualRebatePct', label: 'Annual rebate %' },
                 { key: 'effectiveDate', label: 'Effective' },
                 { key: 'expiryDate', label: 'Expiry' },
                 { key: 'allowedAssetTypes', label: 'Allowed assets', render: value => (value || []).join(', ') || '—' },

@@ -28,6 +28,7 @@ import com.hexaware.custodian_service.repository.OrganizationRepository;
 import com.hexaware.custodian_service.repository.SettlementInstructionRepository;
 import com.hexaware.custodian_service.security.authorization.SetupAccess;
 import com.hexaware.custodian_service.service.cash.LenderCashLedgerService;
+import com.hexaware.custodian_service.service.fees.RebateAccrualService;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
@@ -62,6 +63,7 @@ public class FinalCollateralReleaseService {
   private final MessagingProperties messaging;
   private final FinalCollateralReleaseEvents events;
   private final ContractClosureService closure;
+  private final RebateAccrualService rebates;
   private final LenderCashLedgerService cashLedger;
   private final Clock clock;
 
@@ -264,6 +266,13 @@ public class FinalCollateralReleaseService {
     Collateral collateral = lockedCollateral(contract, instruction);
     FinalCollateralReleaseRules.validateReleaseInstruction(
         instruction, contract, collateral, parties, instruction.getAmount());
+    boolean rebateAlreadyPaid = settlements.findByContractId(contract.getContractId()).stream()
+        .anyMatch(row -> "COLLATERAL_RELEASE".equals(row.getInstructionType())
+            && row.getStatus() == SettlementInstructionStatus.SETTLED);
+    BigDecimal rebateAmount = rebateAlreadyPaid
+        ? BigDecimal.ZERO.setScale(2)
+        : rebates.accrueThroughLastCompletedDay(contract);
+    instruction.setRebateAmount(rebateAmount);
     BigDecimal released = FinalCollateralReleaseRules.nvl(collateral.getReleasedCashAmount()).add(instruction.getAmount());
     if (released.compareTo(collateral.getPostedCashAmount()) > 0) {
       throw SetupException.conflict("Payout would release more CASH than confirmed collateral");
@@ -281,6 +290,10 @@ public class FinalCollateralReleaseService {
         instruction.getAmount(), instruction.getInstructionReference());
     String releaseReference =
         FinalCollateralReleaseRules.releaseReference(instruction.getInstructionReference());
+    if (rebateAmount.signum() > 0) {
+      cashLedger.payRebate(parties.lenderId(), instruction.getCurrency(), rebateAmount,
+          releaseReference + ":REBATE");
+    }
     events.publishReleaseUpdate(
         contract,
         instruction,
@@ -518,7 +531,9 @@ public class FinalCollateralReleaseService {
     Map<String, Object> result = new LinkedHashMap<>();
     result.put("instructionReference", instruction.getInstructionReference());
     result.put("releaseReference", releaseReference);
-    result.put("amount", instruction.getAmount());
+    result.put("collateralAmount", instruction.getAmount());
+    result.put("rebateAmount", instruction.getRebateAmount());
+    result.put("amount", instruction.getAmount().add(instruction.getRebateAmount()));
     result.put("currency", instruction.getCurrency());
     result.put("status", instruction.getStatus().name());
     result.put("settledAt", instruction.getSettledAt());

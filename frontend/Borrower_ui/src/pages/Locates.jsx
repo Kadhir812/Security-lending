@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { ArrowRight, Plus, RefreshCw, Search } from 'lucide-react'
 import { ApiState, Button, DataTable, DetailGrid, EmptyState, Field, KpiStrip, PageHeading, Panel, StatusBadge } from '../components/UI'
 import { FormMessage, LiveGate, ResourceBody, WorkPage } from '../components/Work'
@@ -63,9 +63,10 @@ export function LocatesPage() {
 export function NewLocatePage() {
   const { mode, notify } = useApp()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const mslaQuery = useRemote(() => loans.eligible(), [], { enabled: mode === 'live' })
   const securityQuery = useRemote(() => securities.active(), [], { enabled: mode === 'live' })
-  const [form, setForm] = useState({ mslaReference: '', securityIsin: '', quantity: '' })
+  const [form, setForm] = useState(() => ({ mslaReference: '', securityIsin: searchParams.get('isin') || '', quantity: '' }))
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const key = useRef(newReference('LOC'))

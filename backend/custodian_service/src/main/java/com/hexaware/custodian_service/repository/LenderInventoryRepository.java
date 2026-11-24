@@ -15,8 +15,6 @@ public interface LenderInventoryRepository extends JpaRepository<LenderInventory
   Optional<LenderInventory> findByOrganizationIdAndSecurityIsin(
       Long organizationId, String securityIsin);
 
-  boolean existsByOrganizationIdAndSecurityIsin(Long organizationId, String securityIsin);
-
   @Lock(LockModeType.PESSIMISTIC_WRITE)
   @Query(
       """
@@ -26,6 +24,8 @@ public interface LenderInventoryRepository extends JpaRepository<LenderInventory
         and inventory.securityIsin = :securityIsin
       """)
   Optional<LenderInventory> findLocked(Long organizationId, String securityIsin);
+
+  boolean existsByOrganizationIdAndSecurityIsin(Long organizationId, String securityIsin);
 
   @Query(
       value = """

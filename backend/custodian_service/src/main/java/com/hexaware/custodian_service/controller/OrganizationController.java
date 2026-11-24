@@ -23,6 +23,20 @@ public class OrganizationController {
 
   private final OrganizationService service;
 
+  @GetMapping("/borrowers")
+  public PageResponse<OrganizationResponse> listBorrowers(
+      Authentication authentication,
+      @RequestParam(defaultValue = "0") int page,
+      @RequestParam(defaultValue = "20") int size) {
+    return service.listBorrowers(authentication, page, size);
+  }
+
+  @GetMapping("/borrowers/{reference}/active-msla-count")
+  public long countActiveBorrowerMslas(
+      Authentication authentication, @PathVariable String reference) {
+    return service.countActiveBorrowerMslas(authentication, reference);
+  }
+
   @PostMapping
   public OrganizationResponse create(
       Authentication authentication, @Valid @RequestBody OrganizationRequest request) {

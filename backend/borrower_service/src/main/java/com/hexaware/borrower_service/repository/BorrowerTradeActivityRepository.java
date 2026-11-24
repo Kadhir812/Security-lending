@@ -16,4 +16,7 @@ public interface BorrowerTradeActivityRepository extends JpaRepository<BorrowerT
 
   List<BorrowerTradeActivity> findByBorrowerOrganizationReferenceOrderByTradeIdDesc(
       String borrowerOrganizationReference);
+
+  List<BorrowerTradeActivity> findByBorrowerOrganizationReferenceOrderByTradeIdAsc(
+      String borrowerOrganizationReference);
 }

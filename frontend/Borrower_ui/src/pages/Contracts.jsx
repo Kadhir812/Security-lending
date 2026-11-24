@@ -21,6 +21,7 @@ const SNAPSHOT_FIELDS = [
   'requiredCashCollateral',
   'confirmedCashCollateral',
   'feeRate',
+  'agreedAnnualRebatePct',
   'settlementDate',
   'loanStartDate',
   'maturityDate',
@@ -80,6 +81,12 @@ export function ContractDetailPage() {
   const query = useRemote(() => loans.contract(requestReference), [requestReference], { enabled: mode === 'live' })
   const projection = query.data
   const snapshot = projection?.contractSnapshot
+  const transactionReference = projection?.transactionReference
+  const settlementQ = useRemote(() => contracts.settlement(transactionReference), [transactionReference], { enabled: mode === 'live' && !!transactionReference })
+  const returnsQ = useRemote(() => contracts.returnProgress(transactionReference), [transactionReference], { enabled: mode === 'live' && !!transactionReference })
+  const chargesQ = useRemote(() => contracts.charges(transactionReference), [transactionReference], { enabled: mode === 'live' && !!transactionReference })
+  const paymentsQ = useRemote(() => contracts.payments(transactionReference), [transactionReference], { enabled: mode === 'live' && !!transactionReference })
+  const releasesQ = useRemote(() => contracts.releases(transactionReference), [transactionReference], { enabled: mode === 'live' && !!transactionReference })
 
   return (
     <WorkPage
@@ -118,6 +125,84 @@ export function ContractDetailPage() {
           </ResourceBody>
         </Panel>
         {snapshot && <div className="dashboard-lifecycle contract-lifecycle"><Lifecycle current={snapshot.contractStatus || 'UNKNOWN'} /></div>}
+        {transactionReference && <>
+          <Panel title="Settlement and collateral activity" icon={Banknote} actions={<Refresh onClick={settlementQ.reload} />}>
+            <ResourceBody query={settlementQ}>
+              <DetailGrid data={settlementQ.data} fields={['contractStatus','deliveredQuantity','returnedQuantity','outstandingQuantity','requiredCashCollateral','confirmedCashCollateral']} />
+              <h3 className="subsection-title">Securities settlement</h3>
+              <DataTable rows={settlementQ.data?.settlementInstructions || []} columns={[
+                { key: 'instructionReference', label: 'Instruction' }, { key: 'instructionType', label: 'Type' },
+                { key: 'quantity', label: 'Quantity', render: number }, { key: 'status', label: 'Status' },
+                { key: 'confirmedAt', label: 'Confirmed', render: stamp },
+              ]} emptyLabel="No securities settlement instructions were returned." />
+              <h3 className="subsection-title">CASH collateral</h3>
+              <DataTable rows={settlementQ.data?.collateralInstructions || []} columns={[
+                { key: 'instructionReference', label: 'Instruction' }, { key: 'amount', label: 'Amount', render: value => money(value, snapshot.settlementCurrency) },
+                { key: 'currency', label: 'CCY' }, { key: 'status', label: 'Status' }, { key: 'confirmedAt', label: 'Confirmed', render: stamp },
+              ]} emptyLabel="No collateral instructions were returned." />
+            </ResourceBody>
+          </Panel>
+          <Panel title="MTM and margin calls" icon={ShieldCheck}>
+            <DataTable rows={snapshot.marginCalls || []} columns={[
+              { key: 'marginCallReference', label: 'Call reference' }, { key: 'requiredCollateral', label: 'Required', render: value => money(value, snapshot.settlementCurrency) },
+              { key: 'currentCollateral', label: 'Current', render: value => money(value, snapshot.settlementCurrency) },
+              { key: 'outstandingAmount', label: 'Outstanding', render: value => money(value, snapshot.settlementCurrency) },
+              { key: 'dueAt', label: 'Due', render: stamp }, { key: 'status', label: 'Status' },
+            ]} emptyLabel="No MTM margin calls are present in the contract projection." />
+            <p className="field-hint">The Custodian owns MTM runs and call creation. Borrower top-up instructions remain available from the Margin Calls module.</p>
+          </Panel>
+          <Panel title="Returns and recall notices" icon={Clock3} actions={<Refresh onClick={returnsQ.reload} />}>
+            <ResourceBody query={returnsQ}>
+              <h3 className="subsection-title">Custodian recalls</h3>
+              <DataTable rows={returnsQ.data?.recalls || []} columns={[
+                { key: 'recallReference', label: 'Recall' }, { key: 'requestedQuantity', label: 'Requested', render: number },
+                { key: 'returnedQuantity', label: 'Returned', render: number }, { key: 'dueAt', label: 'Due', render: stamp }, { key: 'status', label: 'Status' },
+              ]} emptyLabel="No recall notices were returned." />
+              <h3 className="subsection-title">Return instructions</h3>
+              <DataTable rows={returnsQ.data?.returns || []} columns={[
+                { key: 'instructionReference', label: 'Instruction' }, { key: 'recallReference', label: 'Recall' },
+                { key: 'quantity', label: 'Quantity', render: number }, { key: 'submittedAt', label: 'Submitted', render: stamp }, { key: 'status', label: 'Status' },
+              ]} emptyLabel="No return instructions were returned." />
+            </ResourceBody>
+          </Panel>
+          <Panel title="Lending fee calculations, accrued rebates and payments" icon={FileText}>
+            <h3 className="subsection-title">Accrued daily cash collateral rebate</h3>
+            <DataTable rows={snapshot.rebateCharges || []} columns={[
+              { key: 'accrualDate', label: 'Accrual date' }, { key: 'settledCashCollateral', label: 'Settled cash collateral', render: value => money(value, snapshot.settlementCurrency) },
+              { key: 'annualRebatePercentage', label: 'Annual rebate %' }, { key: 'grossAmount', label: 'Calculated', render: value => money(value, snapshot.settlementCurrency) },
+              { key: 'amount', label: 'Accrual adjustment', render: value => money(value, snapshot.settlementCurrency) }, { key: 'status', label: 'Status' },
+            ]} emptyLabel="No rebate credits have been projected for this contract." />
+            <ResourceBody query={chargesQ}>
+              <h3 className="subsection-title">Daily lending-fee charges</h3>
+              <DataTable rows={chargesQ.data || []} columns={[
+                { key: 'itemKey', label: 'Accrual date' }, { key: 'amount', label: 'Calculated', render: value => money(value, snapshot.settlementCurrency) },
+                { key: 'paidAmount', label: 'Paid', render: value => money(value, snapshot.settlementCurrency) },
+                { key: 'availableAmount', label: 'Due', render: value => money(value, snapshot.settlementCurrency) }, { key: 'status', label: 'Status' },
+              ]} emptyLabel="No fee charges were returned." />
+            </ResourceBody>
+            <ResourceBody query={paymentsQ}>
+              <h3 className="subsection-title">Payment instructions</h3>
+              <DataTable rows={paymentsQ.data || []} columns={[
+                { key: 'paymentReference', label: 'Payment' }, { key: 'amount', label: 'Amount', render: value => money(value, snapshot.settlementCurrency) },
+                { key: 'currency', label: 'CCY' }, { key: 'status', label: 'Status' }, { key: 'submittedAt', label: 'Submitted', render: stamp },
+              ]} emptyLabel="No payment instructions were returned." />
+            </ResourceBody>
+          </Panel>
+          <Panel title="Final collateral and accumulated rebate release" icon={Banknote} actions={<Refresh onClick={() => { releasesQ.reload(); settlementQ.reload() }} />}>
+            <h3 className="subsection-title">Confirmed settlement instructions and final cash payout</h3>
+            <DataTable rows={settlementQ.data?.collateralReleaseInstructions || []} columns={[
+              { key: 'instructionReference', label: 'Instruction' }, { key: 'collateralAmount', label: 'Collateral', render: value => money(value, snapshot.settlementCurrency) },
+              { key: 'rebateAmount', label: 'Accumulated rebate', render: value => money(value, snapshot.settlementCurrency) },
+              { key: 'amount', label: 'Total cash returned', render: value => money(value, snapshot.settlementCurrency) }, { key: 'status', label: 'Status' },
+            ]} emptyLabel="No collateral return has settled yet." />
+            <ResourceBody query={releasesQ}>
+              <DataTable rows={releasesQ.data || []} columns={[
+                { key: 'releaseReference', label: 'Release' }, { key: 'amount', label: 'Amount', render: value => money(value, snapshot.settlementCurrency) },
+                { key: 'currency', label: 'CCY' }, { key: 'status', label: 'Status' }, { key: 'submittedAt', label: 'Submitted', render: stamp },
+              ]} emptyLabel="No final collateral release requests were returned." />
+            </ResourceBody>
+          </Panel>
+        </>}
       </LiveGate>
     </WorkPage>
   )

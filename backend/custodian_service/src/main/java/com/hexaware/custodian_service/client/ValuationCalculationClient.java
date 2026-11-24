@@ -115,6 +115,47 @@ public class ValuationCalculationClient {
     }
   }
 
+  public RebateCalculationResponse calculateRebate(
+      RebateCalculationRequest request, String bearerToken) {
+    try {
+      var response = builder.baseUrl(baseUrl).build().post()
+          .uri("/api/calculations/rebate")
+          .header(HttpHeaders.AUTHORIZATION, "Bearer " + bearerToken)
+          .body(request)
+          .retrieve()
+          .body(RebateCalculationResponse.class);
+      if (response == null) throw SetupException.unavailable("Valuation service returned an empty rebate result");
+      return response;
+    } catch (RestClientResponseException exception) {
+      if (exception.getStatusCode().value() == HttpStatus.UNPROCESSABLE_ENTITY.value()) {
+        throw SetupException.conflict("Rebate calculation inputs are not eligible");
+      }
+      throw SetupException.unavailable("Valuation service could not process rebate calculation");
+    } catch (RestClientException exception) {
+      throw SetupException.unavailable("Valuation service is unavailable");
+    }
+  }
+
+  public List<RebateCalculationResponse> rebateResults(
+      String transactionReference, String custodianOrganizationReference,
+      LocalDate from, LocalDate to, String bearerToken) {
+    try {
+      List<RebateCalculationResponse> response = builder.baseUrl(baseUrl).build().get()
+          .uri(uri -> uri.path("/api/calculations/rebate")
+              .queryParam("transactionReference", transactionReference)
+              .queryParam("custodianOrganizationReference", custodianOrganizationReference)
+              .queryParam("from", from).queryParam("to", to).build())
+          .header(HttpHeaders.AUTHORIZATION, "Bearer " + bearerToken)
+          .retrieve()
+          .body(new ParameterizedTypeReference<>() {});
+      return response == null ? List.of() : response;
+    } catch (RestClientResponseException exception) {
+      throw SetupException.unavailable("Valuation service could not list rebate results");
+    } catch (RestClientException exception) {
+      throw SetupException.unavailable("Valuation service is unavailable");
+    }
+  }
+
   public List<LendingFeeCalculationResponse> lendingFeeResults(
       String transactionReference,
       String custodianOrganizationReference,

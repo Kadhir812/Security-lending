@@ -9,6 +9,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Clock;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -49,6 +50,28 @@ public class LenderCashLedgerService {
         "Confirmed lending fee payment received");
   }
 
+  @Transactional
+  public void payRebate(Long lenderOrganizationId, String currency,
+      BigDecimal rebateAdjustment, String resultReference) {
+    if (rebateAdjustment == null || rebateAdjustment.signum() == 0 || rebateAdjustment.scale() > 2
+        || resultReference == null || resultReference.isBlank()) {
+      throw SetupException.invalid("Rebate adjustment and result reference are invalid");
+    }
+    LenderCashAccount account = lockAccount(lenderOrganizationId, currency);
+    BigDecimal cashDelta = rebateAdjustment.negate();
+    if (cashDelta.signum() < 0
+        && account.getCashBalance().subtract(account.getRestrictedBalance())
+            .compareTo(cashDelta.negate()) < 0) {
+      throw SetupException.conflict("Rebate payout exceeds available lender cash");
+    }
+    boolean payout = rebateAdjustment.signum() > 0;
+    post(account, payout ? "REBATE_PAID" : "REVERSAL", payout ? "REBATE" : "REVERSAL",
+        resultReference, "REBATE-SETTLE:" + resultReference, cashDelta,
+        BigDecimal.ZERO.setScale(2), payout
+            ? "Daily cash-collateral rebate paid to Borrower"
+            : "Reversed prior cash-collateral rebate accrual");
+  }
+
   @Transactional(readOnly = true)
   public Map<String, Object> balance(Long lenderOrganizationId, String currency) {
     LenderCashAccount account = accounts.findByOrganizationIdAndCurrency(lenderOrganizationId, currency)
@@ -64,6 +87,39 @@ public class LenderCashLedgerService {
     return result;
   }
 
+  @Transactional(readOnly = true)
+  public List<LenderCashTransaction> history(Long lenderOrganizationId, String currency) {
+    var account = accounts.findByOrganizationIdAndCurrency(lenderOrganizationId, currency)
+        .orElse(null);
+    if (account == null) return List.of();
+    return transactions.findTop100ByCashAccountIdOrderByCreatedAtDescCashTransactionIdDesc(
+        account.getCashAccountId());
+  }
+
+  @Transactional
+  public void recordExternalMovement(Long lenderOrganizationId, String currency,
+      BigDecimal amount, boolean deposit, String externalReference, String idempotencyKey,
+      String description, Long userId) {
+    if (amount == null || amount.signum() <= 0 || amount.scale() > 2) {
+      throw SetupException.invalid("Amount must be positive and use at most two decimal places");
+    }
+    String external = externalReference == null ? "" : externalReference.strip();
+    String key = idempotencyKey == null ? "" : idempotencyKey.strip();
+    if (external.isEmpty() || external.length() > 100 || key.isEmpty() || key.length() > 100) {
+      throw SetupException.invalid("External reference and Idempotency-Key are required");
+    }
+    LenderCashAccount account = lockAccount(lenderOrganizationId, currency);
+    BigDecimal delta = deposit ? amount : amount.negate();
+    if (!deposit && account.getCashBalance().subtract(account.getRestrictedBalance()).compareTo(amount) < 0) {
+      throw SetupException.conflict("Withdrawal exceeds available lender cash");
+    }
+    post(account, deposit ? "DEPOSIT" : "WITHDRAWAL", "MANUAL",
+        external, key, delta, BigDecimal.ZERO.setScale(2),
+        description == null || description.isBlank()
+            ? (deposit ? "Externally confirmed lender cash deposit" : "Externally confirmed lender cash withdrawal")
+            : description.strip(), userId);
+  }
+
   private LenderCashAccount lockAccount(Long organizationId, String currency) {
     if (organizationId == null || currency == null || !currency.matches("[A-Z]{3}")) {
       throw SetupException.conflict("Lender cash account identity is invalid");
@@ -76,6 +132,12 @@ public class LenderCashLedgerService {
   private void post(LenderCashAccount account, String type, String sourceType,
       String sourceReference, String key, BigDecimal cashDelta, BigDecimal restrictedDelta,
       String description) {
+    post(account, type, sourceType, sourceReference, key, cashDelta, restrictedDelta, description, null);
+  }
+
+  private void post(LenderCashAccount account, String type, String sourceType,
+      String sourceReference, String key, BigDecimal cashDelta, BigDecimal restrictedDelta,
+      String description, Long userId) {
     var existing = transactions.findByCashAccountIdAndIdempotencyKey(
         account.getCashAccountId(), key).orElse(null);
     if (existing != null) {
@@ -110,6 +172,7 @@ public class LenderCashLedgerService {
         .cashBalanceAfter(nextCash)
         .restrictedBalanceAfter(nextRestricted)
         .description(description)
+        .createdByUserId(userId)
         .createdAt(clock.instant())
         .build());
   }

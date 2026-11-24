@@ -10,6 +10,8 @@ import org.springframework.data.jpa.repository.Query;
 public interface InventoryReservationRepository extends JpaRepository<InventoryReservation, Long> {
   Optional<InventoryReservation> findByContractId(Long contractId);
 
+  boolean existsByInventoryId(Long inventoryId);
+
   @Lock(LockModeType.PESSIMISTIC_WRITE)
   @Query("select r from InventoryReservation r where r.contractId = :contractId")
   Optional<InventoryReservation> findLockedByContractId(Long contractId);

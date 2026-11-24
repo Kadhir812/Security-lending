@@ -79,7 +79,9 @@ public class InitialSettlementService {
           row.put("instructionType", instruction.getInstructionType());
           row.put("status", instruction.getStatus().name());
           row.put("currency", instruction.getCurrency());
-          row.put("amount", instruction.getAmount());
+          row.put("collateralAmount", instruction.getAmount());
+          row.put("rebateAmount", instruction.getRebateAmount());
+          row.put("amount", instruction.getAmount().add(instruction.getRebateAmount()));
           row.put("securityIsin", instruction.getSecurityIsin());
           row.put("quantity", instruction.getQuantity());
           row.put("settlementDate", instruction.getSettlementDate());
@@ -103,6 +105,9 @@ public class InitialSettlementService {
     response.put("lenderRestrictedBalance", lenderCash.get("restrictedBalance"));
     response.put("lenderAvailableBalance", lenderCash.get("availableBalance"));
     response.put("collateralInstructions", collateralRows);
+    response.put("collateralReleaseInstructions", settlementRows.stream()
+        .filter(row -> "COLLATERAL_RELEASE".equals(row.get("instructionType")))
+        .toList());
     response.put("settlementInstructions", settlementRows);
     return response;
   }

@@ -14,10 +14,10 @@ Custodian API base URL: `http://localhost:8081`
 ## End-to-end lifecycle
 
 ```text
-Configure organizations, lender mandate, inventory, and MSLA
+Configure organizations, lender inventory, and MSLA & Lending Setup
         |
         v
-Set credit limit, collateral haircut, and lending fee rules
+Create or reuse the active mandate, then create the MSLA, credit limit, CASH haircut, and fee schedule together
         |
         v
 Borrower locate (API not available yet) and loan request
@@ -51,12 +51,12 @@ downstream workflow.
 | Stage | Custodian input/action | API and key fields |
 |---|---|---|
 | Organization | Create/update organization reference, name, type, status; use the returned/current version on updates where applicable. | `POST /api/organizations`, `PUT /api/organizations/{reference}`. |
-| Lender mandate | Reference, lender organization, effective dates, status, version. The Custodian organization comes from the authenticated identity. | `POST /api/mandates`, `PUT /api/mandates/{reference}`. |
+| MSLA & Lending Setup | Lender and Borrower, either a new mandate or an existing active mandate, agreement dates and terms, credit limit and reason, and annual fee. The Custodian organization comes from the authenticated identity. The backend creates/reuses an ACTIVE mandate and atomically creates the ACTIVE MSLA, credit limit, zero-percent CASH haircut, and agreement-wide fee schedule. | `POST /api/mslas/setup`. Existing mandate management APIs remain available for legacy records. |
 | Inventory | Lender organization, security ISIN, total quantity; updates include the current version. | `POST /api/inventory`, `PUT /api/inventory/{lenderReference}/{securityIsin}`. |
-| MSLA | MSLA and mandate references, Borrower organization, effective/expiry dates, status, base currency, eligible security types, collateral type and coverage, MTM interval, margin window, recall rule, calendar code. | `POST /api/mslas`, `PUT /api/mslas/{reference}`. |
-| Credit limit | Limit amount and reason; updates also provide status and current version. | `POST /api/credit-limits/{mslaReference}`, `PUT /api/credit-limits/{mslaReference}`. |
-| Haircut | Collateral type, currency, haircut percentage, effective period, version on update. | `POST/PUT /api/mslas/{mslaReference}/collateral-haircuts[/{haircutId}]`. |
-| Lending fee | Optional security ISIN, annual fee percentage, effective period, status, version. | `POST/PUT /api/mslas/{mslaReference}/lending-fees[/{feeId}]`. |
+| MSLA | For new agreements, use the combined setup above. Existing draft agreements remain accessible through the MSLA API. | `GET /api/mslas`, `GET /api/mslas/{reference}`, existing `POST /api/mslas` and `PUT /api/mslas/{reference}`. |
+| Credit limit | Created in the combined setup; later changes require a reason and current version. | `POST /api/credit-limits/{mslaReference}`, `PUT /api/credit-limits/{mslaReference}`. |
+| Haircut | New CASH agreements receive a dated 0% haircut. Other supported collateral types remain outside this phase. | `POST/PUT /api/mslas/{mslaReference}/collateral-haircuts[/{haircutId}]`. |
+| Lending fee | New agreements receive one active agreement-wide annual fee schedule; later security-specific schedules remain configurable. | `POST/PUT /api/mslas/{mslaReference}/lending-fees[/{feeId}]`. |
 | Loan decision | Review request details; approve with no invented valuation fields, or reject with a reason. | `POST /api/loan-requests/{requestReference}/approve`; reject body is `{ "reason": "..." }`. |
 | Simulated settlement | For local demos only: instruction reference and external confirmation reference; failure actions also require a reason. | Explicit `/simulated-confirm` and `/simulated-fail` endpoints. These are demo controls, not production settlement evidence. |
 | MTM | Trigger MTM with an `Idempotency-Key`, or request evaluation. | `POST .../margin-calls/mtm`, `POST .../margin-calls/evaluate`. |
@@ -81,36 +81,43 @@ scope. Inputs: organization reference, display name, organization type, and
 status. Never allow the user to select or change the owning Custodian identity
 unless the backend explicitly supports it.
 
-### 3. Mandates
+### 3. Borrower directory
 
-Create and manage lender-Custodian relationships. Select a lender organization
-visible to the Custodian; enter mandate reference, effective dates, status,
-and version for updates.
+List registered Borrower organizations visible to the authenticated Custodian.
+Show organization status and, for a selected Borrower, the number of currently
+active MSLAs scoped to this Custodian. Provide a shortcut to the combined MSLA
+setup form with that Borrower preselected. Do not treat directory visibility
+as proof that an active agreement exists.
 
 ### 4. Lender inventory
 
 Select lender and security; show total, reserved, on-loan, and available
 quantities returned by the service. Create/update total quantity only with
-optimistic version data. Avoid editing derived available/reserved quantities.
+optimistic version data. Remove an inventory row only after explicit
+confirmation; the backend blocks removal while shares are encumbered or
+reservation history references the row. Avoid editing derived quantities.
 
-### 5. MSLA agreements
+### 5. Security Master and market prices
 
-Select a valid mandate and Borrower organization. Capture the agreement
-terms listed above. Display exact returned values; use these terms as the
-Borrower eligibility source rather than duplicating agreement logic in the UI.
+Browse active securities and inspect latest and recent market prices from the
+shared Security Market service. Display quote timestamp and stale status; do
+not calculate valuations or treat an informational quote as approval evidence.
 
-### 6. Credit limits, haircuts, and lending fees
+### 6. MSLA & lending setup
 
-Provide separate agreement-scoped panels for limit and history, collateral
-haircuts, and fee schedules. Include effective dates/status and version
-conflict handling. Do not calculate authoritative credit availability,
-collateral requirements, or effective fee selection client-side.
+Use one form to create a new lender mandate or select a currently active one,
+then set up the Borrower MSLA, credit limit, 0% CASH haircut, and annual fee.
+The setup endpoint commits new records atomically and activates the MSLA
+immediately. Display returned terms and references; do not calculate credit,
+collateral, or fee values in the browser.
 
-### 7. Pending request queue
+### 7. Locate and loan request desk
 
-Use the paginated loan-request endpoint. Show request reference, Borrower,
-MSLA, security, quantity, settlement date/currency, status, and submission
-time from the response. Provide refresh because Kafka delivery is asynchronous.
+Show the paginated loan-request inbox and Custodian-visible pending Locate
+inbox together. Include details on row selection and deliberate approval or
+rejection. Locate approval confirms availability without reserving shares;
+loan approval rechecks and reserves inventory. Provide refresh because Kafka
+delivery is asynchronous.
 
 ### 8. Loan request review
 
@@ -177,17 +184,30 @@ closure reference and reason, then show the returned status. A unified
 audit/activity timeline is useful, but there is no general activity endpoint
 in the current catalog; use only available resource-specific histories.
 
+### 16. Lender cash account
+
+Select an active lender within the current Custodian mandate scope. Show cash,
+restricted collateral, available cash, and recent ledger entries. External
+deposit and withdrawal records require operator confirmation, a source
+reference, and an idempotency key; withdrawals cannot consume restricted
+collateral. This is an operational ledger, not a bank connection.
+
 ## API map
 
 | Use | Method and path |
 |---|---|
 | Service status | `GET /api/foundation/status` |
+| Security Master and prices | `GET /api/reference/securities`; `GET /api/reference/securities/{isin}/prices/latest`; `GET /api/reference/securities/{isin}/prices?from={instant}&to={instant}` |
+| Lender cash account | `GET /api/lenders/{lenderReference}/cash-accounts/{currency}`; append `/transactions`; `POST .../deposits` or `/withdrawals` with `Idempotency-Key` |
 | Loan requests | `GET /api/loan-requests?page=0&size=20`; `GET /api/loan-requests/{requestReference}` |
+| Locate requests | `GET /api/locate-requests`; `POST /api/locate-requests/{reference}/approve`; `POST /api/locate-requests/{reference}/reject` |
+| Collateral inquiry visibility | `GET /api/collateral-inquiries?page=0&size=20` (processed BB records for the authenticated Custodian, with BA outbox publication status) |
 | Loan decisions | `POST /api/loan-requests/{requestReference}/approve`; `POST /api/loan-requests/{requestReference}/reject` |
 | Organizations | `GET/POST /api/organizations`; `GET/PUT /api/organizations/{reference}` |
+| Borrower directory | `GET /api/organizations/borrowers?page=0&size=20`; `GET /api/organizations/borrowers/{reference}/active-msla-count` |
 | Mandates | `GET/POST /api/mandates`; `GET/PUT /api/mandates/{reference}` |
-| Inventory | `GET/POST /api/inventory`; `GET/PUT /api/inventory/{lenderReference}/{securityIsin}` |
-| MSLAs | `GET/POST /api/mslas`; `GET/PUT /api/mslas/{reference}` |
+| Inventory | `GET/POST /api/inventory`; `GET/PUT /api/inventory/{lenderReference}/{securityIsin}`; `DELETE /api/inventory/{lenderReference}/{securityIsin}?version={version}` |
+| MSLAs | `GET /api/mslas`; `POST /api/mslas/setup` for atomic mandate/MSLA/risk/fee setup; legacy `POST /api/mslas` and `PUT /api/mslas/{reference}` remain available. |
 | Credit limits | `GET /api/credit-limits`; `GET/POST/PUT /api/credit-limits/{mslaReference}`; append `/history` for history |
 | Haircuts | `GET/POST /api/mslas/{mslaReference}/collateral-haircuts`; `GET/PUT .../{haircutId}` |
 | Lending fees | `GET/POST /api/mslas/{mslaReference}/lending-fees`; `GET/PUT .../{feeId}`; `/effective?securityIsin=...&businessDate=YYYY-MM-DD` |
@@ -240,7 +260,7 @@ lists are plain arrays; use each endpoint's actual response shape.
 ## Current API gaps
 
 - Locate create/review endpoints are not exposed through REST.
-- There is no Custodian inquiry/report read endpoint for BB/BA visibility.
+- There is no unified active-contract list or unified audit/activity endpoint.
 - There is no general active-contract list or unified audit/activity endpoint.
 - Several settlement confirmation/failure endpoints are explicitly
   simulated demo operations; production external settlement integration is

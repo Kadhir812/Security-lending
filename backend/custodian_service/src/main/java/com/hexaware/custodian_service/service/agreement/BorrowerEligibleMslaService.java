@@ -78,6 +78,7 @@ public class BorrowerEligibleMslaService {
         mandate.getEffectiveTo(),
         mandate.getStatus(),
         agreement.getBaseCurrency(),
+        agreement.getAnnualRebatePct(),
         types,
         eligible);
   }

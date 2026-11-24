@@ -2,6 +2,7 @@ package com.hexaware.borrower_service.repository;
 
 import com.hexaware.borrower_service.entity.LoanRequest;
 import java.util.Optional;
+import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -14,4 +15,7 @@ public interface LoanRequestRepository extends JpaRepository<LoanRequest, Long> 
 
   Page<LoanRequest> findByBorrowerOrganizationReferenceOrderByRequestedAtDesc(
       String borrowerOrganizationReference, Pageable pageable);
+
+  List<LoanRequest> findByBorrowerOrganizationReferenceOrderByRequestedAtDesc(
+      String borrowerOrganizationReference);
 }

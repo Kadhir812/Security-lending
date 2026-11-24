@@ -7,6 +7,7 @@ import com.hexaware.custodian_service.dto.response.PageResponse;
 import com.hexaware.custodian_service.entity.LenderInventory;
 import com.hexaware.custodian_service.exception.SetupException;
 import com.hexaware.custodian_service.repository.LenderInventoryRepository;
+import com.hexaware.custodian_service.repository.InventoryReservationRepository;
 import com.hexaware.custodian_service.repository.OrganizationRepository;
 import com.hexaware.custodian_service.service.setup.LendingSetupAccess;
 import com.hexaware.custodian_service.service.setup.SetupValidation;
@@ -37,6 +38,7 @@ public class LenderInventoryService {
       Pattern.compile("for key '([^']+)'", Pattern.CASE_INSENSITIVE);
 
   private final LenderInventoryRepository inventories;
+  private final InventoryReservationRepository reservations;
   private final OrganizationRepository organizations;
   private final LendingSetupAccess setupAccess;
   private final Clock clock;
@@ -154,6 +156,28 @@ public class LenderInventoryService {
     inventories.flush();
     entityManager.refresh(inventory);
     return response(inventory, lender.getOrganizationReference());
+  }
+
+  @Transactional
+  public void delete(
+      Authentication authentication, String lenderReference, String securityIsin, long version) {
+    var lender = setupAccess.requireLender(authentication, lenderReference, true);
+    String isin = setupAccess.requireSecurity(securityIsin).isin();
+    var inventory =
+        inventories
+            .findLocked(lender.getOrganizationId(), isin)
+            .orElseThrow(() -> SetupException.missing("Inventory not found in your mandate scope"));
+    SetupValidation.version(inventory.getVersion(), version);
+    if (inventory.getOnLoanQuantity() > 0 || inventory.getReservedQuantity() > 0) {
+      throw SetupException.conflict(
+          "Inventory cannot be removed while securities are on loan or reserved");
+    }
+    if (reservations.existsByInventoryId(inventory.getInventoryId())) {
+      throw SetupException.conflict(
+          "Inventory has reservation history; set total quantity to zero to retain its audit trail");
+    }
+    inventories.delete(inventory);
+    inventories.flush();
   }
 
   private boolean isForeignKeyViolation(String constraintName, String sqlState, String message) {

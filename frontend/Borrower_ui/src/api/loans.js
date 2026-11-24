@@ -24,4 +24,5 @@ export const loans = {
       return [{ ...approved[index], ...projection, contractSnapshot: snapshot }]
     })
   },
+  holdings: () => request.get('/holdings'),
 }

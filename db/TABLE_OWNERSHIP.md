@@ -1,10 +1,11 @@
-# 52-table ownership map
+# 53-table ownership map
 
 | Database | Table | Ownership |
 |---|---|---|
 | security_market_db | `security_master` | AUTHORITATIVE LOCAL RECORD |
 | security_market_db | `security_price` | AUTHORITATIVE LOCAL RECORD |
 | custodian_db | `organization` | AUTHORITATIVE LOCAL RECORD |
+| custodian_db | `calculation_schedule_config` | PERSISTED CUSTODIAN ACCRUAL CADENCE AND RUN STATE |
 | custodian_db | `borrower_identity_link` | ONE-TIME IDENTITY-LINK AUDIT / REPLAY PREVENTION |
 | custodian_db | `roles` | AUTHORITATIVE LOCAL RECORD |
 | custodian_db | `message_log` | TECHNICAL |

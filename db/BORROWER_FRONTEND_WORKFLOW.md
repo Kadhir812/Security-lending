@@ -154,8 +154,17 @@ reference in the `Idempotency-Key` header.
     follow-up status.
 13. **Closed contract view** — read-only lifecycle history after Custodian
     closes the contract.
+14. **Holdings** — show backend-projected owned shares, outstanding borrowed
+    quantities, and open short positions by security.
+15. **Trade** — use current Security Master quotes to record authorized buy,
+    sell, short-sale, and buy-to-cover executions against the cash and loan
+    ledgers.
+16. **Cash account** — inspect balances/history and record externally
+    confirmed deposits or withdrawals with idempotency keys.
+17. **Security Master and prices** — browse active securities and current or
+    recent prices, including timestamps and stale status.
 
-Pages 4–13 should be reachable only for resources owned by the authenticated
+Pages 4–17 should be reachable only for resources owned by the authenticated
 Borrower. Backend authorization is authoritative even when the UI hides
 another party's references.
 
@@ -167,6 +176,8 @@ another party's references.
 | Eligible MSLAs | `GET /api/loan-requests/eligible-mslas` |
 | Submit/list/get request | `POST /api/loan-requests`; `GET /api/loan-requests`; `GET /api/loan-requests/{requestReference}` |
 | Contract view | `GET /api/loan-requests/{requestReference}/contract` |
+| Holdings | `GET /api/holdings` |
+| Security Master and prices | `GET /api/reference/securities`; `GET /api/reference/securities/{isin}/prices/latest`; `GET /api/reference/securities/{isin}/prices?from={instant}&to={instant}` |
 | Collateral inquiry/report | `POST /api/loan-requests/{requestReference}/collateral-inquiries`; `GET /api/loan-requests/{requestReference}/collateral-reports` |
 | CASH instruction | `POST /api/loan-requests/{requestReference}/collateral/cash-instructions` |
 | Settlement progress | `GET /api/contracts/{transactionReference}/settlement` |

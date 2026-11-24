@@ -222,7 +222,7 @@ public class LoanDecisionCommitter {
                 .quantity(request.getQuantity())
                 .settlementCurrency(request.getSettlementCurrency())
                 .agreedAnnualFeePct(fee.getAnnualFeePct())
-                .agreedAnnualRebatePct(BigDecimal.ZERO.setScale(6))
+                .agreedAnnualRebatePct(agreement.getAnnualRebatePct())
                 .dayCountBasis("ACT_365")
                 .collateralCoveragePct(agreement.getCollateralCoveragePct())
                 .collateralTerms(collateralTerms)
@@ -543,6 +543,7 @@ public class LoanDecisionCommitter {
     result.put("quantity", contract.getQuantity());
     result.put("settlementCurrency", contract.getSettlementCurrency());
     result.put("agreedAnnualFeePct", contract.getAgreedAnnualFeePct());
+    result.put("agreedAnnualRebatePct", contract.getAgreedAnnualRebatePct());
     result.put("dayCountBasis", contract.getDayCountBasis());
     result.put("collateralCoveragePct", contract.getCollateralCoveragePct());
     result.put("collateralTerms", contract.getCollateralTerms());

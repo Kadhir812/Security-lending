@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { Activity, ArrowDown, ArrowUp, BarChart3, Clock3, RefreshCw, Search, Star, TrendingUp } from 'lucide-react'
 import { Button, ConfirmDialog, DataTable, Field, Panel, StatusBadge } from '../components/UI'
 import { FormMessage, LiveGate, ResourceBody, WorkPage } from '../components/Work'
@@ -53,8 +54,9 @@ function positionsFromActivity(activity = []) {
 
 export default function TradePage() {
   const { mode, notify, refresh } = useApp()
+  const [searchParams] = useSearchParams()
   const [query, setQuery] = useState('')
-  const [selectedIsin, setSelectedIsin] = useState('')
+  const [selectedIsin, setSelectedIsin] = useState(() => searchParams.get('isin') || '')
   const [tradeType, setTradeType] = useState('BUY')
   const [quantity, setQuantity] = useState('')
   const [contractReference, setContractReference] = useState('')
