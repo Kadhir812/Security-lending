@@ -7,6 +7,8 @@ Use a migration administrator on empty databases. Run `00_all_databases.sql` OR 
 
 For existing Borrower databases, apply `migrations/015_borrower_cash_account_and_transaction.sql` to add organization/currency cash accounts and posted cash transaction history. The Borrower service must update the account balance and insert its transaction in the same local transaction. Use `transaction_reference` as a stable unique reference; related lifecycle records are stored as type/reference values, not foreign keys.
 
+For an existing Custodian database whose local foreign keys are missing, first check for orphan rows, then apply `migrations/016_custodian_local_foreign_keys.sql` once. It restores the local constraints declared in `02_custodian_db.sql`; it does not add cross-service foreign keys.
+
 ## Borrower cash accounts
 
 `POST /api/cash-accounts` opens a zero-balance account for the authenticated borrower's organization and a currency, for example `{"currency":"USD"}`. Use `GET /api/cash-accounts` or `GET /api/cash-accounts/{currency}` to read balances, and `GET /api/cash-accounts/{currency}/transactions` to page through posted movements.
