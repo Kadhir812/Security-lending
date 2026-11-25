@@ -1,0 +1,22 @@
+/** Resets and typography — one font family and consistent tabular numbers. */
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--color-shell);color:var(--color-text);font:500 14px/1.35 var(--font-ui);font-variant-numeric:tabular-nums;letter-spacing:-.12px}
+button,input,select,textarea{font:inherit;font-variant-numeric:tabular-nums}
+button{cursor:pointer}
+button:disabled{cursor:not-allowed;opacity:.5}
+a{color:inherit;text-decoration:none}
+a:hover{text-decoration:none}
+h1,h2,h3,h4,p,figure,dl{margin:0}
+h1,h2,h3,h4{font-weight:800;line-height:1.15}
+svg{flex-shrink:0}
+strong,b{font-weight:800}
+:focus-visible{outline:3px solid var(--color-orange);outline-offset:2px}
+::selection{background:#e88c0b;color:#fff}
+.tabular{font-variant-numeric:tabular-nums}
+.muted{color:#77736a;font-size:12px}
+.positive{color:#07642c!important}
+.quote-up{color:#35d66d!important}
+.quote-down{color:#ff655b!important}
+.spin{animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}

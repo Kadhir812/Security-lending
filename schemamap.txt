@@ -1,0 +1,120 @@
+SECURITIES LENDING SCHEMA MAP
+=============================
+
+The schema contains 28 tables. Arrows show foreign-key direction:
+PARENT --> CHILD. A child can have more than one parent.
+
+
+1. IDENTITY AND ACCESS
+
+ORGANIZATION
+  └── USERS
+        └── USER_ROLES ──> ROLES
+
+ROLES
+  └── USER_ROLES
+
+2. SECURITY REFERENCE DATA
+
+SECURITY_MASTER
+  └── SECURITY_PRICE
+
+SECURITY_MASTER is also referenced by:
+  ├── LENDER_INVENTORY
+  ├── LOCATE_REQUEST
+  ├── LOAN_REQUEST
+  ├── LOAN_CONTRACT
+  ├── BORROWER_INVENTORY
+  ├── INVENTORY_MOVEMENT
+  ├── BORROWER_TRADE_ACTIVITY
+  └── LENDING_FEE
+
+3. AGREEMENTS AND COUNTERPARTY CONTROLS
+
+ORGANIZATION (as lender_org_id and borrower_org_id)
+  └── MSLA_AGREEMENT
+        ├── COUNTERPARTY_CREDIT_LIMIT
+        │     └── CREDIT_LIMIT_HISTORY
+        ├── COLLATERAL_HAIRCUT
+        └── LENDING_FEE
+
+USERS
+  ├── CREDIT_LIMIT_HISTORY (changed_by)
+  └── CONTRACT_STATUS_HISTORY (changed_by)
+
+4. INVENTORY, LOCATES, AND LOAN REQUESTS
+
+ORGANIZATION + SECURITY_MASTER
+  └── LENDER_INVENTORY
+
+ORGANIZATION (borrower_id) + SECURITY_MASTER
+  ├── LOCATE_REQUEST
+  └── LOAN_REQUEST
+          └── LOAN_CONTRACT (loan_request_id)
+
+ORGANIZATION (from/to organization) + SECURITY_MASTER
+  └── INVENTORY_MOVEMENT
+
+5. LOAN CONTRACT AND LIFECYCLE
+
+MSLA_AGREEMENT + LOAN_REQUEST + ORGANIZATION
+(lender_org_id and borrower_org_id) + SECURITY_MASTER
+  └── LOAN_CONTRACT
+        ├── BORROWER_INVENTORY
+        ├── CONTRACT_STATUS_HISTORY
+        ├── COLLATERAL
+        │     └── COLLATERAL_VALUATION_HISTORY
+        ├── MARK_TO_MARKET_SNAPSHOT
+        ├── MARGIN_CALL
+        │     └── MARGIN_CALL_TRANSACTION_LOG
+        ├── RECALL_REQUEST
+        ├── SETTLEMENT_INSTRUCTION
+        ├── BORROWER_TRADE_ACTIVITY
+        ├── REBATE_CALCULATION
+        │     └── REBATE_PAYMENT_HISTORY
+        └── (loan contract stores the current loan, collateral,
+             rebate, and lifecycle summary values)
+
+6. COMPLETE TABLE INVENTORY
+
+1.  ORGANIZATION                  Root business entities
+2.  USERS                         Users belonging to organizations
+3.  ROLES                         Role definitions
+4.  USER_ROLES                    User-to-role junction
+5.  SECURITY_MASTER               Tradable security reference data
+6.  SECURITY_PRICE                Security market-price observations
+7.  MSLA_AGREEMENT                Master securities lending agreement
+8.  COUNTERPARTY_CREDIT_LIMIT     Agreement credit-limit summary
+9.  CREDIT_LIMIT_HISTORY           Credit-limit change audit trail
+10. COLLATERAL_HAIRCUT             Agreement collateral haircut rules
+11. LENDER_INVENTORY               Lender available/on-loan holdings
+12. LOCATE_REQUEST                 Borrower security locate workflow
+13. LOAN_REQUEST                   Borrower loan request workflow
+14. LOAN_CONTRACT                  Executed securities loan
+15. BORROWER_INVENTORY             Borrower borrowed holdings
+16. INVENTORY_MOVEMENT              Security delivery/return movements
+17. CONTRACT_STATUS_HISTORY         Contract status audit trail
+18. COLLATERAL                      Collateral posted against a contract
+19. COLLATERAL_VALUATION_HISTORY    Collateral valuation audit trail
+20. MARK_TO_MARKET_SNAPSHOT         Contract valuation snapshots
+21. MARGIN_CALL                     Collateral shortfall workflow
+22. MARGIN_CALL_TRANSACTION_LOG     Margin-call activity log
+23. RECALL_REQUEST                  Contract recall workflow
+24. SETTLEMENT_INSTRUCTION           Delivery, transfer, and return instructions
+25. BORROWER_TRADE_ACTIVITY         Borrower short-sale/cover activity
+26. REBATE_CALCULATION              Contract rebate calculations
+27. REBATE_PAYMENT_HISTORY          Rebate payment audit trail
+28. LENDING_FEE                    Agreement/security fee rules
+
+RELATIONSHIP NOTES
+------------------
+- ORGANIZATION is the main party table. MSLA_AGREEMENT, loan_contract,
+  inventory, request, movement, and trade tables use it in different roles.
+- SECURITY_MASTER is the main security reference table and is shared by
+  pricing, inventory, requests, contracts, movements, trades, and fees.
+- LOAN_CONTRACT is the central transaction table for post-approval processing.
+- Tables ending in HISTORY, SNAPSHOT, LOG, or PAYMENT_HISTORY retain
+  time-based operational/audit records for their parent table.
+- LOCATE_REQUEST, LOAN_REQUEST, and INVENTORY_MOVEMENT are not descendants
+  of LOAN_CONTRACT in the database; they are pre-contract or settlement
+  workflows linked directly to ORGANIZATION and SECURITY_MASTER.

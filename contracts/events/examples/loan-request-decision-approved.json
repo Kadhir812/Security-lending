@@ -1,0 +1,50 @@
+{
+  "eventId": "4ae0746d-2bd8-436d-af77-ae3d3deec376",
+  "eventType": "LOAN_REQUEST_DECISION",
+  "schemaVersion": 1,
+  "producerService": "CUSTODIAN",
+  "destinationService": "BORROWER",
+  "correlationId": "LR-2026-000042",
+  "aggregateReference": "LR-2026-000042",
+  "aggregateVersion": 1,
+  "occurredAt": "2026-11-08T05:30:00Z",
+  "senderOrganizationReference": "CUSTODIAN-001",
+  "receiverOrganizationReference": "BORROWER-001",
+  "payload": {
+    "payloadVersion": 1,
+    "requestReference": "LR-2026-000042",
+    "borrowerOrganizationReference": "BORROWER-001",
+    "custodianOrganizationReference": "CUSTODIAN-001",
+    "decisionStatus": "APPROVED",
+    "decisionReason": null,
+    "decisionVersion": 1,
+    "respondedAt": "2026-11-08T05:30:00Z",
+    "contract": {
+      "requestReference": "LR-2026-000042",
+      "securityIsin": "INE002A01018",
+      "transactionReference": "CTR-49a1b867-30a2-3fce-a4be-0b2c88a8ba9e",
+      "quantity": 1000,
+      "settlementCurrency": "INR",
+      "agreedAnnualFeePct": 0.125,
+      "dayCountBasis": "ACT_365",
+      "collateralCoveragePct": 105,
+      "collateralTerms": {
+        "collateralType": "CASH",
+        "currency": "INR",
+        "haircutPercentage": 0,
+        "coveragePercentage": 105
+      },
+      "acceptedValuationSnapshot": {
+        "calculationReference": "0cf95db6-fde9-4e06-9cb1-2dafc5ae9241",
+        "currency": "INR",
+        "priceSource": "NSE",
+        "priceReference": "8fef347e-5096-4f97-bc23-703fdc09487e"
+      },
+      "loanMarketValue": 250000,
+      "requiredCashCollateral": 262500,
+      "settlementCalendarVersion": "INR-SETTLEMENT-2026",
+      "tradeDate": "2026-11-08",
+      "settlementDate": "2026-11-10"
+    }
+  }
+}
