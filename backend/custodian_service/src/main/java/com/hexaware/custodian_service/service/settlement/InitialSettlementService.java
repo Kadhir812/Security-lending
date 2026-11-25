@@ -81,7 +81,7 @@ public class InitialSettlementService {
           row.put("currency", instruction.getCurrency());
           row.put("collateralAmount", instruction.getAmount());
           row.put("rebateAmount", instruction.getRebateAmount());
-          row.put("amount", instruction.getAmount().add(instruction.getRebateAmount()));
+          row.put("amount", settleAmount(instruction));
           row.put("securityIsin", instruction.getSecurityIsin());
           row.put("quantity", instruction.getQuantity());
           row.put("settlementDate", instruction.getSettlementDate());
@@ -725,5 +725,15 @@ public class InitialSettlementService {
 
   private long nvl(Long value) {
     return value == null ? 0 : value;
+  }
+
+  private static BigDecimal settleAmount(SettlementInstruction instruction) {
+    BigDecimal amount = instruction.getAmount() == null
+        ? BigDecimal.ZERO
+        : instruction.getAmount();
+    BigDecimal rebate = instruction.getRebateAmount() == null
+        ? BigDecimal.ZERO
+        : instruction.getRebateAmount();
+    return amount.add(rebate);
   }
 }
