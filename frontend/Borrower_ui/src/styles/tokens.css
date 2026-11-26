@@ -1,0 +1,54 @@
+/** Design tokens sampled from Securities Lending Command Center Dashboard.png (1672×941). */
+:root {
+  --color-black: #111111;            /* sidebar pixel (45,315) */
+  --color-topbar: #131212;           /* header pixel (115,20) */
+  --color-shell: #1f1e1c;            /* dark work area pixel (120,230) */
+  --color-deep-panel: #1c1b1a;       /* chart pixel (380,336) */
+  --color-cream: #f3e5d3;            /* common card background sampled from image */
+  --color-cream-light: #f6f4e2;      /* cream card pixel (395,182) */
+  --color-cream-deep: #f3e4d2;       /* center card pixel (440,465) */
+  --color-cream-footer: #f4e7d5;     /* card pixel (1310,640) */
+  --color-green-panel: #e2f1cf;     /* KPI pixel (1100,182) */
+  --color-red-panel: #ffd2c5;       /* KPI pixel (1260,180) */
+  --color-muted-panel: #f2e9de;     /* KPI pixel (1500,190) */
+  --color-amber-dark: #643706;      /* sidebar selected state pixel (55,172) */
+  --color-orange: #ff8900;          /* accent matched to reference line / controls */
+  --color-orange-deep: #eb6b00;
+  --color-orange-soft: #ffc064;
+  --color-green: #035f31;
+  --color-green-bright: #44d15b;
+  --color-red: #9d2421;
+  --color-warning: #ffb300;
+  --color-blue: #1945bc;
+  --color-text: #171717;
+  --color-subtext: #4e4b46;
+  --color-border: #b8a995;
+  --color-divider: #d5c6b4;
+  --color-white: #ffffff;
+  --font-ui: 'Roboto Condensed', 'Arial Narrow', Arial, sans-serif;
+  --font-xs: 11px;
+  --font-sm: 12px;
+  --font-md: 14px;
+  --font-lg: 16px;
+  --font-title: 24px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --radius-xs: 5px;
+  --radius-sm: 8px;
+  --radius-md: 11px;
+  --radius-lg: 14px;
+  --shadow-card: 0 2px 7px rgba(0,0,0,.20), inset 0 1px 0 rgba(255,255,255,.57);
+  --shadow-lift: 0 14px 35px rgba(0,0,0,.27);
+  --shadow-orange: 0 0 18px rgba(255,137,0,.75);
+  --sidebar-width: 114px;
+  --ticker-height: 48px;
+  --topbar-height: 70px;
+  --z-sidebar: 20;
+  --z-header: 15;
+  --z-overlay: 90;
+  --z-toast: 120;
+}

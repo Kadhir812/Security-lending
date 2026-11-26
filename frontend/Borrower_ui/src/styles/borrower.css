@@ -1,0 +1,117 @@
+/** Borrower visual overrides: preserves shared Custodian design tokens and screenshot card architecture. */
+.auth-page{min-height:100vh;display:grid;place-items:center;padding:32px 16px;background:radial-gradient(circle at 75% 15%,#4a2d0b 0,transparent 34%),linear-gradient(135deg,#151514,#211d18)}
+.auth-card{width:min(100%,460px);padding:30px;background:linear-gradient(135deg,#fff3e1,#f0dfc8);border:1px solid #bba58b;border-radius:16px;box-shadow:0 22px 65px #0007;color:#201a13}
+.auth-brand{display:flex;align-items:center;gap:12px;padding-bottom:22px;border-bottom:1px solid #d6c3aa;font-size:19px}.auth-brand .brand-mark{font-size:35px}.auth-brand>span:last-child{margin-left:auto;font-size:12px;color:#756552}
+.auth-card__heading{padding:24px 0 16px}.auth-card__heading .eyebrow{font-size:11px;font-weight:800;letter-spacing:1.2px;color:#98560f}.auth-card__heading h1{font-size:30px;margin:6px 0}.auth-card__heading>p:last-child{font-size:13px;color:#645747}
+.auth-form{display:grid;gap:14px}.auth-form .field{margin:0}.auth-submit{width:100%;justify-content:center;min-height:44px;margin-top:4px}
+.auth-error{padding:10px;border-radius:7px;background:#ffe1dc;border:1px solid #d99a90;color:#8b231a;font-size:13px}
+.auth-toggle{text-align:center;margin:18px 0;color:#685949;font-size:13px}.auth-toggle button{border:0;background:none;color:#98510a;text-decoration:underline;font-weight:800}
+.auth-demo-note{display:flex;gap:10px;align-items:flex-start;padding:12px;border-radius:8px;background:#f4e3c9;color:#62503a;font-size:12px}.auth-demo-note svg{color:#9a5c15;flex:none}.auth-demo-note p{line-height:1.5}
+@media(max-width:520px){.auth-card{padding:24px 20px}}
+/* .borrower-dashboard: desktop grid slightly roomier for status labels and demo provenance. */
+.borrower-dashboard .dashboard-grid--top{grid-template-columns:minmax(0,1.72fr) minmax(0,2.07fr) minmax(0,1fr);height:204px}
+.borrower-dashboard .dashboard-grid--middle{height:158px}
+.borrower-dashboard .dashboard-grid--bottom{height:196px}
+.borrower-dashboard .dashboard-kpi{height:99px;padding:12px 13px 8px}
+.borrower-dashboard .dashboard-kpi__top{font-size:13px}
+.borrower-dashboard .dashboard-kpi>strong{font-size:25px}
+.borrower-dashboard .dashboard-kpi>small{font-size:11px}
+.borrower-dashboard .dashboard-panel__head{padding-bottom:4px;height:29px}
+.borrower-dashboard .dashboard-compact-table{height:calc(100% - 30px)}
+.borrower-dashboard .trend-chart{height:calc(100% - 31px)}
+/* .borrower-panel-actions: keep tags/links in header without covering table content. */
+.borrower-panel-actions{display:flex;align-items:center;justify-content:flex-end;gap:7px;min-width:0}
+.borrower-panel-actions .demo-tag{font-size:9px;padding:2px 4px;flex:none}
+.borrower-panel-actions .chart-ranges{flex:none}
+/* .borrower-dashboard .dashboard-compact-table__actions: neutral Borrower review action, no approval controls. */
+.borrower-dashboard .dashboard-compact-table__actions button{color:#604016;background:#f8e4be;border-color:#cc9a55}
+/* .borrower-dashboard .dashboard-grid: compact headers, maintain four-row table density. */
+.borrower-dashboard .dashboard-compact-table th{padding:7px 7px}
+.borrower-dashboard .dashboard-compact-table td{padding:6px 7px}
+.borrower-dashboard .dashboard-panel--requests .dashboard-compact-table{overflow:auto}
+.borrower-dashboard .dashboard-panel--contracts .dashboard-compact-table{overflow:auto}
+/* .borrower-dashboard .empty-state: API absence has readable copy in dense widgets. */
+.borrower-dashboard .empty-state{min-height:0;height:calc(100% - 31px);padding:12px 15px;gap:5px}
+.borrower-dashboard .empty-state strong{font-size:13px}
+.borrower-dashboard .empty-state p{font-size:11px;max-width:100%;line-height:1.45}
+.borrower-dashboard .empty-state svg{width:20px;height:20px}
+.borrower-dashboard .alert-list{margin-top:3px}
+.borrower-dashboard .fix-list{margin-top:1px}
+.borrower-dashboard .fix-list>div{padding:4px 5px}
+.borrower-dashboard .treemap{height:calc(100% - 31px)}
+.borrower-dashboard .quick-actions{height:calc(100% - 30px)}
+.borrower-dashboard .utilization{height:calc(100% - 32px)}
+.borrower-dashboard .credit-content{height:calc(100% - 32px)}
+.borrower-dashboard .ratio-lines{padding-top:9px}
+/* .live-gate: prevents accidental writes while the Overview displays illustrative data. */
+.live-gate{display:flex;align-items:center;gap:16px;justify-content:space-between;background:#f6e7cf;border:1px solid #c9b08a;padding:15px 17px;border-radius:9px}
+.live-gate strong{font-size:16px;color:#322719}
+.live-gate p{font-size:13px;color:#62513e;line-height:1.5;margin-top:5px;max-width:590px}
+/* .subsection-title: hierarchy separating operation instruction groups inside a single cream panel. */
+.subsection-title{font-size:14px;color:#72420d;margin:15px 0 8px;padding-top:10px;border-top:1px solid #e0cbaa}
+/* .form-separated: distinct, staged action block following related read-only status data. */
+.form-separated{border-top:1px solid #ddc3a1;margin-top:15px;padding-top:16px}
+/* .auth-feature-grid: onboarding modules in same cream card aesthetic. */
+.auth-feature-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.auth-feature-grid>div{border:1px solid #d4bfa2;border-radius:9px;background:#f6ebd8;padding:14px}
+.auth-feature-grid svg{color:#0a7631;float:right}
+.auth-feature-grid strong{display:block;font-size:14px}
+.auth-feature-grid p{font-size:12px;color:#746553;margin-top:7px;line-height:1.45}
+/* .auth-next: secure onboarding step linking directly to live request desk. */
+.auth-next{margin-top:14px}
+/* .contract-lifecycle: reuse screenshot-matched glowing dark timeline inside live contract detail. */
+.contract-lifecycle{margin-bottom:13px;height:120px}
+.contract-lifecycle .lifecycle__heading{margin-bottom:14px}
+/* .data-table table: consistent compact typography across frequently used Borrower workspaces. */
+.data-table td{white-space:nowrap}
+/* .form-error svg: aligned field and backend validation feedback. */
+.form-error svg{display:inline;vertical-align:-2px;margin-right:4px}
+/* .borrower-dashboard .fix-code--U1/U2: custom FIX message background treatments. */
+.fix-code--U1{background:#346c36}
+.fix-code--U2{background:#a45417}
+/* .app-header__identity: prevent browser title clipping at common desktop widths. */
+.app-header__identity{min-width:0}
+.app-header__identity h1{overflow:hidden;text-overflow:ellipsis}
+/* .status-badge: explicitly color additional genuine Borrower states. */
+.status-badge--info{background:#d5e1fa;color:#274c84}
+@media(max-width:1450px){
+  .borrower-dashboard .dashboard-grid--top{grid-template-columns:minmax(0,1.4fr) minmax(0,1.8fr) minmax(0,1fr)}
+  .borrower-dashboard .dashboard-kpi{padding:10px 9px}
+  .borrower-dashboard .dashboard-kpi__top{font-size:11px}
+  .borrower-dashboard .dashboard-kpi>strong{font-size:22px}
+  .borrower-panel-actions .demo-tag{font-size:8px}
+  .borrower-dashboard .dashboard-panel__head h2{font-size:14px}
+}
+@media(max-width:1150px){
+  .borrower-dashboard .dashboard-kpis{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .borrower-dashboard .dashboard-grid--top{grid-template-columns:1.3fr 1.7fr;height:auto}
+  .borrower-dashboard .dashboard-grid--top>.dashboard-panel{height:224px}
+  .borrower-dashboard .dashboard-panel--alerts{grid-column:1/-1;height:165px!important}
+  .borrower-dashboard .dashboard-grid--middle{grid-template-columns:repeat(2,minmax(0,1fr));height:auto}
+  .borrower-dashboard .dashboard-grid--middle>.dashboard-panel{height:180px}
+  .borrower-dashboard .dashboard-grid--bottom{grid-template-columns:1.5fr 1fr;height:auto}
+  .borrower-dashboard .dashboard-grid--bottom>.dashboard-panel{height:196px}
+  .borrower-dashboard .dashboard-panel--quick{grid-column:1/-1;height:185px!important}
+}
+@media(max-width:820px){
+  .borrower-dashboard .dashboard-grid--top,.borrower-dashboard .dashboard-grid--middle,.borrower-dashboard .dashboard-grid--bottom{display:flex;flex-direction:column;gap:9px}
+  .borrower-dashboard .dashboard-grid--top>.dashboard-panel,.borrower-dashboard .dashboard-grid--middle>.dashboard-panel,.borrower-dashboard .dashboard-grid--bottom>.dashboard-panel{height:215px;flex:none}
+  .borrower-dashboard .dashboard-panel--trend{height:248px!important}
+  .borrower-dashboard .dashboard-panel--alerts{height:175px!important}
+  .borrower-dashboard .dashboard-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .borrower-dashboard .dashboard-kpi{height:92px}
+  .borrower-dashboard .dashboard-lifecycle{height:auto}
+  .borrower-dashboard .dashboard-lifecycle__main{overflow-x:auto}
+  .borrower-panel-actions .demo-tag{font-size:9px}
+  .live-gate{flex-direction:column;align-items:flex-start}
+  .auth-feature-grid{grid-template-columns:1fr}
+}
+@media(max-width:530px){
+  .borrower-dashboard .dashboard-panel__head h2{font-size:13px}
+  .borrower-dashboard .dashboard-kpi>strong{font-size:20px}
+  .borrower-panel-actions .demo-tag{max-width:125px;white-space:normal;line-height:1.1}
+  .borrower-dashboard .dashboard-grid--top>.dashboard-panel{height:225px}
+  .borrower-dashboard .dashboard-grid--middle>.dashboard-panel{height:220px}
+  .borrower-dashboard .dashboard-grid--bottom>.dashboard-panel{height:210px}
+  .borrower-dashboard .dashboard-panel--trend{height:225px!important}
+}

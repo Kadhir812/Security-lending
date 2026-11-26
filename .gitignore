@@ -1,0 +1,13 @@
+# Ignore local runtime assets and build output
+
+kafka-runtime/
+kafka/logs/
+kafka/libs/rocksdbjni-*.jar
+observability/agent/data/
+observability/data/
+observability/logs/
+observability/openobserve/
+app-logs/
+**/target/
+*.log
+*.zip
