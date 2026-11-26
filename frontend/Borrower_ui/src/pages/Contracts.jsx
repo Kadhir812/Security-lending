@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { ArrowRight, Banknote, Clock3, FileText, Layers3, ShieldCheck } from 'lucide-react'
-import { Button, ConfirmDialog, DataTable, DetailGrid, Field, Lifecycle, Panel } from '../components/UI'
+import { Button, ConfirmDialog, DataTable, DetailGrid, Field, Lifecycle, Modal, Panel } from '../components/UI'
 import { ContractPicker, FormMessage, LiveGate, ResourceBody, Refresh, WorkPage } from '../components/Work'
 import { contracts } from '../api/contracts'
 import { loans } from '../api/loans'
@@ -20,7 +20,7 @@ const SNAPSHOT_FIELDS = [
   'settlementCurrency',
   'requiredCashCollateral',
   'confirmedCashCollateral',
-  'feeRate',
+  'agreedAnnualFeePct',
   'agreedAnnualRebatePct',
   'settlementDate',
   'loanStartDate',
@@ -308,6 +308,7 @@ export function CashCollateralPage() {
   const contractQuery = useRemote(() => loans.contract(requestReference), [requestReference], { enabled: mode === 'live' && Boolean(requestReference) })
   const snapshot = contractQuery.data?.contractSnapshot
   const [form, setForm] = useState({ instructionReference: newReference('CASH'), amount: '', currency: '', collateralType: 'CASH' })
+  const [formOpen, setFormOpen] = useState(false)
   const [error, setError] = useState('')
   const [dialog, setDialog] = useState(null)
   const [busy, setBusy] = useState(false)
@@ -388,9 +389,11 @@ export function CashCollateralPage() {
           </ResourceBody>
         </Panel>
         {requestReference && (
-          <Panel title="CASH collateral instruction" icon={Banknote}>
+          <Panel title="CASH collateral instruction" icon={Banknote} actions={<Button icon={ShieldCheck} disabled={!['APPROVED', 'PENDING_SETTLEMENT'].includes(status)} onClick={() => setFormOpen(true)}>New instruction</Button>}>
             <ResourceBody query={contractQuery}>
-              {snapshot && (
+              {snapshot && <DetailGrid data={snapshot} fields={['contractStatus', 'requiredCashCollateral', 'confirmedCashCollateral', 'settlementCurrency']} />}
+              {snapshot && formOpen && (
+                <Modal title="Post initial CASH collateral" subtitle="Submit a CASH instruction for Custodian processing." onClose={() => setFormOpen(false)}>
                 <form className="resource-form" onSubmit={prepare}>
                   <div className="form-grid">
                     <Field name="instructionReference" label="Cash instruction reference" required value={form.instructionReference} readOnly hint="Generated automatically for this instruction." max={80} />
@@ -403,6 +406,7 @@ export function CashCollateralPage() {
                     <Button disabled={busy || !['APPROVED', 'PENDING_SETTLEMENT'].includes(status)} type="submit" icon={ShieldCheck}>Review cash instruction</Button>
                   </div>
                 </form>
+                </Modal>
               )}
             </ResourceBody>
           </Panel>

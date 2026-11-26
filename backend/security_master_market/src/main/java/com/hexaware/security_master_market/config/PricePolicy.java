@@ -14,6 +14,7 @@ import org.springframework.stereotype.Component;
 public class PricePolicy {
   private List<String> sourcePriority = List.of("DEMO_SIMULATED");
   private Duration maxAge = Duration.ofHours(24);
+  private Duration simulatedRefreshInterval = Duration.ofHours(6);
 
   @PostConstruct
   void validate() {
@@ -22,8 +23,13 @@ public class PricePolicy {
         || sourcePriority.size() > 20
         || maxAge == null
         || maxAge.isNegative()
-        || maxAge.isZero())
-      throw new IllegalStateException("Configure 1-20 price sources and a positive max-age");
+        || maxAge.isZero()
+        || simulatedRefreshInterval == null
+        || simulatedRefreshInterval.isNegative()
+        || simulatedRefreshInterval.isZero()
+        || simulatedRefreshInterval.compareTo(maxAge.dividedBy(2)) >= 0)
+      throw new IllegalStateException(
+          "Configure 1-20 price sources, a positive max-age, and a simulated refresh interval below half max-age");
     sourcePriority = sourcePriority.stream().map(s -> MarketInput.upper(s, "source", 100)).toList();
     if (sourcePriority.stream().distinct().count() != sourcePriority.size())
       throw new IllegalStateException("Duplicate price source priorities");

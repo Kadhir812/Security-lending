@@ -48,7 +48,7 @@ public class LocateDecisionService {
   @Transactional(readOnly = true)
   public List<Map<String, Object>> pending(Authentication authentication) {
     var custodian = access.actor(authentication, false);
-    return locates.findPendingByCustodian(custodian.getOrganizationId()).stream()
+    return locates.findAllByCustodian(custodian.getOrganizationId()).stream()
         .map(locate -> queueRow(locate, custodian.getOrganizationId()))
         .toList();
   }
@@ -150,9 +150,12 @@ public class LocateDecisionService {
     row.put("mslaReference", parties.agreement().getMslaReference());
     row.put("securityIsin", locate.getSecurityIsin());
     row.put("quantity", locate.getQuantity());
+    row.put("approvedQuantity", locate.getApprovedQuantity());
     row.put("availableQuantity", available);
     row.put("requestTime", locate.getRequestTime());
     row.put("status", locate.getStatus());
+    row.put("respondedAt", locate.getRespondedAt());
+    row.put("responseReason", locate.getResponseReason());
     return row;
   }
 

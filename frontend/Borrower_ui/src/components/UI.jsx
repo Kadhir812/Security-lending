@@ -59,6 +59,11 @@ export function Field({ name, label, value, onChange, type = 'text', options, re
 export function DetailGrid({ data, fields }) { if (!data) return null; const entries = (fields || Object.keys(data)).map(f => [f, data[f]]); return <dl className="detail-grid">{entries.map(([key, value]) => <div key={key}><dt>{titleCase(key)}</dt><dd>{/status$/i.test(key) ? <StatusBadge value={value} /> : display(value, key)}</dd></div>)}</dl> }
 /** Notice: short-lived user feedback with explicit close control. */
 export function Notice() { const { notice, setNotice } = useApp(); if (!notice) return null; return <div role="status" className={`toast toast--${notice.tone}`}><span>{notice.message}</span><button type="button" aria-label="Dismiss notification" onClick={() => setNotice(null)}><X size={17} /></button></div> }
+/** Modal: keeps workflow entry on its list page while preserving the existing submit/confirmation flow. */
+export function Modal({ title, subtitle, onClose, children }) {
+  useEffect(() => { const handle = event => { if (event.key === 'Escape') onClose() }; window.addEventListener('keydown', handle); return () => window.removeEventListener('keydown', handle) }, [onClose])
+  return <div className="modal-backdrop" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) onClose() }}><section className="modal workflow-modal" role="dialog" aria-modal="true" aria-label={title}><header className="modal__heading"><div><h2>{title}</h2>{subtitle && <p>{subtitle}</p>}</div><button type="button" className="icon-button" aria-label="Close dialog" onClick={onClose}><X size={18}/></button></header><div className="modal__body">{children}</div></section></div>
+}
 /** ConfirmDialog: uses mandatory explicit operator approval, never silently retries. */
 export function ConfirmDialog({ config, onClose, onCompleted }) {
   const [values, setValues] = useState(() => Object.fromEntries((config?.fields || []).map(f => [f.name, f.defaultValue || ''])))

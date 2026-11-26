@@ -29,7 +29,7 @@ public class FinalCollateralReleaseEvents {
       int releaseInstructionCount,
       String status,
       long aggregateVersion,
-      boolean simulatedConfirmation) {
+      boolean operatorConfirmed) {
     java.math.BigDecimal rebateAmount = instruction.getRebateAmount() == null
         ? java.math.BigDecimal.ZERO.setScale(2) : instruction.getRebateAmount();
     Map<String, Object> payload = new LinkedHashMap<>();
@@ -55,7 +55,7 @@ public class FinalCollateralReleaseEvents {
         instruction.getSettledAt() == null ? null : instruction.getSettledAt().toString());
     payload.put("externalConfirmationReference", instruction.getExternalConfirmationReference());
     payload.put("failureReason", instruction.getFailureReason());
-    payload.put("simulatedConfirmation", simulatedConfirmation);
+    payload.put("operatorConfirmed", operatorConfirmed);
     outgoing.enqueue(
         "SETTLEMENT_INSTRUCTION",
         EventEnvelope.builder()

@@ -1,7 +1,7 @@
 import { useEffect, useId, useState } from 'react'
 import { AlertCircle, ArrowRight, Check, ChevronLeft, ChevronRight, CircleHelp, Database, LoaderCircle, RefreshCw, Maximize2, Minimize2, X } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { display, statusTone, titleCase } from '../utils/format'
+import { display, displayReferenceText, statusTone, titleCase } from '../utils/format'
 import { useApp } from '../hooks/useApp'
 
 /** Panel: warm, bordered container used throughout the operations workspace. */
@@ -10,7 +10,7 @@ export function Panel({ title, icon: Icon, actions, children, className = '', su
   const [expanded, setExpanded] = useState(false)
   return <section className={`panel os-business-window ${className} ${expanded ? 'os-business-window--expanded' : ''}`}>
     <div className="panel__heading">
-      <div className="panel__title-group"><h2>{Icon && <Icon size={17} strokeWidth={2} />} {title}</h2>{subtitle && <p>{subtitle}</p>}</div>
+      <div className="panel__title-group"><h2>{Icon && <Icon size={17} strokeWidth={2} />} {displayReferenceText(title)}</h2>{subtitle && <p>{displayReferenceText(subtitle)}</p>}</div>
       <div className="panel__actions">{actions}
         <div className="os-business-window-controls">
           <button type="button" aria-label={minimized ? `Restore ${title}` : `Minimize ${title}`} title={minimized ? 'Restore panel' : 'Minimize panel'} onClick={() => setMinimized(x => !x)}><Minimize2 size={14}/></button>
@@ -38,11 +38,11 @@ export function ApiState({ loading, error, token, children, reload, empty, empty
   return children
 }
 /** PageHeading: structured title, guidance and top-right toolbar. */
-export function PageHeading({ eyebrow = 'CUSTODIAN OPERATIONS', title, subtitle, action, tags }) { return <div className="page-heading"><div><p className="eyebrow">{eyebrow}</p><h1>{title}</h1><p>{subtitle}</p>{tags && <div className="page-heading__tags">{tags}</div>}</div><div className="page-heading__actions">{action}</div></div> }
+export function PageHeading({ eyebrow = 'CUSTODIAN OPERATIONS', title, subtitle, action, tags }) { return <div className="page-heading"><div><p className="eyebrow">{displayReferenceText(eyebrow)}</p><h1>{displayReferenceText(title)}</h1><p>{displayReferenceText(subtitle)}</p>{tags && <div className="page-heading__tags">{tags}</div>}</div><div className="page-heading__actions">{action}</div></div> }
 /** KpiStrip: quick at-a-glance metrics with explicit source labels. */
-export function KpiStrip({ items }) { return <div className="kpi-strip">{items.map((item, index) => <div className="kpi-strip__item" key={index}><span>{item.label}</span><strong className="tabular">{item.value ?? '—'}</strong><small>{item.detail || 'From the current workflow'}</small></div>)}</div> }
+export function KpiStrip({ items }) { return <div className="kpi-strip">{items.map((item, index) => <div className="kpi-strip__item" key={index}><span>{displayReferenceText(item.label)}</span><strong className="tabular">{displayReferenceText(item.value ?? String.fromCharCode(8212))}</strong><small>{displayReferenceText(item.detail || 'From the current workflow')}</small></div>)}</div> }
 /** SideGuide: contextual controls, business rules and FIX notes. */
-export function SideGuide({ title = 'Operator guidance', items = [], fix, note }) { return <aside className="side-guide"><h3><CircleHelp size={16} /> {title}</h3><ol>{items.map((item, i) => <li key={i}>{item}</li>)}</ol>{fix && <div className="side-guide__fix"><span>RELATED FIX / WORKFLOW</span><strong>{fix}</strong></div>}{note && <p className="side-guide__note">{note}</p>}</aside> }
+export function SideGuide({ title = 'Operator guidance', items = [], fix, note }) { return <aside className="side-guide"><h3><CircleHelp size={16} /> {displayReferenceText(title)}</h3><ol>{items.map((item, i) => <li key={i}>{displayReferenceText(item)}</li>)}</ol>{fix && <div className="side-guide__fix"><span>RELATED FIX / WORKFLOW</span><strong>{displayReferenceText(fix)}</strong></div>}{note && <p className="side-guide__note">{displayReferenceText(note)}</p>}</aside> }
 /** FooterNote: persistent operational caution at the foot of every page. */
 export function FooterNote({ children }) { return <p className="footer-note"><AlertCircle size={14} /> {children || 'All balances, contract states and eligibility checks are authoritative only when returned by the Custodian service. Workflow updates may arrive asynchronously.'}</p> }
 /** DataTable: narrow, scrollable dense institutional table. */
@@ -52,13 +52,14 @@ export function Pagination({ page = 0, totalPages = 0, totalElements = 0, size =
 /** Field: accessible controlled input, schema-specific validation and helper text. */
 export function Field({ name, label, value, onChange, type = 'text', options, required, readOnly, hint, min, max, minLength, step, placeholder, pattern, multiline, disabled, multiple }) {
   const id = useId()
-  const props = { id, name, required, readOnly, disabled: disabled || (readOnly && !!options), value: multiple ? (value ?? []) : (value ?? ''), onChange: e => onChange?.(multiple ? Array.from(e.target.selectedOptions, option => option.value) : e.target.value), placeholder, min, max, step, pattern, minLength, maxLength: type === 'text' || multiline ? max : undefined }
-  return <div className="field"><label htmlFor={id}>{label || titleCase(name)} {required && <sup>*</sup>}</label>{options ? <select {...props} multiple={multiple}>{!multiple && <option value="">Choose {label || titleCase(name)}</option>}{options.map(o => <option value={typeof o === 'string' ? o : o.value} key={typeof o === 'string' ? o : o.value}>{typeof o === 'string' ? o.replace(/_/g, ' ') : o.label}</option>)}</select> : multiline ? <textarea {...props} rows={3} /> : <input {...props} type={type} />}{hint && <small>{hint}</small>}</div>
+  const shownValue = readOnly && !options && /Reference$/i.test(name) ? display(value, name) : value
+  const props = { id, name, required, readOnly, disabled: disabled || (readOnly && !!options), value: multiple ? (value ?? []) : (shownValue ?? ''), onChange: e => onChange?.(multiple ? Array.from(e.target.selectedOptions, option => option.value) : e.target.value), placeholder, min, max, step, pattern, minLength, maxLength: type === 'text' || multiline ? max : undefined }
+  return <div className="field"><label htmlFor={id}>{displayReferenceText(label || titleCase(name))} {required && <sup>*</sup>}</label>{options ? <select {...props} multiple={multiple}>{!multiple && <option value="">Choose {displayReferenceText(label || titleCase(name))}</option>}{options.map(o => <option value={typeof o === 'string' ? o : o.value} key={typeof o === 'string' ? o : o.value}>{displayReferenceText(typeof o === 'string' ? o.replace(/_/g, ' ') : o.label)}</option>)}</select> : multiline ? <textarea {...props} rows={3} /> : <input {...props} type={type} />}{hint && <small>{displayReferenceText(hint)}</small>}</div>
 }
 /** DetailGrid: displays returned DTO values without altering server ownership. */
 export function DetailGrid({ data, fields }) { if (!data) return null; const entries = (fields || Object.keys(data)).map(f => [f, data[f]]); return <dl className="detail-grid">{entries.map(([key, value]) => <div key={key}><dt>{titleCase(key)}</dt><dd>{/status$/i.test(key) ? <StatusBadge value={value} /> : display(value, key)}</dd></div>)}</dl> }
 /** Notice: short-lived user feedback with explicit close control. */
-export function Notice() { const { notice, setNotice } = useApp(); if (!notice) return null; return <div role="status" className={`toast toast--${notice.tone}`}><span>{notice.message}</span><button type="button" aria-label="Dismiss notification" onClick={() => setNotice(null)}><X size={17} /></button></div> }
+export function Notice() { const { notice, setNotice } = useApp(); if (!notice) return null; return <div role="status" className={`toast toast--${notice.tone}`}><span>{displayReferenceText(notice.message)}</span><button type="button" aria-label="Dismiss notification" onClick={() => setNotice(null)}><X size={17} /></button></div> }
 /** ConfirmDialog: uses mandatory explicit operator approval, never silently retries. */
 export function ConfirmDialog({ config, onClose, onCompleted }) {
   const [values, setValues] = useState(() => Object.fromEntries((config?.fields || []).map(f => [f.name, f.defaultValue || ''])))
@@ -72,7 +73,7 @@ export function ConfirmDialog({ config, onClose, onCompleted }) {
     catch (err) { setError(err.message) }
     finally { setBusy(false) }
   }
-  return <div className="modal-backdrop" role="presentation"><div className="modal" role="dialog" aria-modal="true" aria-labelledby="confirm-title"><div className="modal__heading"><div><span className="eyebrow">EXPLICIT CONFIRMATION</span><h2 id="confirm-title">{config.title}</h2></div><button type="button" className="icon-button" aria-label="Close dialog" disabled={busy} onClick={onClose}><X size={18} /></button></div><form onSubmit={submit}><div className="modal__body">{config.simulation && <div className="simulation-banner">SIMULATION – demo only · This is not proof of external settlement.</div>}<p>{config.message}</p>{config.subject && <div className="modal__subject">{config.subject}</div>}<div className="form-grid">{config.fields?.map(f => <Field key={f.name} {...f} value={values[f.name]} onChange={value => setValues(v => ({ ...v, [f.name]: value }))} />)}</div>{error && <p className="form-error" role="alert">{error}</p>}</div><div className="modal__footer"><Button variant="outline" onClick={onClose} disabled={busy}>Cancel</Button><Button type="submit" busy={busy} variant={config.danger ? 'danger' : 'primary'} icon={Check}>{config.confirmText || 'Confirm action'}</Button></div></form></div></div>
+  return <div className="modal-backdrop" role="presentation"><div className="modal" role="dialog" aria-modal="true" aria-labelledby="confirm-title"><div className="modal__heading"><div><span className="eyebrow">EXPLICIT CONFIRMATION</span><h2 id="confirm-title">{displayReferenceText(config.title)}</h2></div><button type="button" className="icon-button" aria-label="Close dialog" disabled={busy} onClick={onClose}><X size={18} /></button></div><form onSubmit={submit}><div className="modal__body">{config.simulation && <div className="simulation-banner">SIMULATION – demo only · This is not proof of external settlement.</div>}<p>{displayReferenceText(config.message)}</p>{config.subject && <div className="modal__subject">{displayReferenceText(config.subject)}</div>}<div className="form-grid">{config.fields?.map(f => <Field key={f.name} {...f} value={values[f.name]} onChange={value => setValues(v => ({ ...v, [f.name]: value }))} />)}</div>{error && <p className="form-error" role="alert">{displayReferenceText(error)}</p>}</div><div className="modal__footer"><Button variant="outline" onClick={onClose} disabled={busy}>Cancel</Button><Button type="submit" busy={busy} variant={config.danger ? 'danger' : 'primary'} icon={Check}>{displayReferenceText(config.confirmText || 'Confirm action')}</Button></div></form></div></div>
 }
 /** Lifecycle: the fixed business journey, current stage server-backed when possible. */
 export function Lifecycle({ current = 'ON_LOAN', demo = false }) {

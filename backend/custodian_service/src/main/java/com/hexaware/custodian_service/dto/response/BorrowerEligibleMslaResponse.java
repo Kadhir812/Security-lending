@@ -20,6 +20,7 @@ public record BorrowerEligibleMslaResponse(
     LocalDate mandateEffectiveTo,
     MandateStatus mandateStatus,
     String baseCurrency,
+    BigDecimal annualFeePct,
     BigDecimal annualRebatePct,
     List<String> allowedAssetTypes,
     EligibleSecurities eligibleSecurities) {}

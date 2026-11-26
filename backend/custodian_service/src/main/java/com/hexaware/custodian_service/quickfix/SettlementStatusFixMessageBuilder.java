@@ -44,7 +44,7 @@ public class SettlementStatusFixMessageBuilder {
         || !"SECURITY_DELIVERY".equals(payload.get("instructionType"))
         || !"SETTLED".equals(payload.get("settlementStatus"))
         || !"SETTLED".equals(payload.get("instructionStatus"))
-        || !Boolean.TRUE.equals(payload.get("simulatedConfirmation"))
+        || !Boolean.TRUE.equals(payload.get("operatorConfirmed")) && !Boolean.TRUE.equals(payload.get("simulatedConfirmation"))
         || !Long.valueOf(1).equals(event.getAggregateVersion())
         || !Long.valueOf(1).equals(number(payload.get("aggregateVersion")))
         || !Long.valueOf(1).equals(number(payload.get("payloadVersion")))) {

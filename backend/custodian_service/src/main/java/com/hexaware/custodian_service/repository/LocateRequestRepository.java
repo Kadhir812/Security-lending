@@ -26,8 +26,7 @@ public interface LocateRequestRepository extends JpaRepository<LocateRequest, Lo
       where locate.mslaId = agreement.mslaId
         and agreement.mandateId = mandate.mandateId
         and mandate.custodianOrgId = :custodianId
-        and locate.status = 'PENDING'
       order by locate.requestTime desc, locate.locateId desc
       """)
-  List<LocateRequest> findPendingByCustodian(Long custodianId);
+  List<LocateRequest> findAllByCustodian(Long custodianId);
 }

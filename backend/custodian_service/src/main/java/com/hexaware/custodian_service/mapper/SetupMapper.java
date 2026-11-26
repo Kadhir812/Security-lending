@@ -11,6 +11,7 @@ import com.hexaware.custodian_service.enums.MandateStatus;
 import com.hexaware.custodian_service.enums.OrganizationStatus;
 import com.hexaware.custodian_service.service.setup.SetupValidation;
 import java.time.LocalDate;
+import java.math.BigDecimal;
 import java.util.Map;
 import org.springframework.stereotype.Component;
 
@@ -64,7 +65,8 @@ public class SetupMapper {
       MslaAgreement agreement,
       LenderMandate mandate,
       Map<Long, Organization> organizations,
-      LocalDate date) {
+      LocalDate date,
+      BigDecimal annualFeePct) {
     boolean currentlyEffective =
         agreement.getAgreementStatus() == AgreementStatus.ACTIVE
             && SetupValidation.covers(
@@ -90,6 +92,7 @@ public class SetupMapper {
         .eligibleSecurities(agreement.getEligibleSecurities())
         .collateralType(agreement.getCollateralType())
         .collateralCoveragePct(agreement.getCollateralCoveragePct())
+        .annualFeePct(annualFeePct)
         .annualRebatePct(agreement.getAnnualRebatePct())
         .mtmIntervalMinutes(agreement.getMtmIntervalMinutes())
         .marginCallWindowHours(agreement.getMarginCallWindowHours())

@@ -42,6 +42,8 @@
 .kpi-strip__item small{font-size:11px;color:#726657}
 /* .work-area: dense 2-column operations workspace with contextual guidance. */
 .work-area{display:grid;grid-template-columns:minmax(0,1fr) 306px;gap:13px;margin:0 3px 6px;align-items:start}
+.work-area{grid-template-columns:minmax(0,1fr)}
+.work-area__side{display:none}
 .work-area__main,.work-area__side{min-width:0}
 /* .side-guide: permanent workflow safety and related FIX context. */
 .side-guide,.side-links{background:linear-gradient(160deg,#f7e9d5,#eaddc7);border:1px solid #c4af94;box-shadow:var(--shadow-card);border-radius:10px;padding:17px;margin-bottom:13px}
@@ -53,6 +55,13 @@
 .side-guide__fix span{font-size:10px;color:#806e58;letter-spacing:1px;font-weight:800}
 .side-guide__fix strong{font-size:13px;color:#a24e04}
 .side-guide__note{font-size:12px;border-radius:8px;background:#e6d2b6;padding:11px;margin-top:13px;color:#584937}
+.workflow-modal-backdrop{position:fixed;inset:0;z-index:100;display:grid;place-items:center;padding:22px;background:#111827a8}
+.workflow-modal{width:min(1120px,96vw);max-height:92vh;display:flex;flex-direction:column;background:#f8ebd9;border:1px solid #cdbba5;border-radius:14px;box-shadow:0 24px 80px #0006;overflow:hidden}
+.workflow-modal>header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 18px;background:#fff;border-bottom:1px solid #ded6ce}
+.workflow-modal>header>div{display:flex;align-items:baseline;gap:12px;min-width:0}.workflow-modal>header strong{font-size:18px}.workflow-modal>header span{font-size:12px;color:#74695c;overflow-wrap:anywhere}
+.workflow-modal>header button{display:grid;place-items:center;width:34px;height:34px;border:0;border-radius:7px;background:transparent}.workflow-modal>header button:hover{background:#f0e5d8}
+.workflow-modal__content{padding:14px;overflow:auto}.workflow-modal__content .sub-page{margin:0}.workflow-modal__content .panel{margin-bottom:10px}
+@media(max-width:620px){.workflow-modal-backdrop{padding:7px}.workflow-modal{width:100%;max-height:96vh}.workflow-modal__content{padding:8px}}
 .side-links strong{display:block;font-size:14px;margin-bottom:9px}
 .side-links a{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-top:1px solid #d1bda4;color:#82501b;font-weight:800}
 /* .footer-note: context-aware audit and authorization disclaimer. */
@@ -156,3 +165,5 @@
 @media(max-width:1200px){.work-area{grid-template-columns:minmax(0,1fr) 260px}.detail-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:900px){.work-area{grid-template-columns:1fr}.work-area__side{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}.kpi-strip{grid-template-columns:repeat(2,minmax(0,1fr))}.side-guide,.side-links{margin-bottom:0}}
 @media(max-width:620px){.page-heading{flex-direction:column;align-items:start}.page-heading h1{font-size:24px}.work-area__side{grid-template-columns:1fr}.form-grid,.detail-grid,.simulation-buttons,.action-grid{grid-template-columns:1fr}.kpi-strip{gap:7px}.kpi-strip__item{padding:10px}.kpi-strip__item strong{font-size:18px}.panel__heading,.panel__content{padding:12px}.pagination{align-items:start;flex-direction:column}.resource-form__scope{align-items:stretch;flex-direction:column}.lookup-bar{align-items:stretch;flex-direction:column}.lookup-bar>.field{min-width:100%}}
+.work-area{grid-template-columns:minmax(0,1fr)!important}
+.work-area__side{display:none!important}

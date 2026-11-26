@@ -283,7 +283,7 @@ public class LoanRequestFixMessageBuilder {
     payload.put("confirmedCashCollateral", confirmedCashCollateral.toPlainString());
     payload.put("settledAt", settledAt);
     payload.put("externalConfirmationReference", string(message, 9149));
-    payload.put("simulatedConfirmation", true);
+    payload.put("operatorConfirmed", true);
     return payload;
   }
 

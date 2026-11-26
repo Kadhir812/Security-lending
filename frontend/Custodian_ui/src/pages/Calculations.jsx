@@ -4,7 +4,7 @@ import { calculationSchedule, loanRequests, marginCalls, payments, settlements }
 import { useApp } from '../hooks/useApp'
 import { useRemote } from '../hooks/useRemote'
 import { ApiState, Button, DataTable, DetailGrid, Field, FooterNote, KpiStrip, PageHeading, Panel } from '../components/UI'
-import { titleCase } from '../utils/format'
+import { display, titleCase } from '../utils/format'
 
 const utcDay = (offset = 0) => {
   const date = new Date()
@@ -72,7 +72,7 @@ export default function Calculations() {
     ]} />
     <Panel title="Contract and date range" subtitle="Select a real approved contract before requesting calculations.">
       <form className="lookup-bar" onSubmit={event => { event.preventDefault(); setParams(current => ({ ...current, transaction: input.trim() })) }}>
-        <Field name="transaction" label="Approved loan contract" value={input} onChange={setInput} required options={contracts.map(row => ({ value: row.transactionReference, label: `${row.transactionReference} · ${row.borrowerOrganizationReference} · ${row.securityIsin}` }))} />
+        <Field name="transaction" label="Approved loan contract" value={input} onChange={setInput} required options={contracts.map(row => ({ value: row.transactionReference, label: `${display(row.transactionReference,'transactionReference')} · ${display(row.borrowerOrganizationReference,'borrowerOrganizationReference')} · ${row.securityIsin}` }))} />
         <Button type="submit" icon={Search} disabled={!input.trim()}>Load contract</Button>
       </form>
       <div className="lookup-bar calculation-dates">{['from', 'to'].map(key => <Field key={key} name={key} label={titleCase(key)} type="date" required value={params[key]} onChange={value => setParams(current => ({ ...current, [key]: value }))} />)}</div>

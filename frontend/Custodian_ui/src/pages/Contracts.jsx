@@ -1,18 +1,19 @@
 import { useEffect, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
-import { ArrowRight, FileText, RefreshCw, Search } from 'lucide-react'
+import { useSearchParams } from 'react-router-dom'
+import { FileText, RefreshCw, X } from 'lucide-react'
 import { loanRequests, settlements, marginCalls, recalls, payments } from '../api/resources'
 import { useApp } from '../hooks/useApp'
 import { useRemote } from '../hooks/useRemote'
-import { ApiState, Button, DataTable, DetailGrid, Field, FooterNote, KpiStrip, Lifecycle, PageHeading, Panel, SideGuide, StatusBadge } from '../components/UI'
-import { display, money, number, stamp, titleCase } from '../utils/format'
+import { ApiState, Button, DataTable, DetailGrid, FooterNote, KpiStrip, Lifecycle, PageHeading, Panel, StatusBadge } from '../components/UI'
+import { money, number, referenceLabel, stamp, titleCase } from '../utils/format'
 import { demoContracts } from '../mock/dashboard'
+import { OperationsPage } from './Operations'
 
 export default function Contracts() {
   const { token, mode } = useApp()
   const [params, setParams] = useSearchParams()
   const transaction = params.get('transaction') || ''
-  const [input, setInput] = useState(transaction)
+  const [workflow, setWorkflow] = useState(null)
   const requests = useRemote(() => loanRequests.list(0, 100), [], { enabled: mode === 'live' })
   const rows = requests.data?.content || []
   const approved = rows.filter(row => row.status === 'APPROVED' && row.transactionReference)
@@ -31,22 +32,35 @@ export default function Contracts() {
   const charges = Array.isArray(chargeQ.data) ? chargeQ.data : chargeQ.data?.content || []
   const paymentRows = Array.isArray(paymentQ.data) ? paymentQ.data : paymentQ.data?.content || []
 
-  useEffect(() => setInput(transaction), [transaction])
-  function inspect(event) {
-    event.preventDefault()
-    const value = approved.find(row => row.transactionReference === input.trim())?.transactionReference || input.trim()
-    setParams(value ? { transaction: value } : {})
-  }
   function select(row) {
-    setInput(row.transactionReference)
     setParams({ transaction: row.transactionReference })
   }
+
+  useEffect(() => {
+    if (!transaction) {
+      try { const saved = sessionStorage.getItem('custodian-contract-transaction'); if (saved) setParams({ transaction: saved }, { replace: true }) } catch { /* storage unavailable */ }
+      return
+    }
+    try { sessionStorage.setItem('custodian-contract-transaction', transaction) } catch { /* storage unavailable */ }
+  }, [transaction, setParams])
+  useEffect(() => {
+    const save = () => { try { sessionStorage.setItem('custodian-contract-scroll', String(window.scrollY)) } catch { /* storage unavailable */ } }
+    window.addEventListener('scroll', save, { passive: true })
+    return () => { save(); window.removeEventListener('scroll', save) }
+  }, [])
+  useEffect(() => {
+    if (requests.loading || settlement.loading) return undefined
+    const frame = window.requestAnimationFrame(() => window.requestAnimationFrame(() => {
+      try { window.scrollTo(0, Number(sessionStorage.getItem('custodian-contract-scroll') || 0)) } catch { /* storage unavailable */ }
+    }))
+    return () => window.cancelAnimationFrame(frame)
+  }, [requests.loading, settlement.loading, transaction])
 
   return <div className="sub-page">
     <PageHeading title="Loan Contract Workspace" subtitle="Open an approved loan to inspect its lifecycle and all supported contract-scoped operations in one place." action={<Button icon={RefreshCw} variant="outline" onClick={() => { requests.reload(); settlement.reload(); mtm.reload(); recallQ.reload(); chargeQ.reload(); rebateQ.reload(); paymentQ.reload() }}>Refresh contract</Button>} />
     <KpiStrip items={[
       { label: 'Approved loans', value: mode === 'demo' ? demoContracts.length : requests.data?.totalElements ?? '—', detail: mode === 'demo' ? 'Illustrative only' : 'Request service response' },
-      { label: 'Selected contract', value: transaction || 'None', detail: 'Server-issued transaction reference' },
+      { label: 'Selected contract', value: transaction ? referenceLabel(transaction, 'transactionReference') : 'None', detail: 'Contract reference' },
       { label: 'Contract status', value: settlement.data?.contractStatus || '—', detail: 'Live settlement projection' },
       { label: 'Outstanding', value: settlement.data ? number(settlement.data.outstandingQuantity) : '—', detail: 'Returned by Custodian service' },
     ]} />
@@ -66,20 +80,13 @@ export default function Contracts() {
         </ApiState>}
       </Panel>
 
-      {mode === 'live' && <Panel title="Open by contract reference" subtitle="Use a real transaction reference returned from an approved request.">
-        <form className="lookup-bar" onSubmit={inspect}>
-          <Field name="transactionReference" label="Loan contract" value={input} onChange={setInput} required options={approved.map(row => ({ value: row.transactionReference, label: `${row.transactionReference} · ${row.borrowerOrganizationReference} · ${row.securityIsin}` }))} />
-          <Button type="submit" icon={Search} disabled={!input.trim()}>Open contract</Button>
-        </form>
-      </Panel>}
-
       {transaction && mode === 'live' && <>
-        <Panel title={`Contract detail · ${transaction}`} subtitle="Contract parties and terms from the approved loan request and settlement projection.">
+        <Panel title={`Contract detail · ${referenceLabel(transaction, 'transactionReference')}`} subtitle="Contract parties and terms from the approved loan request and settlement projection.">
           <ApiState token={token} loading={settlement.loading} error={settlement.error} reload={settlement.reload}>
             {selectedRequest && <DetailGrid data={selectedRequest} fields={['requestReference','transactionReference','mslaReference','borrowerOrganizationReference','lenderOrganizationReference','securityIsin','quantity','requestedSettlementDate','settlementCurrency','requestedAt']} />}
             <DetailGrid data={settlement.data} fields={['transactionReference','contractStatus','quantity','deliveredQuantity','returnedQuantity','outstandingQuantity','requiredCashCollateral','confirmedCashCollateral']} />
             <Lifecycle current={settlement.data?.contractStatus || 'UNKNOWN'} />
-            <div className="action-grid">{[['Settlement','settlement'],['Margin & MTM','margin'],['Recalls','recalls'],['Charges & payments','payments'],['Contract close','close']].map(([label,path]) => <Link className="action-link" key={path} to={`/${path}?transaction=${encodeURIComponent(transaction)}`}>{label}<ArrowRight size={15}/></Link>)}</div>
+            <div className="action-grid">{[['Settlement','settlement'],['Margin & MTM','margin'],['Recalls','recalls'],['Charges & payments','payments'],['Contract close','close']].map(([label,path]) => <button className="action-link" key={path} type="button" onClick={()=>setWorkflow(path)}>{label}</button>)}</div>
           </ApiState>
         </Panel>
         <Panel title="Settlement and collateral activity" actions={<Button icon={RefreshCw} variant="ghost" onClick={settlement.reload}>Refresh activity</Button>}>
@@ -140,12 +147,8 @@ export default function Contracts() {
         </Panel>
       </>}
       {mode === 'demo' && <Panel title="Illustrative portfolio"><DataTable keyField="transactionReference" rows={demoContracts} columns={[{key:'transactionReference',label:'Contract'},{key:'borrower',label:'Borrower'},{key:'security',label:'Security'},{key:'quantity',label:'Quantity',render:number},{key:'status',label:'Status',render:value=><StatusBadge value={value}/>}]} /></Panel>}
-    </div><div className="work-area__side"><SideGuide title="Contract operations" items={[
-      'Select a server-approved loan contract; do not use illustrative demo references for live actions.',
-      'Lifecycle status, instructions, margin calls, charges, and payments come from their service endpoints.',
-      'Use the linked operation pages for authorized MTM, confirmation, return, payment, recall, and closure actions.',
-      'Refresh after asynchronous Kafka updates; a submitted instruction is not a completed settlement.',
-    ]} fix="Approval → collateral → delivery → on loan → returns → final release → close" note="No general contract-list endpoint is exposed; the live portfolio uses approved loan requests and transaction-scoped resources." /></div></div>
+    </div></div>
     <FooterNote>Service-returned statuses and amounts remain authoritative. The Custodian portal does not calculate collateral, fees, or market exposure.</FooterNote>
+    {workflow&&<div className="workflow-modal-backdrop" role="presentation" onMouseDown={event=>{if(event.target===event.currentTarget)setWorkflow(null)}}><section className="workflow-modal" role="dialog" aria-modal="true" aria-label={`${workflow} contract workflow`}><header><div><strong>{({settlement:'Settlement',margin:'Margin & MTM',recalls:'Recalls & returns',payments:'Fees & payments',close:'Contract close'})[workflow]}</strong><span>{referenceLabel(transaction, 'transactionReference')}</span></div><button type="button" aria-label="Close workflow" onClick={()=>setWorkflow(null)}><X size={20}/></button></header><div className="workflow-modal__content"><OperationsPage kind={workflow} embedded contractReference={transaction}/></div></section></div>}
   </div>
 }

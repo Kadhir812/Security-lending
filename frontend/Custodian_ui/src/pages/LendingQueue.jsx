@@ -1,14 +1,15 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { CheckCircle2, Eye, RefreshCw, XCircle } from 'lucide-react'
 import { loanRequests, locates } from '../api/resources'
 import { useApp } from '../hooks/useApp'
 import { useRemote } from '../hooks/useRemote'
-import { ApiState, Button, ConfirmDialog, DataTable, DetailGrid, FooterNote, KpiStrip, PageHeading, Pagination, Panel, SideGuide, StatusBadge } from '../components/UI'
-import { stamp } from '../utils/format'
+import { ApiState, Button, ConfirmDialog, DataTable, FooterNote, KpiStrip, PageHeading, Pagination, Panel, SideGuide, StatusBadge } from '../components/UI'
+import { display, stamp } from '../utils/format'
 
 const loanColumns = [
   { key: 'requestReference', label: 'Request reference' },
+  { key: 'transactionReference', label: 'Loan contract' },
   { key: 'borrowerOrganizationReference', label: 'Borrower' },
   { key: 'mslaReference', label: 'MSLA' },
   { key: 'securityIsin', label: 'Security' },
@@ -24,6 +25,7 @@ const locateColumns = [
   { key: 'mslaReference', label: 'MSLA' },
   { key: 'securityIsin', label: 'Security' },
   { key: 'quantity', label: 'Requested' },
+  { key: 'approvedQuantity', label: 'Approved' },
   { key: 'availableQuantity', label: 'Available now' },
   { key: 'status', label: 'Status', render: value => <StatusBadge value={value} /> },
   { key: 'requestTime', label: 'Received', render: stamp },
@@ -31,10 +33,10 @@ const locateColumns = [
 
 export default function LendingQueue() {
   const { token, notify } = useApp()
+  const navigate = useNavigate()
   const [page, setPage] = useState(0)
   const [loanFilter, setLoanFilter] = useState('ALL')
   const [dialog, setDialog] = useState(null)
-  const [selected, setSelected] = useState(null)
   const loans = useRemote(() => loanRequests.list(page, 20), [page])
   const locate = useRemote(() => locates.queue(), [])
   const loanRows = (loans.data?.content || []).filter(row => loanFilter === 'ALL' || row.status === loanFilter)
@@ -80,13 +82,12 @@ export default function LendingQueue() {
   }
 
   function reviewLoan(row, decision) {
-    setSelected({ type: 'loan', row })
     setDialog({
       title: decision === 'approve' ? 'Approve Borrow Request' : 'Reject Borrow Request',
       message: decision === 'approve'
         ? 'The service validates the MSLA, inventory, credit, and valuation before creating the contract.'
         : 'Reject the request with a clear explanation. The decision is sent asynchronously to the Borrower.',
-      subject: `${row.requestReference} · ${row.securityIsin}`,
+      subject: `${display(row.requestReference, 'requestReference')} · ${row.securityIsin}`,
       danger: decision === 'reject',
       confirmText: decision === 'approve' ? 'Approve request' : 'Reject request',
       fields: decision === 'reject' ? [{ name: 'reason', label: 'Rejection reason', required: true, max: 500, multiline: true }] : [],
@@ -95,11 +96,18 @@ export default function LendingQueue() {
           ? await loanRequests.approve(row.requestReference)
           : await loanRequests.reject(row.requestReference, values.reason)
         notify(`Returned decision: ${result.status || 'received'}`, 'success')
-        setSelected({ type: 'loan', row: result })
         loans.reload()
         return result
       },
     })
+  }
+
+  function openLoan(row) {
+    if (row.status === 'APPROVED' && row.transactionReference) {
+      navigate(`/contracts?transaction=${encodeURIComponent(row.transactionReference)}`)
+      return
+    }
+    navigate(`/requests/review/${encodeURIComponent(row.requestReference)}`)
   }
 
   return (
@@ -123,10 +131,8 @@ export default function LendingQueue() {
                 keyField="locateReference"
                 rows={locateRows}
                 columns={locateColumns}
-                emptyLabel="There are no pending locate requests."
-                onRow={row => setSelected({ type: 'locate', row })}
+                emptyLabel="There are no locate requests."
                 actions={row => <div className="table-actions">
-                  <Button variant="outline" icon={Eye} onClick={() => setSelected({ type: 'locate', row })}>Details</Button>
                   <Button variant="approve" icon={CheckCircle2} disabled={row.status !== 'PENDING' || Number(row.availableQuantity) < 1} onClick={() => reviewLocate(row, 'approve')}>Approve</Button>
                   <Button variant="reject" icon={XCircle} disabled={row.status !== 'PENDING'} onClick={() => reviewLocate(row, 'reject')}>Reject</Button>
                 </div>}
@@ -142,9 +148,9 @@ export default function LendingQueue() {
                 rows={loanRows}
                 columns={loanColumns}
                 emptyLabel="No loan requests match this status."
-                onRow={row => setSelected({ type: 'loan', row })}
+                onRow={openLoan}
                 actions={row => <div className="table-actions">
-                  <Button variant="outline" icon={Eye} onClick={() => setSelected({ type: 'loan', row })}>Details</Button>
+                  <Button variant="outline" icon={Eye} onClick={() => openLoan(row)}>{row.status === 'APPROVED' ? 'Open contract' : 'Details'}</Button>
                   <Button variant="approve" disabled={row.status !== 'PENDING'} onClick={() => reviewLoan(row, 'approve')}>Approve</Button>
                   <Button variant="reject" disabled={row.status !== 'PENDING'} onClick={() => reviewLoan(row, 'reject')}>Reject</Button>
                 </div>}
@@ -153,12 +159,6 @@ export default function LendingQueue() {
             </ApiState>
           </Panel>
 
-          {selected && <Panel
-            title={`${selected.type === 'locate' ? 'Locate' : 'Loan'} request details`}
-            actions={selected.type === 'loan' && selected.row.requestReference && <Link className="btn btn--outline" to={`/requests/review/${encodeURIComponent(selected.row.requestReference)}`}>Full loan review</Link>}
-          >
-            <DetailGrid data={selected.row} />
-          </Panel>}
         </div>
         <div className="work-area__side">
           <SideGuide
@@ -166,7 +166,7 @@ export default function LendingQueue() {
             items={[
               'Locate approval confirms available quantity only; it does not reserve shares.',
               'Loan approval rechecks current MSLA, inventory, credit, and valuation, then creates the authoritative contract.',
-              'Use Details for an in-page summary or Full loan review for agreement, inventory, and credit context.',
+              'Open a pending request for its full review; approved loan rows open their contract directly.',
               'Refresh after asynchronous Kafka updates. A failed or unknown decision must not be retried automatically.',
             ]}
             fix="Borrower locate → Custodian locate decision → Borrower loan request → Custodian loan decision"

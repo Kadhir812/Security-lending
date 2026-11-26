@@ -85,29 +85,29 @@ public class SettlementInstructionUpdatedHandler implements MessageHandler {
       boolean pendingValid = "PENDING".equals(settlementStatus)
           && text(payload.get("externalConfirmationReference")) == null
           && text(payload.get("failureReason")) == null
-          && Boolean.FALSE.equals(payload.get("simulatedConfirmation"));
+          && Boolean.FALSE.equals(operatorConfirmation(payload));
       boolean settledValid = "SETTLED".equals(settlementStatus)
           && text(payload.get("externalConfirmationReference")) != null
-          && Boolean.TRUE.equals(payload.get("simulatedConfirmation"));
+          && Boolean.TRUE.equals(operatorConfirmation(payload));
       boolean failedValid = "FAILED".equals(settlementStatus)
           && text(payload.get("failureReason")) != null
-          && Boolean.FALSE.equals(payload.get("simulatedConfirmation"));
+          && Boolean.FALSE.equals(operatorConfirmation(payload));
       if ((!pendingValid && !settledValid && !failedValid) || incomingVersion < 1) {
         throw invalid("COLLATERAL_RELEASE_CONFIRMATION_INVALID");
       }
     } else if ("SECURITY_RETURN".equals(instructionType)) {
       boolean settledConfirmationValid = "SETTLED".equals(settlementStatus)
           && text(payload.get("externalConfirmationReference")) != null
-          && Boolean.TRUE.equals(payload.get("simulatedConfirmation"));
+          && Boolean.TRUE.equals(operatorConfirmation(payload));
       boolean failedConfirmationValid = "FAILED".equals(settlementStatus)
           && text(payload.get("failureReason")) != null
-          && Boolean.FALSE.equals(payload.get("simulatedConfirmation"));
+          && Boolean.FALSE.equals(operatorConfirmation(payload));
       if ((!settledConfirmationValid && !failedConfirmationValid) || incomingVersion < 2) {
         throw invalid("RETURN_SETTLEMENT_CONFIRMATION_INVALID");
       }
     } else if (!"SETTLED".equals(settlementStatus)
         || text(payload.get("externalConfirmationReference")) == null
-        || !Boolean.TRUE.equals(payload.get("simulatedConfirmation"))) {
+        || !Boolean.TRUE.equals(operatorConfirmation(payload))) {
       throw invalid("SETTLEMENT_CONFIRMATION_INVALID");
     }
 
@@ -194,7 +194,7 @@ public class SettlementInstructionUpdatedHandler implements MessageHandler {
     instruction.put("externalConfirmationReference",
         payload.get("externalConfirmationReference"));
     instruction.put("failureReason", payload.get("failureReason"));
-    instruction.put("simulatedConfirmation", payload.get("simulatedConfirmation"));
+    instruction.put("operatorConfirmed", operatorConfirmation(payload));
     List<Map<String, Object>> settlementInstructions =
         mapList(snapshot.get("settlementInstructions"));
     Map<String, Object> settlement = find(settlementInstructions, instructionReference);
@@ -262,7 +262,7 @@ public class SettlementInstructionUpdatedHandler implements MessageHandler {
     instruction.put("settlementAggregateVersion", incomingVersion);
     instruction.put("settledAt", payload.get("settledAt"));
     instruction.put("externalConfirmationReference", payload.get("externalConfirmationReference"));
-    instruction.put("simulatedConfirmation", true);
+    instruction.put("operatorConfirmed", true);
     snapshot.put("collateralInstructions", instructions);
     Long contractVersion = optionalInteger(payload.get("contractVersion"));
     long currentContractVersion = number(snapshot.get("settlementContractVersion"));
@@ -339,7 +339,7 @@ public class SettlementInstructionUpdatedHandler implements MessageHandler {
     instruction.put("externalConfirmationReference",
         payload.get("externalConfirmationReference"));
     instruction.put("failureReason", payload.get("failureReason"));
-    instruction.put("simulatedConfirmation", payload.get("simulatedConfirmation"));
+    instruction.put("operatorConfirmed", operatorConfirmation(payload));
     instruction.put("releaseInstructionCount", instructionCount);
     snapshot.put("collateralReleaseInstructions", instructions);
 
@@ -439,14 +439,14 @@ public class SettlementInstructionUpdatedHandler implements MessageHandler {
       existing.put("settlementAggregateVersion", incomingVersion);
       existing.put("settledAt", payload.get("settledAt"));
       existing.put("settlementStatus", status);
-      existing.put("simulatedConfirmation", true);
+      existing.put("operatorConfirmed", true);
     } else {
       if (incomingVersion != 1) throw invalid("SETTLEMENT_INSTRUCTION_VERSION_GAP");
       Map<String, Object> instruction = new LinkedHashMap<>(payload);
       instruction.put("settlementAggregateVersion", incomingVersion);
       instruction.put("settledAt", payload.get("settledAt"));
       instruction.put("settlementStatus", status);
-      instruction.put("simulatedConfirmation", true);
+      instruction.put("operatorConfirmed", true);
       instructions.add(instruction);
     }
     snapshot.put("settlementInstructions", instructions);
@@ -469,6 +469,12 @@ public class SettlementInstructionUpdatedHandler implements MessageHandler {
         .orElse(null);
   }
 
+  private Boolean operatorConfirmation(Map<String, Object> payload) {
+    Object value = payload.containsKey("operatorConfirmed")
+        ? payload.get("operatorConfirmed")
+        : payload.get("simulatedConfirmation");
+    return value instanceof Boolean confirmed ? confirmed : null;
+  }
   private long number(Object value) {
     return value == null ? 0 : integer(value);
   }

@@ -287,7 +287,7 @@ public class InitialSettlementService {
 
   @Transactional
   public SettlementInstruction confirmCash(Authentication authentication, String transactionReference,
-      com.hexaware.custodian_service.dto.request.SimulatedSettlementConfirmationRequest request) {
+      com.hexaware.custodian_service.dto.request.SettlementConfirmationRequest request) {
     Organization actor = access.actor(authentication, true);
     LoanContract contract = scopedLockedContract(transactionReference);
     LoanRequest loanRequest = requests.findById(contract.getLoanRequestId())
@@ -384,7 +384,7 @@ public class InitialSettlementService {
             .newStatus(LoanContractStatus.PENDING_SETTLEMENT.name())
             .changedBy(access.user(authentication).getUserId())
             .actorType(HistoryActorType.USER)
-            .reason("SIMULATED_INITIAL_CASH_COLLATERAL_CONFIRMED")
+            .reason("INITIAL_CASH_COLLATERAL_CONFIRMED")
             .changedAt(clock.instant())
             .build());
       }
@@ -395,7 +395,7 @@ public class InitialSettlementService {
 
   @Transactional
   public SettlementInstruction confirmSecurities(Authentication authentication, String transactionReference,
-      com.hexaware.custodian_service.dto.request.SimulatedSettlementConfirmationRequest request) {
+      com.hexaware.custodian_service.dto.request.SettlementConfirmationRequest request) {
     Organization actor = access.actor(authentication, true);
     LoanContract contract = scopedLockedContract(transactionReference);
     LoanRequest loanRequest = requests.findById(contract.getLoanRequestId())
@@ -495,16 +495,37 @@ public class InitialSettlementService {
 
     InventoryReservation reservation = reservations.findLockedByContractId(contract.getContractId())
         .orElseThrow(() -> SetupException.conflict("Contract has no inventory reservation"));
-    if (reservation.getStatus() != InventoryReservationStatus.ACTIVE
-        || reservation.getRemainingQuantity() == null) {
-      throw SetupException.conflict("Inventory reservation is not active");
-    }
-    if (!reservation.getRemainingQuantity().equals(contract.getQuantity())) {
+    if (reservation.getRemainingQuantity() == null
+        || !reservation.getRemainingQuantity().equals(contract.getQuantity())) {
       throw SetupException.conflict("Delivery must consume the full approved reservation");
     }
     LenderInventory inventory = inventories.findLocked(
         reservationOrganizationId(reservation), loanRequest.getSecurityIsin())
         .orElseThrow(() -> SetupException.conflict("Reserved lender inventory not found"));
+    if (!Objects.equals(inventory.getInventoryId(), reservation.getInventoryId())) {
+      throw SetupException.conflict("Reservation points to a different lender inventory position");
+    }
+    if (inventory.getReservedQuantity() == null
+        || inventory.getReservedQuantity() < contract.getQuantity()) {
+      throw SetupException.conflict(
+          "The full security quantity is no longer reserved in lender inventory");
+    }
+    if (reservation.getStatus() != InventoryReservationStatus.ACTIVE) {
+      boolean untouchedReservation = reservation.getConsumedQuantity() != null
+          && reservation.getConsumedQuantity() == 0L
+          && reservation.getReleasedQuantity() != null
+          && reservation.getReleasedQuantity() == 0L;
+      boolean recoverableStatus = reservation.getStatus() == InventoryReservationStatus.EXPIRED
+          || reservation.getStatus() == InventoryReservationStatus.RELEASED;
+      if (!recoverableStatus || !untouchedReservation) {
+        throw SetupException.conflict("Inventory reservation is " + reservation.getStatus()
+            + " and cannot be restored; refresh inventory and approve a new reservation");
+      }
+      // Recover stale expiry/release flags only while the full quantity remains assigned to this
+      // untouched reservation in the lender's aggregate inventory balance.
+      reservation.setStatus(InventoryReservationStatus.ACTIVE);
+      reservations.saveAndFlush(reservation);
+    }
     reservation.setConsumedQuantity(contract.getQuantity());
     reservation.setStatus(InventoryReservationStatus.CONSUMED);
     inventory.setReservedQuantity(inventory.getReservedQuantity() - contract.getQuantity());
@@ -547,7 +568,7 @@ public class InitialSettlementService {
         .newStatus(LoanContractStatus.ON_LOAN.name())
         .changedBy(access.user(authentication).getUserId())
         .actorType(HistoryActorType.USER)
-        .reason("SIMULATED_INITIAL_SECURITIES_DELIVERY_CONFIRMED")
+        .reason("INITIAL_SECURITIES_DELIVERY_CONFIRMED")
         .changedAt(clock.instant()).build());
     publishSettlementUpdate(contract, instruction, loanRequest, 1L);
     return instruction;
@@ -599,7 +620,7 @@ public class InitialSettlementService {
       Organization borrower,
       Organization custodian,
       String settlementStatus,
-      boolean simulatedConfirmation) {
+      boolean operatorConfirmed) {
     Map<String, Object> payload = new LinkedHashMap<>();
     payload.put("transactionReference", contract.getTransactionReference());
     payload.put("instructionReference", instruction.getInstructionReference());
@@ -628,7 +649,7 @@ public class InitialSettlementService {
         ? null
         : instruction.getSettledAt().toString());
     payload.put("externalConfirmationReference", instruction.getExternalConfirmationReference());
-    payload.put("simulatedConfirmation", simulatedConfirmation);
+    payload.put("operatorConfirmed", operatorConfirmed);
     return payload;
   }
 

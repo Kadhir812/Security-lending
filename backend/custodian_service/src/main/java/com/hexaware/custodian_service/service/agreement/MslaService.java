@@ -4,13 +4,16 @@ import com.hexaware.custodian_service.dto.request.MslaRequest;
 import com.hexaware.custodian_service.dto.response.MslaResponse;
 import com.hexaware.custodian_service.dto.response.PageResponse;
 import com.hexaware.custodian_service.entity.LenderMandate;
+import com.hexaware.custodian_service.entity.LendingFee;
 import com.hexaware.custodian_service.entity.MslaAgreement;
 import com.hexaware.custodian_service.entity.Organization;
 import com.hexaware.custodian_service.enums.AgreementStatus;
 import com.hexaware.custodian_service.enums.OrganizationType;
+import com.hexaware.custodian_service.enums.RuleStatus;
 import com.hexaware.custodian_service.exception.SetupException;
 import com.hexaware.custodian_service.mapper.SetupMapper;
 import com.hexaware.custodian_service.repository.LenderMandateRepository;
+import com.hexaware.custodian_service.repository.LendingFeeRepository;
 import com.hexaware.custodian_service.repository.MslaAgreementRepository;
 import com.hexaware.custodian_service.repository.OrganizationRepository;
 import com.hexaware.custodian_service.repository.SetupUsageRepository;
@@ -19,6 +22,7 @@ import com.hexaware.custodian_service.service.organization.MandateService;
 import com.hexaware.custodian_service.service.setup.SetupValidation;
 import java.time.Clock;
 import java.time.LocalDate;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -35,6 +39,7 @@ public class MslaService {
 
   private final MslaAgreementRepository agreements;
   private final LenderMandateRepository mandateRepository;
+  private final LendingFeeRepository fees;
   private final OrganizationRepository organizations;
   private final SetupUsageRepository usage;
   private final MandateService mandates;
@@ -265,7 +270,7 @@ public class MslaService {
             mandate.getCustodianOrgId(),
             agreement.getBorrowerOrgId());
     var parties = mandates.parties(organizationIds);
-    return mapper.msla(agreement, mandate, parties, LocalDate.now(clock));
+    return mapper.msla(agreement, mandate, parties, LocalDate.now(clock), agreementDefaultFee(agreement));
   }
 
   @Transactional(readOnly = true)
@@ -318,6 +323,19 @@ public class MslaService {
                     agreement,
                     mandatesById.get(agreement.getMandateId()),
                     organizationsById,
-                    LocalDate.now(clock))));
+                    LocalDate.now(clock),
+                    agreementDefaultFee(agreement))));
+  }
+
+  private BigDecimal agreementDefaultFee(MslaAgreement agreement) {
+    LocalDate today = LocalDate.now(clock);
+    return fees.findByMslaIdOrderByEffectiveFromDescFeeIdDesc(agreement.getMslaId()).stream()
+        .filter(fee -> fee.getSecurityIsin() == null)
+        .filter(fee -> fee.getStatus() == RuleStatus.ACTIVE)
+        .filter(fee -> !today.isBefore(fee.getEffectiveFrom()))
+        .filter(fee -> fee.getEffectiveTo() == null || !today.isAfter(fee.getEffectiveTo()))
+        .map(LendingFee::getAnnualFeePct)
+        .findFirst()
+        .orElse(null);
   }
 }

@@ -1,8 +1,8 @@
 package com.hexaware.custodian_service.controller;
 
 import com.hexaware.custodian_service.dto.request.CashCollateralInstructionRequest;
-import com.hexaware.custodian_service.dto.request.SimulatedSettlementConfirmationRequest;
-import com.hexaware.custodian_service.dto.request.SimulatedSettlementFailureRequest;
+import com.hexaware.custodian_service.dto.request.SettlementConfirmationRequest;
+import com.hexaware.custodian_service.dto.request.SettlementFailureRequest;
 import com.hexaware.custodian_service.entity.Collateral;
 import com.hexaware.custodian_service.entity.SettlementInstruction;
 import com.hexaware.custodian_service.dto.response.CollateralSettlementResponse;
@@ -42,11 +42,11 @@ public class InitialSettlementController {
         collateral.getPostedCashAmount(), false);
   }
 
-  @PostMapping("/cash-instructions/simulated-confirm")
+  @PostMapping("/cash-instructions/confirm")
   public CollateralSettlementResponse confirmCash(
       Authentication authentication,
       @PathVariable String transactionReference,
-      @Valid @RequestBody SimulatedSettlementConfirmationRequest request) {
+      @Valid @RequestBody SettlementConfirmationRequest request) {
     SettlementInstruction instruction =
         service.confirmCash(authentication, transactionReference, request);
     return new CollateralSettlementResponse(instruction.getInstructionReference(),
@@ -54,11 +54,11 @@ public class InitialSettlementController {
         instruction.getAmount(), true);
   }
 
-  @PostMapping("/securities/simulated-confirm")
+  @PostMapping("/securities/confirm")
   public CollateralSettlementResponse confirmSecurities(
       Authentication authentication,
       @PathVariable String transactionReference,
-      @Valid @RequestBody SimulatedSettlementConfirmationRequest request) {
+      @Valid @RequestBody SettlementConfirmationRequest request) {
     SettlementInstruction instruction =
         service.confirmSecurities(authentication, transactionReference, request);
     return new CollateralSettlementResponse(instruction.getInstructionReference(),
@@ -66,11 +66,11 @@ public class InitialSettlementController {
         instruction.getAmount(), true);
   }
 
-  @PostMapping("/returns/simulated-confirm")
+  @PostMapping("/returns/confirm")
   public CollateralSettlementResponse confirmReturn(
       Authentication authentication,
       @PathVariable String transactionReference,
-      @Valid @RequestBody SimulatedSettlementConfirmationRequest request) {
+      @Valid @RequestBody SettlementConfirmationRequest request) {
     SettlementInstruction instruction =
         returns.confirmReturn(authentication, transactionReference, request);
     return new CollateralSettlementResponse(instruction.getInstructionReference(),
@@ -78,11 +78,11 @@ public class InitialSettlementController {
         instruction.getStatus().name(), null, true);
   }
 
-  @PostMapping("/returns/simulated-fail")
+  @PostMapping("/returns/fail")
   public CollateralSettlementResponse failReturn(
       Authentication authentication,
       @PathVariable String transactionReference,
-      @Valid @RequestBody SimulatedSettlementFailureRequest request) {
+      @Valid @RequestBody SettlementFailureRequest request) {
     SettlementInstruction instruction =
         returns.failReturn(authentication, transactionReference, request);
     return new CollateralSettlementResponse(instruction.getInstructionReference(),
@@ -90,11 +90,11 @@ public class InitialSettlementController {
         instruction.getStatus().name(), null, false);
   }
 
-  @PostMapping("/collateral-releases/simulated-confirm")
+  @PostMapping("/collateral-releases/confirm")
   public CollateralSettlementResponse confirmCollateralRelease(
       Authentication authentication,
       @PathVariable String transactionReference,
-      @Valid @RequestBody SimulatedSettlementConfirmationRequest request) {
+      @Valid @RequestBody SettlementConfirmationRequest request) {
     SettlementInstruction instruction = releases.confirm(
         authentication, transactionReference, request.instructionReference(),
         request.confirmationReference());
@@ -103,11 +103,11 @@ public class InitialSettlementController {
         instruction.getAmount(), true);
   }
 
-  @PostMapping("/collateral-releases/simulated-fail")
+  @PostMapping("/collateral-releases/fail")
   public CollateralSettlementResponse failCollateralRelease(
       Authentication authentication,
       @PathVariable String transactionReference,
-      @Valid @RequestBody SimulatedSettlementFailureRequest request) {
+      @Valid @RequestBody SettlementFailureRequest request) {
     SettlementInstruction instruction = releases.fail(
         authentication, transactionReference, request.instructionReference(),
         request.failureReason());

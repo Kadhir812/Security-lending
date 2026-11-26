@@ -5,6 +5,7 @@ import { useApp } from '../hooks/useApp'
 import { Notice } from '../components/UI'
 import { useRemote } from '../hooks/useRemote'
 import { auth } from '../api/resources'
+import { displayReferenceText } from '../utils/format'
 
 const ROLE = 'Custodian'
 const otherURL = import.meta.env.VITE_BORROWER_UI_URL || 'http://localhost:5174'

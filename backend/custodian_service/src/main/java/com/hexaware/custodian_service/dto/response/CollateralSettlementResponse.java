@@ -7,4 +7,4 @@ public record CollateralSettlementResponse(
     String currency,
     String settlementStatus,
     java.math.BigDecimal confirmedAmount,
-    boolean simulatedConfirmation) {}
+    boolean operatorConfirmed) {}

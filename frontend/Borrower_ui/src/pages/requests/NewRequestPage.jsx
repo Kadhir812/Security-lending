@@ -263,6 +263,13 @@ export function NewRequestPage() {
                 hint="Automatically taken from eligible MSLA baseCurrency"
               />
               <Field
+                name="annualFeePct"
+                label="MSLA annual lending fee (%)"
+                readOnly
+                value={selectedMsla?.annualFeePct ?? ''}
+                hint="Inherited from the selected agreement and applied automatically; this value is not sent per loan."
+              />
+              <Field
                 name="locateReference"
                 label="Approved locate (optional)"
                 value={form.locateReference}

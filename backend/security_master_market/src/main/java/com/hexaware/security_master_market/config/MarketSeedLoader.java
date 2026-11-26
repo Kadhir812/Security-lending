@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.core.annotation.Order;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
@@ -22,6 +23,7 @@ import tools.jackson.databind.ObjectMapper;
 /** Explicitly enabled development data; never replaces user-maintained rows. */
 @Component
 @RequiredArgsConstructor
+@Order(1)
 @ConditionalOnProperty(name = "app.market.seed.enabled", havingValue = "true")
 public class MarketSeedLoader implements ApplicationRunner {
   private final JdbcTemplate jdbc;

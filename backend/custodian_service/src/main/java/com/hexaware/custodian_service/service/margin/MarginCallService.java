@@ -303,7 +303,7 @@ public class MarginCallService {
     contracts.save(contract);
     calls.saveAndFlush(call);
     publishCall(call, contract, parties(contract), "TOP_UP_CONFIRMED",
-        settlementInstructionId, "Simulated CASH receipt confirmed",
+        settlementInstructionId, "Operator-confirmed CASH receipt recorded",
         call.getStatus() == MarginCallStatus.SATISFIED ? "SATISFIED" : "TOP_UP_CONFIRMED");
     return response(call, contract);
   }
@@ -553,7 +553,7 @@ public class MarginCallService {
       payload.put("settlementAmount", instruction.getAmount().toPlainString());
       payload.put("settlementCurrency", instruction.getCurrency());
       payload.put("externalConfirmationReference", instruction.getExternalConfirmationReference());
-      payload.put("simulatedConfirmation", true);
+      payload.put("operatorConfirmed", true);
     }
     outgoing.enqueue("MARGIN_CALL", EventEnvelope.builder()
         .eventId(eventId)

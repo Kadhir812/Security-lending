@@ -2,8 +2,8 @@ package com.hexaware.custodian_service.service.returns;
 
 import com.hexaware.custodian_service.client.MtmCalculationResponse;
 import com.hexaware.custodian_service.dto.request.CreateRecallRequest;
-import com.hexaware.custodian_service.dto.request.SimulatedSettlementConfirmationRequest;
-import com.hexaware.custodian_service.dto.request.SimulatedSettlementFailureRequest;
+import com.hexaware.custodian_service.dto.request.SettlementConfirmationRequest;
+import com.hexaware.custodian_service.dto.request.SettlementFailureRequest;
 import com.hexaware.custodian_service.entity.*;
 import com.hexaware.custodian_service.enums.*;
 import com.hexaware.custodian_service.exception.SetupException;
@@ -198,10 +198,24 @@ public class SecuritiesReturnService {
         instruction.getVersion() + 1, false);
   }
 
+  /**
+   * Compatibility adapter for callers compiled against the former demo request DTO. The request
+   * is processed through the same operator-confirmed settlement path as the current API.
+   */
+  @Deprecated
   public SettlementInstruction confirmReturn(
       Authentication authentication,
       String transactionReference,
-      SimulatedSettlementConfirmationRequest confirmation) {
+      com.hexaware.custodian_service.dto.request.SimulatedSettlementConfirmationRequest confirmation) {
+    return confirmReturn(authentication, transactionReference,
+        new SettlementConfirmationRequest(confirmation.instructionReference(),
+            confirmation.confirmationReference()));
+  }
+
+  public SettlementInstruction confirmReturn(
+      Authentication authentication,
+      String transactionReference,
+      SettlementConfirmationRequest confirmation) {
     Organization actor = access.actor(authentication, false);
     LoanContract initial = contract(transactionReference);
     Parties initialParties = parties(initial);
@@ -256,7 +270,7 @@ public class SecuritiesReturnService {
   public SettlementInstruction failReturn(
       Authentication authentication,
       String transactionReference,
-      SimulatedSettlementFailureRequest failure) {
+      SettlementFailureRequest failure) {
     Organization actor = access.actor(authentication, true);
     LoanContract contract = lockedContract(transactionReference);
     Parties parties = parties(contract);
@@ -285,7 +299,7 @@ public class SecuritiesReturnService {
   private SettlementInstruction confirmReturnTransaction(
       Authentication authentication,
       String transactionReference,
-      SimulatedSettlementConfirmationRequest confirmation,
+      SettlementConfirmationRequest confirmation,
       MtmCalculationResponse mtmResult,
       long quantity,
       Long expectedVersion,
@@ -471,7 +485,7 @@ public class SecuritiesReturnService {
       String recallReference,
       String status,
       long aggregateVersion,
-      boolean simulatedConfirmation) {
+      boolean operatorConfirmed) {
     Map<String, Object> payload = new LinkedHashMap<>();
     payload.put("payloadVersion", 1);
     payload.put("aggregateVersion", aggregateVersion);
@@ -495,7 +509,7 @@ public class SecuritiesReturnService {
         ? null : instruction.getSettledAt().toString());
     payload.put("externalConfirmationReference", instruction.getExternalConfirmationReference());
     payload.put("failureReason", instruction.getFailureReason());
-    payload.put("simulatedConfirmation", simulatedConfirmation);
+    payload.put("operatorConfirmed", operatorConfirmed);
     String eventType = "PENDING".equals(status)
         ? "SECURITY_RETURN_RECEIVED"
         : "SETTLEMENT_INSTRUCTION_UPDATED";

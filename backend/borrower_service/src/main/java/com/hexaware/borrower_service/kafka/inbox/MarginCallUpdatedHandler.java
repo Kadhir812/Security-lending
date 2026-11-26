@@ -124,7 +124,7 @@ public class MarginCallUpdatedHandler implements MessageHandler {
         instruction.put("settlementStatus", payload.get("settlementStatus"));
         instruction.put("settlementAmount", payload.get("settlementAmount"));
         instruction.put("settlementCurrency", payload.get("settlementCurrency"));
-        instruction.put("simulatedConfirmation", payload.get("simulatedConfirmation"));
+        instruction.put("operatorConfirmed", operatorConfirmation(payload));
         instruction.put("externalConfirmationReference",
             payload.get("externalConfirmationReference"));
       }
@@ -161,6 +161,12 @@ public class MarginCallUpdatedHandler implements MessageHandler {
 
   private String text(Object value) {
     return value instanceof String text && !text.isBlank() ? text : null;
+  }
+
+  private Object operatorConfirmation(Map<String, Object> payload) {
+    return payload.containsKey("operatorConfirmed")
+        ? payload.get("operatorConfirmed")
+        : payload.get("simulatedConfirmation");
   }
 
   private long integer(Object value) {
